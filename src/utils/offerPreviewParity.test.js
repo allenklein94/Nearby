@@ -78,7 +78,11 @@ describe('Customer Preview = the customer card', () => {
     const dash = read('screens/BusinessDashboardScreen.js');
     const detail = read('screens/BusinessRequestDetailScreen.js');
     expect(detail).toContain('...offerCardStyleSpec(colors)');
-    const block = dash.slice(dash.indexOf('const previewOffer = draftPreviewOffer('), dash.indexOf('onPress={handleSubmitOffer}'));
+    // The preview renders inside the Make an Offer dock (components/OfferPreviewDock.js); Send Offer is the dock's
+    // sendButton prop, so the block runs from the one draftPreviewOffer call to the dock's closing tag.
+    const start = dash.indexOf('const previewOffer = draftPreviewOffer(');
+    const block = dash.slice(start, dash.indexOf('</OfferPreviewDock>', start));
+    expect(block).toContain('<OfferPreviewDock');
     expect(block).toContain('getOfferCardStyles(colors)');
     expect(block).toContain('<View style={cardStyles.offerCard}>');
     expect(block).toContain('<OfferCustomerBody offer={previewOffer}');

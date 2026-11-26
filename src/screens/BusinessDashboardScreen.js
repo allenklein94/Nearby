@@ -102,6 +102,8 @@ import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProbl
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
 import { draftPreviewOffer, draftSecondTime, draftSecondPartySize, previewAcceptAction } from '../utils/offerDraftPreview';
 import { getOfferCardStyles } from '../components/offerCardStyles';
+import { previewDockSummary } from '../utils/offerPreviewDock';
+import OfferPreviewDock from '../components/OfferPreviewDock';
 import ReviseOfferSheet from '../components/ReviseOfferSheet';
 import { canReviseOffer, isRevisedOffer } from '../utils/offerRevision';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
@@ -7330,7 +7332,10 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
-            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
+            {/* Owner 2026-11-22: the form scrolls; the dock below it (outside the scroll) keeps the live Customer Preview one tap
+                away and Send Offer always in reach (components/OfferPreviewDock.js, rules utils/offerPreviewDock.js). */}
+            <View style={[styles.sheet, styles.offerSheet]}>
+            <ScrollView style={styles.offerSheetScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>{t('ui.bizDash3.makeAnOffer')}</Text>
               {offerDraft.draft && (
                 <DraftBanner
@@ -7619,7 +7624,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
               <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>{t('ui.bizDash3.whatsIncludedOptional')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, styles.inlineAddInput]}
                   placeholder={t('ui.bizDash3.eGPrivateTable')}
                   placeholderTextColor={colors.textTertiary}
                   value={offerIncludedItemDraft}
@@ -7628,7 +7633,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                   accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
-                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  style={[styles.smallActionButton, styles.inlineAddButton, { backgroundColor: colors.primary }]}
                   onPress={addOfferIncludedItem}
                   accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
@@ -7810,60 +7815,70 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                   }}
                 />
               ) : null}
-              {/* Item 49 (was item 84's separate step): the Customer Preview builds live as the owner fills the form, right
-                  above Send Offer. One mapping (utils/offerDraftPreview.js), one body + engine shared with the customer's real card. */}
-              {(() => {
-                const previewOffer = draftPreviewOffer({
-                  type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
-                  proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
-                  partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
-                  discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
-                  availFrom: offerAvailFrom, availUntil: offerAvailUntil,
-                  creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
-                });
-                if (!previewOffer) return null;
-                const localMedia = !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
-                const shown = presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
-                const previewAction = previewAcceptAction();
-                const cardStyles = getOfferCardStyles(colors);
-                return (
-                  <View style={{ marginTop: spacing.md }}>
-                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
-                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
-                    {/* Item 49: the same frame, header, title and button styles as the customer's card (components/offerCardStyles.js). */}
-                    <View style={cardStyles.offerCard}>
-                      <View style={cardStyles.offerPartnerRow}>
-                        <BusinessLogoMark uri={previewLogo} />
-                        <Text style={[cardStyles.offerPartnerName, cardStyles.offerPartnerNameFlex]}>{selectedPartner?.name}</Text>
-                      </View>
-                      {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
-                      {shown.heard ? <Text style={cardStyles.offerReputationLine}>{shown.heard}</Text> : null}
-                      {shown.statusLine ? <Text style={cardStyles.offerStatus}>{shown.statusLine}</Text> : null}
-                      {!!previewOffer.offer_title && <Text style={cardStyles.offerTitleHeadline}>{previewOffer.offer_title}</Text>}
-                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
-                      {/* The customer's button, shown but never live here (previewAcceptAction): nothing is screened, sent or booked yet. */}
-                      <View style={[cardStyles.acceptButton, cardStyles.acceptButtonWaiting]} pointerEvents="none" accessible accessibilityRole="button" accessibilityState={{ disabled: previewAction.disabled }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
-                        <Text style={cardStyles.acceptButtonText}>{previewAction.label}</Text>
-                      </View>
-                    </View>
-                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
-                    <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
-                  </View>
-                );
-              })()}
-              <TouchableOpacity
-                style={[styles.submitButton, (respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)) && disabledButtonStyle(colors)]}
-                onPress={handleSubmitOffer}
-                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
-                accessibilityRole="button"
-                accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
-              >
-                <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
-              </TouchableOpacity>
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
                 <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </ScrollView>
+            {/* Item 49: the Customer Preview builds live as the owner fills the form. One mapping (utils/offerDraftPreview.js),
+                one body + engine shared with the customer's real card, rendered ONLY here, inside the dock's panel. */}
+            {(() => {
+              const previewOffer = draftPreviewOffer({
+                type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
+                proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
+                partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
+                discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
+                availFrom: offerAvailFrom, availUntil: offerAvailUntil,
+                creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
+              });
+              const localMedia = previewOffer && !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
+              const shown = previewOffer ? presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } }) : null;
+              const previewAction = previewAcceptAction();
+              const cardStyles = getOfferCardStyles(colors);
+              const sendBlocked = respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime);
+              return (
+                <OfferPreviewDock
+                  hasPreview={!!previewOffer}
+                  label={t('ui.bizDash3.customerPreview')}
+                  summary={previewDockSummary(previewOffer)}
+                  sendButton={(
+                    <TouchableOpacity
+                      style={[styles.submitButton, styles.offerDockSend, sendBlocked && disabledButtonStyle(colors)]}
+                      onPress={handleSubmitOffer}
+                      disabled={sendBlocked}
+                      accessibilityRole="button"
+                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
+                    >
+                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
+                    </TouchableOpacity>
+                  )}
+                >
+                  {previewOffer && (
+                    <View>
+                      <Text style={[styles.helperText, { marginTop: 0 }]}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
+                      {/* Item 49: the same frame, header, title and button styles as the customer's card (components/offerCardStyles.js). */}
+                      <View style={cardStyles.offerCard}>
+                        <View style={cardStyles.offerPartnerRow}>
+                          <BusinessLogoMark uri={previewLogo} />
+                          <Text style={[cardStyles.offerPartnerName, cardStyles.offerPartnerNameFlex]}>{selectedPartner?.name}</Text>
+                        </View>
+                        {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
+                        {shown.heard ? <Text style={cardStyles.offerReputationLine}>{shown.heard}</Text> : null}
+                        {shown.statusLine ? <Text style={cardStyles.offerStatus}>{shown.statusLine}</Text> : null}
+                        {!!previewOffer.offer_title && <Text style={cardStyles.offerTitleHeadline}>{previewOffer.offer_title}</Text>}
+                        <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
+                        {/* The customer's button, shown but never live here (previewAcceptAction): nothing is screened, sent or booked yet. */}
+                        <View style={[cardStyles.acceptButton, cardStyles.acceptButtonWaiting]} pointerEvents="none" accessible accessibilityRole="button" accessibilityState={{ disabled: previewAction.disabled }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
+                          <Text style={cardStyles.acceptButtonText}>{previewAction.label}</Text>
+                        </View>
+                      </View>
+                      {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
+                      <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
+                    </View>
+                  )}
+                </OfferPreviewDock>
+              );
+            })()}
+            </View>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -8405,7 +8420,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whatsIncluded')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, styles.inlineAddInput]}
                   placeholder={t('ui.bizDash3.eGBirthdayDessert')}
                   placeholderTextColor={colors.textTertiary}
                   value={packageIncludedItemDraft}
@@ -8414,7 +8429,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                   accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
-                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  style={[styles.smallActionButton, styles.inlineAddButton, { backgroundColor: colors.primary }]}
                   onPress={addPackageIncludedItem}
                   accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
@@ -8836,6 +8851,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modalCloseText: { color: colors.primary, fontWeight: '600' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  // Make an Offer (owner 2026-11-22): the sheet holds a shrinking form scroll + the preview dock; it never covers the status bar.
+  offerSheet: { maxHeight: '92%' },
+  offerSheetScroll: { flexGrow: 0, flexShrink: 1 },
+  offerDockSend: { marginTop: spacing.sm },
+  // The "What's included" rows (Make an Offer + Occasion Package, owner 2026-11-22): the input shrinks (minWidth 0: a web text field otherwise keeps its
+  // built-in width and pushed Add off a 320 pt screen) and Add never does, so the button is always whole and tappable.
+  inlineAddInput: { flex: 1, minWidth: 0 },
+  inlineAddButton: { flexShrink: 0, marginLeft: spacing.sm, alignSelf: 'center', minHeight: 44 },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
