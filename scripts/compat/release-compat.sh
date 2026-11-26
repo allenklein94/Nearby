@@ -12,7 +12,9 @@
 #      checkpoint so it reads the schema and the in-database pre-request config fresh).
 # Results: $OUT/<version>.static.txt, $OUT/<version>.runtime.json, $OUT/<version>.jest.log, $OUT/summary.txt.
 set -u
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+# APP_ROOT = the app build under test (default: this checkout; for a released build, a worktree of its tag, which carries
+# its own runner). MIGRATIONS_FROM = where the migrations come from (default: the same tree; e.g. main for the newest ones).
+ROOT=${APP_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}; MIG=${MIGRATIONS_FROM:-$ROOT}
 DB=${DB:?container name}; START=${START:?start version}; OUT=${OUT:?output dir}
 NET=${REPLAY_NETWORK:-nearby-replay-internal}; REST=${DB}-compat-rest; IMAGE=${POSTGREST_IMAGE:-postgrest/postgrest:v13.0.7}
 PGMOD=${NEARBY_PG_MODULE:-/workspaces/.nearby-verify/pgmod/node_modules/pg}
@@ -25,8 +27,9 @@ case "$IP" in 172.*|10.*|192.168.*) ;; *) echo "refusing: $DB is not on a privat
 export NEARBY_LOCAL_DB_URL=postgres://postgres:postgres@$IP:5432/postgres NEARBY_PG_MODULE=$PGMOD
 docker exec -e PGPASSWORD=postgres "$DB" psql -h localhost -U supabase_admin -d postgres -qc "alter role authenticator with password 'postgres';" >/dev/null
 SECRET=$(openssl rand -hex 32)
-node "$ROOT/scripts/compat/scan-calls.js" "$ROOT/src" "$OUT/calls.json" | tee -a "$OUT/summary.txt"
-node "$ROOT/scripts/compat/calls-to-sql.js" "$OUT/calls.json" > "$OUT/check.sql"
+HERE=$(cd "$(dirname "$0")" && pwd)
+node "$HERE/scan-calls.js" "$ROOT/src" "$OUT/calls.json" | tee -a "$OUT/summary.txt"
+node "$HERE/calls-to-sql.js" "$OUT/calls.json" > "$OUT/check.sql"
 
 rest_up() {
   docker rm -f "$REST" >/dev/null 2>&1
@@ -47,8 +50,8 @@ check_at() {
 check_at "$START"
 last=$START
 for cp in ${CHECKPOINTS:-}; do
-  for f in $(ls "$ROOT/supabase/migrations" | awk -v a="$last" -v b="$cp" 'substr($0,1,8)>a && substr($0,1,8)<=b'); do
-    Q --single-transaction < "$ROOT/supabase/migrations/$f" > "$OUT/apply-${f%.sql}.out" 2>&1 \
+  for f in $(ls "$MIG/supabase/migrations" | awk -v a="$last" -v b="$cp" 'substr($0,1,8)>a && substr($0,1,8)<=b'); do
+    Q --single-transaction < "$MIG/supabase/migrations/$f" > "$OUT/apply-${f%.sql}.out" 2>&1 \
       || { say "apply $f FAILED: $(tail -2 "$OUT/apply-${f%.sql}.out" | tr '\n' ' ' | cut -c1-200)"; exit 1; }
   done
   check_at "$cp"; last=$cp
