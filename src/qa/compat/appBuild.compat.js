@@ -6,7 +6,7 @@
 // What is real: PostgREST, Postgres, every RLS policy / grant / trigger / function at that version, the app's supabase-js
 // client with the app's own fetch wrapper (withActingBusiness), and the app's service functions + the exact screen writes
 // cited by file. What stands in (and only that): Supabase Auth (a signed JWT for the actor; sign-in itself is the separate
-// Auth test, scripts/replay/signup-hook-auth-local.js), the device location (40.0, -75.0) and the two content-screening
+// Auth test, scripts/replay/signup-hook-auth-local.js), the device location (a random point per run) and the two content-screening
 // edge functions, emulated step for step from their source (screen-user-content: hash, find, record 'low';
 // screen-business-content offer_response: record the screening result, then call submit_business_offer AS THE USER, as the
 // function does). The AI classifier answer is always 'low'; Web Risk has no key (as staging/prod today), so a text with a
@@ -76,7 +76,7 @@ async function mockScreenBusinessContent(userId, body) {
     await svc(`insert into business_content_screening_results (partner_id, target_type, target_id, submitted_by, content_snapshot,
                  risk_tier, model_reasoning, source)
                select p.managed_partner_id, 'offer_response', null, $1,
-                 private.screening_content_offer_response($2, $3, $4, $5::text[]::text, $6, $7, $8, $9, $10::uuid),
+                 private.screening_content_offer_response($2::uuid, $3::text, $4::text, $5::text[]::text, $6::text, $7::text, $8::text, $9::text, $10::uuid),
                  'low', 'compat stand-in for screen-business-content', 'submission'
                  from profiles p where p.id = $1`,
     [userId, body.requestId, body.offerDescription, body.offerTitle ?? null, body.includedItems ?? [], body.redemptionInstructions ?? null,
@@ -131,7 +131,11 @@ jest.mock('../../services/supabase', () => {
     ENVIRONMENT: 'staging', ENVIRONMENT_ERROR: null, SERVICES: {}, createIsolatedAuthClient: () => mockClient,
   };
 });
-const mockCoords = { coords: { latitude: 40.0, longitude: -75.0, accuracy: 10 }, timestamp: Date.now() };
+// Each run gets its own spot (earlier checkpoints' test people and business stay in the disposable database and would
+// otherwise fill Browse's first page and the routing candidates at a shared point).
+const mockLat = Math.round((27 + Math.random() * 20) * 10) / 10 + 0.04;
+const mockLng = Math.round((-118 + Math.random() * 44) * 10) / 10 + 0.04;
+const mockCoords = { coords: { latitude: mockLat, longitude: mockLng, accuracy: 10 }, timestamp: Date.now() };
 jest.mock('../../services/userLocation', () => ({
   ...jest.requireActual('../../services/userLocation'),
   getUserLocation: async () => mockCoords, requireUserLocation: async () => mockCoords, getCachedUserLocation: () => mockCoords,
@@ -139,6 +143,7 @@ jest.mock('../../services/userLocation', () => ({
 
 global.fetch = (url, init) => (String(url).startsWith('http://compat.local/') ? mockFetch(url, init) : mockRealFetch(url, init));
 
+const BUCKET = `${mockLat.toFixed(1)},${mockLng.toFixed(1)}`; // the 0.1-degree wide_area the app writes
 const d = enabled ? describe : describe.skip;
 
 d(`app build x database ${VERSION}: real service code through PostgREST`, () => {
@@ -171,18 +176,30 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
     const L = (k) => `'${ids[k]}'::uuid`;
     await svc(`do $$ begin ${actorsSql({
       people: [L('A'), L('B'), L('C'), L('O')], friends: [[L('A'), L('B')]],
-      business: { owner: L('O'), partner: L('P'), lat: 40.0, lng: -75.0, subcategory: 'Coffee' },
+      business: { owner: L('O'), partner: L('P'), lat: mockLat, lng: mockLng, subcategory: 'Coffee' },
     })}
       update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
-        wide_area = '40.0,-75.0', photo_url = 'https://example.invalid/compat.jpg', interests = array['Coffee']
+        wide_area = '${BUCKET}', photo_url = 'https://example.invalid/compat.jpg', interests = array['Coffee']
         where id in (${L('A')}, ${L('C')});
       update profiles set photo_url = 'https://example.invalid/compat.jpg' where id in (${L('B')}, ${L('O')});
     end $$`);
+    // 20270373: every language starts 'pending' (a low result is HELD for a person) until the owner-approved activation
+    // migration from scripts/trust-safety/ugc-calibration.js marks the calibrated ones. The rollout needs that migration
+    // with 0373, so the runner stands it in for the run (restored after); the uncalibrated state has its own step.
+    if (await mockFnExists('private.ugc_outcome_for(text,text[],boolean)')) {
+      st.calibrationBefore = (await svc(`select language, status, calibrated_at, evidence from private.ugc_language_calibration`)).rows;
+      await svc(`update private.ugc_language_calibration set status = 'calibrated', calibrated_at = now(), evidence = 'compat stand-in for the activation migration'
+                  where language in ('en', 'names', 'und') and status = 'pending'`);
+    }
     // The new sign-up N: an SMS-confirmed Auth user with no profile yet (CompleteProfileScreen creates it).
     await svc(`insert into auth.users (id, aud, role, email, phone, phone_confirmed_at)
                values ($1::uuid, 'authenticated', 'authenticated', $1::text || '@compat.invalid', '1555' || lpad((abs(hashtext($1::text)) % 100000000)::text, 8, '0'), now())`, [ids.N]);
   });
   afterAll(async () => {
+    for (const r of st.calibrationBefore ?? []) {
+      await svc(`update private.ugc_language_calibration set status = $2, calibrated_at = $3, evidence = $4 where language = $1`,
+        [r.language, r.status, r.calibrated_at, r.evidence]).catch(() => null);
+    }
     if (process.env.NEARBY_COMPAT_OUT) fs.writeFileSync(process.env.NEARBY_COMPAT_OUT, JSON.stringify({ version: VERSION, results }, null, 1));
     await mockPg?.end();
   });
@@ -204,6 +221,20 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
     const me = await readMyProfile('display_name, birthdate, photo_url, is_admin');
     if (me.error || me.data?.display_name !== 'Compat Newcomer' || !me.data?.photo_url) throw new Error(`start-up read: ${JSON.stringify(me)}`);
     return { complete: true };
+  });
+
+  run('rollout gate: without language calibration, a new sign-up name is held (from 0373)', async () => {
+    const { screenUserContent } = require('../../services/userContentScreening');
+    if (!st.calibrationBefore) return { outcome: 'n/a before 0373' };
+    await svc(`update private.ugc_language_calibration set status = 'pending', calibrated_at = null, evidence = null where language = 'names'`);
+    try {
+      as('N');
+      const check = await screenUserContent([{ text: `Uncalibrated Name ${VERSION}`, kind: 'name' }]);
+      if (check.outcome !== 'hold') throw new Error(`expected hold, got ${check.outcome}`);
+      return { outcome: 'hold', meaning: 'CompleteProfileScreen stops at "name needs review": no profile is created until a person approves the name' };
+    } finally {
+      await svc(`update private.ugc_language_calibration set status = 'calibrated', calibrated_at = now(), evidence = 'compat stand-in for the activation migration' where language = 'names'`);
+    }
   });
 
   // ---- profile edit (ProfileScreen.save: screen the bio, then update) ----
@@ -249,10 +280,15 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
   run('dating: Browse returns the other opted-in person', async () => {
     const { browseDatingCandidates } = require('../../services/datingBrowse');
     as('A');
-    const { data, error } = await browseDatingCandidates({ buckets: ['40.0,-75.0'], offset: 0, limit: 20, columns: 'id, display_name' });
-    if (error) throw error;
-    if (!(data ?? []).some((p) => p.id === ids.C)) throw new Error(`C not in Browse (${(data ?? []).length} rows)`);
-    return { rows: data.length };
+    let seen = 0;
+    for (let offset = 0; offset < 200; offset += 20) { // Browse pages, as the app's infinite list does
+      const { data, error } = await browseDatingCandidates({ buckets: [BUCKET], offset, limit: 20, columns: 'id, display_name' });
+      if (error) throw error;
+      seen += (data ?? []).length;
+      if ((data ?? []).some((p) => p.id === ids.C)) return { rows: seen, page: offset / 20 };
+      if ((data ?? []).length < 20) break;
+    }
+    throw new Error(`C not in Browse (${seen} rows)`);
   });
 
   // ---- Gatherings ----
@@ -264,7 +300,7 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
     const check = await screenUserContent([{ text: title, kind: 'gathering_title' }, { text: 'Meet by the fountain', kind: 'gathering_description' }]);
     if (check.outcome !== 'publish') throw new Error(`title screening: ${check.outcome}`);
     const created = await g.createGathering({ title, description: 'Meet by the fountain', interestTag: 'Coffee',
-      scheduledAt: new Date(Date.now() + 26 * 3600e3).toISOString(), customLocation: { latitude: 40.0, longitude: -75.0 } });
+      scheduledAt: new Date(Date.now() + 26 * 3600e3).toISOString(), customLocation: { latitude: mockLat, longitude: mockLng } });
     st.gathering = created.id;
     as('B');
     const found = await g.searchGatherings(title);
