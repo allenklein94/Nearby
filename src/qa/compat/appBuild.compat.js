@@ -82,7 +82,7 @@ async function mockScreenBusinessContent(userId, body) {
     [userId, body.requestId, body.offerDescription, body.offerTitle ?? null, body.includedItems ?? [], body.redemptionInstructions ?? null,
       body.mediaPath ?? null, body.mediaType ?? null, null, body.creativeId ?? null]);
   }
-  const res = await fetch(`${REST}/rpc/submit_business_offer`, {
+  const res = await mockRealFetch(`${REST}/rpc/submit_business_offer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${mockJwtFor(userId)}` },
     body: JSON.stringify({
@@ -96,6 +96,8 @@ async function mockScreenBusinessContent(userId, body) {
   return mockJson(200, { riskTier: 'low', published: true, result: out });
 }
 
+// The app calls edge functions with the global fetch (functionUrl + fetch), REST through the supabase client: both land here.
+const mockRealFetch = global.fetch;
 async function mockFetch(url, init = {}) {
   const u = String(url);
   const fn = u.match(/\/functions\/v1\/([a-z-]+)/);
@@ -109,7 +111,7 @@ async function mockFetch(url, init = {}) {
   }
   const headers = new Headers(init.headers || {});
   headers.set('Authorization', `Bearer ${mockJwtFor(mockActor.current)}`);
-  return fetch(u.replace('http://compat.local/rest/v1', REST), { ...init, headers });
+  return mockRealFetch(u.replace('http://compat.local/rest/v1', REST), { ...init, headers });
 }
 
 let mockClient = null;
@@ -134,6 +136,8 @@ jest.mock('../../services/userLocation', () => ({
   ...jest.requireActual('../../services/userLocation'),
   getUserLocation: async () => mockCoords, requireUserLocation: async () => mockCoords, getCachedUserLocation: () => mockCoords,
 }));
+
+global.fetch = (url, init) => (String(url).startsWith('http://compat.local/') ? mockFetch(url, init) : mockRealFetch(url, init));
 
 const d = enabled ? describe : describe.skip;
 
@@ -176,7 +180,7 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
     end $$`);
     // The new sign-up N: an SMS-confirmed Auth user with no profile yet (CompleteProfileScreen creates it).
     await svc(`insert into auth.users (id, aud, role, email, phone, phone_confirmed_at)
-               values ($1, 'authenticated', 'authenticated', $1 || '@compat.invalid', '1555' || lpad((abs(hashtext($1::text)) % 100000000)::text, 8, '0'), now())`, [ids.N]);
+               values ($1::uuid, 'authenticated', 'authenticated', $1::text || '@compat.invalid', '1555' || lpad((abs(hashtext($1::text)) % 100000000)::text, 8, '0'), now())`, [ids.N]);
   });
   afterAll(async () => {
     if (process.env.NEARBY_COMPAT_OUT) fs.writeFileSync(process.env.NEARBY_COMPAT_OUT, JSON.stringify({ version: VERSION, results }, null, 1));
