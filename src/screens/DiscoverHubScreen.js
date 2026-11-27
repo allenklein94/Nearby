@@ -2696,7 +2696,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
         {mode === 'things' && !expandedContext && !dateViewData && (
           <>
-            <Text style={styles.searchPrompt} accessibilityRole="header">{t('ui.discover.lookingFor')}</Text>
+            {/* Device test (owner, 2026-11-27): "What are you looking for?" is the header's subtitle; it is not repeated here. */}
             <View style={styles.searchBarWrap}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
@@ -2735,7 +2735,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
             {gatheringTabActive && searchFocused && renderActivitySuggestions()}
 
             <View style={styles.filterRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+              {/* Device test (owner, 2026-11-27): the chips ran under the fixed List | Map button. The list now takes only the
+                  room beside it and its last chip scrolls fully clear of the button. */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.md }}>
                 {(resultTabsActive ? resultTabs : discoverTypeFilters(TYPE_FILTERS, googleDiscovery)).map((f) => {
                   const active = resultTabsActive ? resultTab === f.key : typeFilter === f.key;
                   return (
@@ -3874,7 +3876,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
   },
-  searchPrompt: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
   // Item 44: the screen's one visual hero -- taller, a slightly heavier
   // border, and a subtle card shadow, so it reads as the obvious place for
   // the eye to land instead of one pill among several similar ones.
