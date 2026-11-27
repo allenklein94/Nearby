@@ -16,6 +16,10 @@ restore() {
 }
 outbound() {
   local q="select count(*)||' requests, '||count(*) filter (where status_code between 200 and 399)||' reached a server, '||count(*) filter (where error_msg is not null)||' failed: '||coalesce(string_agg(distinct left(error_msg,40),' | '),'none') from net._http_response"
+  # Migrations add their own cron jobs after the restore paused the 26 existing ones: report them, and re-prove
+  # that the copy still has no route out (the isolation that makes any active job harmless).
+  say "$1 cron after migrations: $(docker exec -i -e PGPASSWORD=postgres nearby-prodcompat psql -h localhost -U supabase_admin -d postgres -XAt -c "select count(*) filter (where active) || ' active of ' || count(*) from cron.job")"
+  docker exec nearby-prodcompat bash -c 'getent hosts example.com >/dev/null 2>&1 && exit 9 || exit 0' && say "$1 isolation after migrations: no DNS (PASS)" || say "$1 isolation after migrations: FAIL (copy resolves the internet)"
   say "$1 outbound: $(docker exec -i -e PGPASSWORD=postgres nearby-prodcompat psql -h localhost -U supabase_admin -d postgres -XAt -v ON_ERROR_STOP=1 -c "$q" 2>&1 | tail -1)"
 }
 : > $C/prodcopy.log
