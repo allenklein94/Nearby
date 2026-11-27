@@ -14,8 +14,18 @@ export const WHEN_PRESETS = [
 ];
 
 // Tonight sets the day only (owner, 2026-10-27): the person picks the clock time, on every path into Create.
+// Tomorrow too (device test, owner 2026-11-27): "dinner tomorrow" became a NOON gathering because Tomorrow filled 12:00.
+// A day word never invents a clock time; Create's existing "Pick a time" asks it (an exact time the person stated still
+// arrives as quickStartWhenISO and wins).
 export function presetLeavesTime(preset) {
-  return preset === 'tonight';
+  return preset === 'tonight' || preset === 'tomorrow';
+}
+
+// The day a day-only preset names, in local time: Tonight = today, Tomorrow = the next local day.
+export function dayForPreset(preset, now = new Date()) {
+  const d = new Date(now);
+  if (preset === 'tomorrow') d.setDate(d.getDate() + 1);
+  return d;
 }
 
 export function dateForPreset(preset) {

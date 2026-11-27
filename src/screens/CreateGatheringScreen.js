@@ -36,7 +36,7 @@ import { canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../ut
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
-import { WHEN_PRESETS, dateForPreset, presetLeavesTime } from '../utils/whenPresets';
+import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayForPreset } from '../utils/whenPresets';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -395,7 +395,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
       } else if (day) {
         leaveTimeOnDay(day, Array.isArray(route.params?.quickStartTimeChoices) ? route.params.quickStartTimeChoices : null);
       } else if (presetLeavesTime(preset)) {
-        leaveTimeOnDay(new Date());
+        leaveTimeOnDay(dayForPreset(preset));
       } else {
         setScheduledAt(dateForPreset(preset));
       }
@@ -481,7 +481,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
       setShowPicker(true);
       return;
     }
-    if (presetLeavesTime(preset)) { leaveTimeOnDay(new Date()); return; }
+    if (presetLeavesTime(preset)) { leaveTimeOnDay(dayForPreset(preset)); return; }
     setScheduledAt(dateForPreset(preset));
   }
 
