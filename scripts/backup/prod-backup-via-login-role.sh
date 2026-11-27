@@ -4,6 +4,9 @@
 #     the mechanism `supabase db dump --linked` uses). Its password goes only into a 0600 file, never printed.
 #  2. Checks the role really is read-only (a write must fail) and can read every dumped schema.
 #  3. Runs prod-logical-backup.sh against it (dump -> isolated restore -> row-by-row verify).
+#  If the pooler answers "password authentication failed" right after a run was interrupted (2026-11-27: twice at
+#  19:47 after a 19:37 run lost its cleanup to a restart), the pooler is still holding the old role's password.
+#  Do NOT retry at once (failed logins can earn an IP ban): wait ~15 min, check network-bans, then one attempt.
 #  4. ALWAYS deletes the login role (trap, also on failure) and the URL file, then checks no CLI login role is left.
 set -euo pipefail
 set +x
@@ -11,13 +14,14 @@ REPO=$(cd "$(dirname "$0")/../.." && pwd)
 REF=enmosvippabmuqslzrox
 OUT=${OUT:-/workspaces/.nearby-verify/backups}
 umask 077; mkdir -p "$OUT"; chmod 700 "$OUT"
-TOKF=$(mktemp "$OUT/.tok.XXXXXX"); URLF=$(mktemp "$OUT/.url.XXXXXX")
+TOKF=$(mktemp "$OUT/.tok.XXXXXX"); URLF=$(mktemp "$OUT/.url.XXXXXX"); ENVF=
 python3 -I -c "import json,re,sys;print(re.search(r'sbp_[A-Za-z0-9]+',open(sys.argv[1]).read()).group(0))" \
   /workspaces/Nearby/.claude/mcp.json > "$TOKF"
 api() { curl -sS -f -H "Authorization: Bearer $(cat "$TOKF")" -H 'Content-Type: application/json' "$@"; }
 cleanup() {
   rc=$?
   shred -u "$URLF" 2>/dev/null || rm -f "$URLF"
+  [ -n "$ENVF" ] && { shred -u "$ENVF" 2>/dev/null || rm -f "$ENVF"; }  # also on a failed check (set -e exit), 2026-11-27
   if api -X DELETE "https://api.supabase.com/v1/projects/$REF/cli/login-role" >/dev/null 2>&1; then
     echo "cleanup: temporary login role deleted"
   else

@@ -3,6 +3,7 @@
 #   bash scripts/backup/encrypt-backup.sh <prod-…dump> <storage-… dir>
 # gpg symmetric AES256 with the passphrase the owner set (set-backup-passphrase.py). Then PROVES the file opens:
 # decrypts to a scratch dir and compares every file's sha256 with the originals. Never deletes the originals.
+# Carries ext-/extpub-/pub- too (2026-11-27): RESTORE_ONLY needs them, so the archive restores on its own.
 set -euo pipefail
 set +x
 DUMP=$1; SDIR=$2
@@ -13,7 +14,7 @@ STAGE=$(mktemp -d "$OUT/.stage.XXXXXX"); CHK=$(mktemp -d "$OUT/.check.XXXXXX")
 trap 'rm -rf "$STAGE" "$CHK"' EXIT
 mkdir -p "$STAGE/nearby-backup-$TS"
 cp -p "$DUMP" "$DUMP.sha256" "$STAGE/nearby-backup-$TS/"
-for f in "$OUT"/cron-"$TS".sql "$OUT"/fp-source-"$TS".txt "$OUT"/schema-source-"$TS".sql; do [ -f "$f" ] && cp -p "$f" "$STAGE/nearby-backup-$TS/"; done
+for f in "$OUT"/cron-"$TS".sql "$OUT"/fp-source-"$TS".txt "$OUT"/schema-source-"$TS".sql "$OUT"/ext-"$TS".sql "$OUT"/extpub-"$TS".sql "$OUT"/pub-"$TS".txt; do [ -f "$f" ] && cp -p "$f" "$STAGE/nearby-backup-$TS/"; done
 cp -rp "$SDIR" "$STAGE/nearby-backup-$TS/storage"
 (cd "$STAGE" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$OUT/.inner.sha256"
 ENC="$OUT/nearby-backup-$TS.tar.gpg"
