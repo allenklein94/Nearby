@@ -36,7 +36,8 @@ rest_up() {
   docker run -d --name "$REST" --network "$NET" -e PGRST_DB_URI="postgres://authenticator:postgres@$IP:5432/postgres" \
     -e PGRST_DB_SCHEMAS=public -e PGRST_DB_ANON_ROLE=anon -e PGRST_JWT_SECRET="$SECRET" "$IMAGE" >/dev/null
   RIP=$(docker inspect -f "{{(index .NetworkSettings.Networks \"$NET\").IPAddress}}" "$REST")
-  for i in $(seq 1 60); do curl -s -o /dev/null "http://$RIP:3000/" && return 0; sleep 1; done; return 1
+  # Ready = 200 from the root, not merely an answer: before its schema cache loads PostgREST answers 503 (PGRST002).
+  for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' "http://$RIP:3000/")" = 200 ] && return 0; sleep 1; done; return 1
 }
 check_at() {
   local v=$1
