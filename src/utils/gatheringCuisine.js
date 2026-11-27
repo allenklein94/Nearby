@@ -4,9 +4,9 @@
 // gatherings.cuisine check constraint use, migration 20270435). A cuisine belongs only to a food category (the taxonomy's
 // cuisine parents, CUISINE_PARENT_TAGS); any other category carries none. Nothing is inferred: a cuisine comes from the
 // person's words (resolveAsk) or their own pick.
-import { CUISINE_OPTIONS, cuisineLabel } from '../constants/businessAttributes';
+import { CUISINE_OPTIONS } from '../constants/businessAttributes';
 import { CUISINE_PARENT_TAGS } from '../constants/categoryTree';
-import { translate } from '../i18n/translate';
+import { cuisineName as translatedCuisineName } from '../i18n/businessProfileDisplay';
 
 // What Create and Edit offer: every canonical cuisine except the catch-all "other" (not a preference anyone states).
 export const GATHERING_CUISINES = CUISINE_OPTIONS.filter((o) => o.key !== 'other').map((o) => o.key);
@@ -27,8 +27,5 @@ export function statedCuisine(classifyResult) {
 }
 
 export function cuisineName(key, language = 'en') {
-  if (!key) return null;
-  if (!language || language === 'en') return cuisineLabel(key);
-  const t = translate(language, `vocab.cuisines.${key}`);
-  return t && t !== `vocab.cuisines.${key}` ? t : cuisineLabel(key);
+  return key ? translatedCuisineName(key, language) : null;
 }

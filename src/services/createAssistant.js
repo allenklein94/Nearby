@@ -88,7 +88,9 @@ export async function classifyCreateRequest(text) {
 export function createFromAsk(r, typedText, result = null) {
   const params = createParamsFromAsk(r, typedText, result);
   // 2026-11-27: a stated cuisine ("italian dinner") is its own fact, carried beside the category, never folded into the title.
-  const cuisine = statedCuisine({ cuisine: r?.cuisine ?? result?.cuisine ?? null });
+  // A WHAT chip the person removed takes the cuisine with it (removeUnderstoodPiece clears both on the classification).
+  const removedWhat = Array.isArray(result?.removedUnderstood) && result.removedUnderstood.includes('what');
+  const cuisine = removedWhat ? null : statedCuisine({ cuisine: result ? result.cuisine : r?.cuisine });
   return { ...params, ...createStartFromAsk(result, typedText, params.quickStartWhenPreset), ...(cuisine ? { quickStartCuisine: cuisine } : {}) };
 }
 

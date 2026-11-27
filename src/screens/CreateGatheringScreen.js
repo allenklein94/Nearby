@@ -37,7 +37,8 @@ import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayForPreset } from '../utils/whenPresets';
-import { compactActivityPicker, quickPickActivityFor, refinementOptions, refinementsOffered, titleForRefinement, refinementSelected } from '../utils/createActivityPicker';
+import { compactActivityPicker } from '../utils/createActivityPicker';
+import { GATHERING_CUISINES, cuisineApplies, cleanGatheringCuisine, cuisineName } from '../utils/gatheringCuisine';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
@@ -178,6 +179,11 @@ export default function CreateGatheringScreen({ navigation, route }) {
   // the What step shows it compactly instead of the full category list; "Adjust" opens the full list. Picking from the
   // full list keeps it open (the person is choosing).
   const activityFromContext = !!(carriedActivity || route.params?.quickStartCategory);
+  // Owner 2026-11-27: the gathering's optional cuisine (canonical key), its own fact beside activity, category and title.
+  const [cuisine, setCuisine] = useState(route.params?.quickStartCuisine ?? null);
+  useEffect(() => {
+    if (route.params?.quickStartCuisine) setCuisine(route.params.quickStartCuisine);
+  }, [route.params?.quickStartCuisine]);
   const [activityListOpen, setActivityListOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -676,6 +682,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         description: description.trim() || null,
         interestTag,
         activity: gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }),
+        cuisine: cleanGatheringCuisine(cuisine, interestTag),
         scheduledAt: scheduledAt.toISOString(),
         isPublic,
         customLocation,
@@ -874,37 +881,32 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
               </View>
             ))}
-            {(() => {
-              // Item 7: optional, only for an activity with refinements (Dinner -> cuisines), only while the title is a prefill
-              const candidate = carriedActivity ?? gatheringActivityAtPublish({ interestTag, title: title.trim(), description: description.trim() });
-              // a category changed with Adjust (Dinner -> Coffee) drops the Dinner refinements
-              const activity = quickPickActivityFor({ label: candidate, category: interestTag });
-              const labelOf = (label) => quickOptionLabel({ label }, language);
-              if (!refinementsOffered(activity, title, labelOf, route.params?.quickStartTitle)) return null;
-              return (
-                <View style={{ marginBottom: spacing.sm }}>
-                  <Text style={styles.subLabel}>{t('ui.startSomething.whatKindOfDinner')}</Text>
-                  <View style={styles.chipsWrap}>
-                    {refinementOptions(activity).map((option) => {
-                      const selected = refinementSelected(activity, option.label, title, labelOf);
-                      return (
-                        <TouchableOpacity
-                          key={option.label}
-                          style={[styles.chip, selected && styles.chipSelected]}
-                          onPress={() => { setCarriedActivity(activity); setTitle(titleForRefinement(activity, option.label, labelOf)); }}
-                          activeOpacity={0.85}
-                          accessibilityLabel={labelOf(option.label)}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected }}
-                        >
-                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.icon} {labelOf(option.label)}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+            {cuisineApplies(interestTag) && (
+              // Item 7 + owner 2026-11-27: an optional cuisine for a food gathering, stored as its own fact (gatherings.cuisine,
+              // 20270435), never folded into the title; carried from the words ("italian dinner") or picked here.
+              <View style={{ marginBottom: spacing.sm }}>
+                <Text style={styles.subLabel}>{t('ui.askBusiness.cuisineOptional')}</Text>
+                <View style={styles.chipsWrap}>
+                  {[...GATHERING_CUISINES, null].map((key) => {
+                    const selected = (cuisine ?? null) === key;
+                    const label = key ? cuisineName(key, language) : quickOptionLabel({ label: "Doesn't matter" }, language);
+                    return (
+                      <TouchableOpacity
+                        key={key ?? 'none'}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setCuisine(key)}
+                        activeOpacity={0.85}
+                        accessibilityLabel={label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-              );
-            })()}
+              </View>
+            )}
           </>
         )}
 
@@ -1603,7 +1605,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.previewIcon}>{selectedStyle ? selectedStyle.icon : '🎉'}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.previewTitle}>{title || t('ui.gatheringForm.preview.untitled')}</Text>
-                {interestTag ? <Text style={styles.previewMeta}>{carriedActivity && gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }) === carriedActivity ? quickOptionLabel({ label: carriedActivity }, language) : names.tag(interestTag)}</Text> : null}
+                {interestTag ? <Text style={styles.previewMeta}>{carriedActivity && gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }) === carriedActivity ? quickOptionLabel({ label: carriedActivity }, language) : names.tag(interestTag)}{cleanGatheringCuisine(cuisine, interestTag) ? ` · ${cuisineName(cleanGatheringCuisine(cuisine, interestTag), language)}` : ''}</Text> : null}
               </View>
               {reviewEditLink('what')}
             </View>

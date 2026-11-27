@@ -1071,6 +1071,8 @@ export async function getGatheringById(gatheringId) {
     console.error('getGatheringById error', error);
     return null;
   }
+  // 2026-11-27: the cuisine (20270435) on its own read, so a server without the column reads as none.
+  data.cuisine = await getGatheringCuisine(gatheringId);
 
   const { data: myProfile } = userId
     ? await readMyProfile('interests')

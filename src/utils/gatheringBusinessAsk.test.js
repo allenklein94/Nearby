@@ -106,3 +106,10 @@ describe('wiring guards', () => {
     expect(read('screens/GatheringDetailScreen.js')).not.toContain('gathering looking for a place to go`');
   });
 });
+
+test('2026-11-27: a food gathering\'s cuisine names the activity on the request card; a non-food one never shows it', () => {
+  const { gatheringActivityLabel } = require('./gatheringBusinessAsk');
+  expect(gatheringActivityLabel({ interest_tag: 'Foodie', activity: 'Dinner', cuisine: 'italian' })).toBe('Italian · Dinner');
+  expect(gatheringActivityLabel({ interest_tag: 'Foodie', activity: 'Dinner', cuisine: null })).toBe('Dinner');
+  expect(gatheringActivityLabel({ interest_tag: 'Coffee', cuisine: 'italian' })).not.toMatch(/Italian/);
+});

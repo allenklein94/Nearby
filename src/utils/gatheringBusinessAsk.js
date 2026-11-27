@@ -9,6 +9,7 @@ import { categoryName } from '../i18n/categoryNames';
 import { countLabel } from './plural';
 import { gatheringBusinessPartySize } from './gatheringFullness';
 import { REQUESTED_ITEM_CATEGORIES } from '../constants/businessAttributes';
+import { cleanGatheringCuisine, cuisineName } from './gatheringCuisine';
 
 // The request's own text. Never the host's title (it can carry a name); the business never sees raw_text anyway.
 export function gatheringRequestText(category) {
@@ -23,7 +24,10 @@ export function gatheringRequestText(category) {
 export function gatheringActivityLabel(gathering, language = 'en') {
   if (!gathering?.interest_tag) return null;
   const pick = quickPickForGathering(gathering);
-  return pick ? quickOptionLabel(pick, language) : categoryName(gathering.interest_tag, language);
+  const base = pick ? quickOptionLabel(pick, language) : categoryName(gathering.interest_tag, language);
+  // 2026-11-27: the gathering's cuisine is its own fact ("Italian · Dinner"); the request inherits it server-side (20270435).
+  const cuisine = cleanGatheringCuisine(gathering.cuisine, gathering.interest_tag);
+  return cuisine ? `${cuisineName(cuisine, language)} · ${base}` : base;
 }
 
 export function gatheringAskFacts(gathering, now = new Date(), language = 'en') {

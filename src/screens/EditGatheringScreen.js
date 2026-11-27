@@ -13,7 +13,9 @@ import KeyboardSafeView from '../components/KeyboardSafeView';
 import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { GATHERING_CUISINES, cuisineApplies, cleanGatheringCuisine, cuisineName } from '../utils/gatheringCuisine';
+import { quickOptionLabel } from '../i18n/optionLabels';
+import { setGatheringCuisine, updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
 import { UGC_KINDS } from '../utils/ugcText';
 import { useTheme } from '../context/ThemeContext';
@@ -84,6 +86,8 @@ export default function EditGatheringScreen({ route, navigation }) {
   // A gathering made before the category became required has none; the host can fill it in (never change one).
   const missingCategory = !gathering.interest_tag;
   const [newCategory, setNewCategory] = useState(null);
+  // 2026-11-27: the gathering's optional cuisine (20270435), edited here, saved on its own write.
+  const [cuisine, setCuisine] = useState(gathering.cuisine ?? null);
   const [timelineSteps, setTimelineSteps] = useState(gathering.timeline_steps ?? []);
   const [coverPhotoPath, setCoverPhotoPath] = useState(gathering.cover_photo_path ?? null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState(null);
@@ -188,6 +192,9 @@ export default function EditGatheringScreen({ route, navigation }) {
       const nextCapacity = limitAttendees ? capacity : null;
       if ((gathering.capacity ?? null) !== nextCapacity) await setGatheringCapacity(gathering.id, nextCapacity);
       if (missingCategory && newCategory) await setGatheringCategoryIfMissing(gathering.id, newCategory);
+      const finalTag = missingCategory ? newCategory : gathering.interest_tag;
+      const cleanCuisine = cleanGatheringCuisine(cuisine, finalTag);
+      if (cleanCuisine !== (gathering.cuisine ?? null)) await setGatheringCuisine(gathering.id, cleanCuisine);
       if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
       else showSuccessToast(t('ui.gatheringForm.edit.updated'), t('ui.gatheringForm.edit.updatedBody'));
       navigation.goBack();
@@ -248,6 +255,30 @@ export default function EditGatheringScreen({ route, navigation }) {
                   </View>
                 </View>
               ))}
+            </>
+          )}
+
+          {cuisineApplies(missingCategory ? newCategory : gathering.interest_tag) && (
+            <>
+              <Text style={styles.label}>{t('ui.askBusiness.cuisineOptional')}</Text>
+              <View style={styles.chipsWrap}>
+                {[...GATHERING_CUISINES, null].map((key) => {
+                  const selected = (cuisine ?? null) === key;
+                  const label = key ? cuisineName(key, language) : quickOptionLabel({ label: "Doesn't matter" }, language);
+                  return (
+                    <TouchableOpacity
+                      key={key ?? 'none'}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setCuisine(key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </>
           )}
 

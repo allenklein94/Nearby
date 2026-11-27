@@ -84,7 +84,7 @@ import { displayDateTime, displayGatheringDateTime } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { attendeeTotal, attendingFigure, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
-import { gatheringRequestText } from '../utils/gatheringBusinessAsk';
+import { gatheringRequestText, gatheringActivityLabel } from '../utils/gatheringBusinessAsk';
 import { countLabel } from '../utils/plural';
 import { spacing, radius, typography } from '../theme';
 import { gatheringJoinAction } from '../utils/primaryAction';
@@ -824,6 +824,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
               {memoryState.completed ? <Text style={styles.titleCompleted}>{` · ${PLAN_STATUS_META[PLAN_STATUS.COMPLETED].label}`}</Text> : null}
             </Text>
           </View>
+          {/* 2026-11-27: a food gathering's cuisine, its own fact beside the activity (never only the title) */}
+          {gathering.cuisine ? <Text style={styles.metaLine}>{gatheringActivityLabel(gathering, language)}</Text> : null}
           <Text style={styles.metaLine}>
             {displayGatheringDateTime(gathering, language)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
