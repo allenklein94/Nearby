@@ -28,6 +28,21 @@ every production step keeps its own approval.
 8. **Policy with the change.** A migration or build that adds processing ships with its Privacy Policy sentence published
    the same day (staged in `staged-docs/`).
 
+## Owner's six release rules (2026-11-27) -> where each lives above
+| Owner rule | Rule(s) here |
+|---|---|
+| Database compatibility with the distributed app | 1 (+ "needs build N" gates, listed per migration) |
+| Automated testing of the current app and the upcoming build against each migration | 3 (`release-compat.sh` x both builds x every batch boundary) |
+| Feature activation only when client + server are ready | 2 + 4 |
+| Branch consolidation | 5 |
+| Deployment discipline (dev -> staging -> production path) | 6 + "Per release" below |
+| Encrypted, verified off-Codespace backups | 7 |
+
+**No circular dependencies, by construction.** A cycle would be "migration M needs build N" AND "build N needs M".
+Rule 2 forbids the second half: build N must pass the runtime run at production's CURRENT version (before M). So the
+order is always build first, then migration. The compatibility run proves it each release: build N passing at the
+oldest checkpoint = no migration it depends on.
+
 ## Per release, in order
 1. Build N source frozen on main -> tag `build-N-ios` + branch `release/build-N` (as build 87).
 2. `release-compat.sh` with build N against production's version + every planned batch boundary; record the summary in
