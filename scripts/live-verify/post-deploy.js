@@ -536,6 +536,11 @@ const STEPS = {
       'phone (installed build): the app still opens and loads Home (a REST call through the new hook)',
       'enforcing a minimum = a SEPARATE owner approval (record-available, plan, set); emergency: NEARBY_VERSION_APPROVAL=version-off ... off --platform=all',
       'rollback: scripts/rollback/20270434 (with enforcement on, rolling back removes the version check entirely)'] },
+  20270435: { journeys: ['gatheringCuisine', 'gatheringActivity', 'requestFunnel'],
+    manual: ['read-only right after: gatherings.cuisine nullable, all NULL (no backfill), check constraint + both triggers present; anon + authenticated have column SELECT; no client grant on the 3 private functions',
+      'phone (a build after 88): Create Dinner with Italian -> GatheringDetail shows "Italian · Dinner"; Edit changes it; Ask Nearby Businesses from it -> the business Opportunity card says Italian',
+      'phone (build 87/88): Create still works (they never send the column)',
+      'rollback: count + export (id, cuisine) first, then scripts/rollback/20270435 (drops every gathering cuisine)'] },
   20270432: { journeys: ['requestFunnel', 'intentFunnel'],
     manual: ['order: right after 20270431', 'read-only: request_journey / routing_candidate_outcomes / intent_funnel still have no anon/authenticated grant; completed outcomes only where visit_confirmed_at is set', 'rollback: scripts/rollback/20270432 (first of the three)'] },
 };

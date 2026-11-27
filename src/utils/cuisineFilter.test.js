@@ -80,10 +80,15 @@ describe('cuisine stays a business discovery attribute', () => {
     expect(rail).not.toMatch(/cuisine/i);
     expect(CATEGORY_GROUPS.map((g) => g.label)).not.toEqual(expect.arrayContaining(['Italian']));
   });
-  it('gatherings, communities and Places are not shown under a cuisine; gathering data untouched', () => {
+  it('gatherings, communities and Places are not shown under a cuisine; a gathering reads its cuisine only on its own', () => {
     expect(discover).toMatch(/\{!activeCuisine && \(<>/);
+    // Owner 2026-11-27: a gathering may carry its own cuisine fact (20270435), read and written only through its own
+    // helpers, never in the shared list selects (so no list read depends on the column before it is live).
     const gSvc = fs.readFileSync(path.join(__dirname, '../services/gatherings.js'), 'utf8');
-    expect(gSvc).not.toMatch(/\.cuisine|cuisine:|'cuisine'|cuisine_/); // only a comment mentions it
+    const SAFE = /const SAFE_GATHERING_FIELDS = '([^']+)'/.exec(gSvc)[1];
+    expect(SAFE).not.toMatch(/cuisine/);
+    expect(gSvc).toMatch(/export async function getGatheringCuisine/);
+    expect(gSvc).toMatch(/export async function setGatheringCuisine/);
   });
   it('no new screen or navigation: the chip only sets state, the typed link reopens the same in-place view', () => {
     expect(discover).toMatch(/onPress=\{\(\) => setCuisineFilter\(c\.active \? null : c\.key\)\}/);

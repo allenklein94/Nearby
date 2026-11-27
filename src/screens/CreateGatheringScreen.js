@@ -38,6 +38,7 @@ import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayForPreset } from '../utils/whenPresets';
 import { compactActivityPicker } from '../utils/createActivityPicker';
+import { NO_PREFERENCE } from '../constants/activityRefinements';
 import { GATHERING_CUISINES, cuisineApplies, cleanGatheringCuisine, cuisineName } from '../utils/gatheringCuisine';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
@@ -889,7 +890,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 <View style={styles.chipsWrap}>
                   {[...GATHERING_CUISINES, null].map((key) => {
                     const selected = (cuisine ?? null) === key;
-                    const label = key ? cuisineName(key, language) : quickOptionLabel({ label: "Doesn't matter" }, language);
+                    const label = key ? cuisineName(key, language) : quickOptionLabel({ label: NO_PREFERENCE }, language);
                     return (
                       <TouchableOpacity
                         key={key ?? 'none'}

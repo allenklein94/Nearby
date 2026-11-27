@@ -89,8 +89,9 @@ describe('AI success -> AI wins, rules fill only the gaps', () => {
 describe('Create Gathering stays short', () => {
   it('asks no energy, commitment, occasion or activity question, and Who stays editable on Details', () => {
     const screen = fs.readFileSync(path.join(__dirname, '../screens/CreateGatheringScreen.js'), 'utf8');
-    // setActivityListOpen only opens the existing category list (item 7 compact row), never a new question. The one optional
-    // refinement Create may offer is item 7's Dinner cuisine row (owner, 2026-11-27), which renames the title only.
+    // setActivityListOpen only opens the existing category list (item 7 compact row), never a new question; any other
+    // setActivit* (a new activity question) still fails. The one optional refinement Create offers is the cuisine row for a
+    // food category (owner, 2026-11-27: a stored fact, never required, never asked for other categories).
     expect(screen).not.toMatch(/energy_?level|setEnergy|commitment|setOccasion|setActivit(?!yListOpen)/i);
     expect(screen).toMatch(/onPress=\{\(\) => \{ Haptics\.selectionAsync\(\); setPartyType\(option\.key\); \}\}/);
   });

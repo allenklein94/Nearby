@@ -126,7 +126,12 @@ describe('item 146: precise gathering location is not client-readable', () => {
 
   test('createGathering returns named columns, never `*`', () => {
     const src = sources.find((s) => s.f === path.join('services', 'gatherings.js')).src;
-    expect(src).toMatch(/\.select\(SAFE_GATHERING_FIELDS\)\s*\n\s*\.single\(\);/);
+    // 2026-11-27: the insert goes through insertRow (writeWithOptionalColumns drops the cuisine column on an older server),
+    // which still selects the named safe columns only.
+    const fn = src.slice(src.indexOf('export async function createGathering'), src.indexOf('export const GATHERING_CUISINE_COLUMNS'));
+    expect(fn).toMatch(/insertRow = \(values\) => supabase\.from\('gatherings'\)\.insert\(values\)\.select\(SAFE_GATHERING_FIELDS\)\.single\(\)/);
+    expect(fn).toMatch(/writeWithOptionalColumns\(insertRow,/);
+    expect(fn).not.toMatch(/select\(\s*['"`]\*/);
   });
 
   test('no embed reads gatherings(*); the point appears in client code only where the host writes it', () => {

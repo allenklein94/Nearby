@@ -13,6 +13,7 @@ import KeyboardSafeView from '../components/KeyboardSafeView';
 import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { NO_PREFERENCE } from '../constants/activityRefinements';
 import { GATHERING_CUISINES, cuisineApplies, cleanGatheringCuisine, cuisineName } from '../utils/gatheringCuisine';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { setGatheringCuisine, updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
@@ -264,7 +265,7 @@ export default function EditGatheringScreen({ route, navigation }) {
               <View style={styles.chipsWrap}>
                 {[...GATHERING_CUISINES, null].map((key) => {
                   const selected = (cuisine ?? null) === key;
-                  const label = key ? cuisineName(key, language) : quickOptionLabel({ label: "Doesn't matter" }, language);
+                  const label = key ? cuisineName(key, language) : quickOptionLabel({ label: NO_PREFERENCE }, language);
                   return (
                     <TouchableOpacity
                       key={key ?? 'none'}
