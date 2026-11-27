@@ -57,3 +57,18 @@ describe('onboarding interests: a few picks, mapped into the taxonomy (item 94)'
     expect(QUICK_INTEREST_TAGS.length).toBeLessThan(20);
   });
 });
+
+describe('item 33: every onboarding pick reaches the activities that mean the same thing', () => {
+  const { interestMatch } = require('../utils/interestMatch');
+  const tagsOf = (key) => QUICK_INTERESTS.find((q) => q.key === key).tags;
+  test('Restaurants matches Dinner/Breakfast/Lunch (Foodie); Live Music matches Concert (Concerts); Nightlife its own tag', () => {
+    expect(interestMatch('Foodie', { declared: tagsOf('restaurants') }).match_type).toBe('declared_interest');
+    expect(interestMatch('Concerts', { declared: tagsOf('live_music') }).match_type).toBe('declared_interest');
+    expect(interestMatch('Nightlife', { declared: tagsOf('nightlife') }).match_type).toBe('declared_interest');
+  });
+  test('the Home / Create activity categories an onboarding pick plainly names are all reached', () => {
+    for (const cat of ['Coffee', 'Fitness', 'Foodie', 'Concerts', 'Outdoors', 'Sports', 'Gaming']) {
+      expect(QUICK_INTERESTS.some((q) => interestMatch(cat, { declared: q.tags }).match_type !== 'none')).toBe(true);
+    }
+  });
+});

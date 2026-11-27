@@ -8,15 +8,18 @@ import { tagsInText } from './categorySynonyms';
 // canonical leaf tags (-> monthly_interests, then profiles.interests) and, where a pick is really a whole area, a broad
 // interest group (-> interest_groups, the weak 2-point signal). The long tail stays reachable through the free text and
 // Settings; onboarding never shows every tag.
+// Device test 2026-11-27 (item 33): a pick also carries the canonical tag the app's own activities use for the same thing,
+// so it really configures what follows: Restaurants -> Foodie (Dinner / Breakfast / Lunch gatherings), Live Music ->
+// Concerts (the Concert quick pick), Nightlife -> the Nightlife tag itself. Existing profiles keep what they saved.
 export const QUICK_INTERESTS = [
   { key: 'coffee', icon: '☕', label: 'Coffee', tags: ['Coffee'] },
   { key: 'fitness', icon: '🏃', label: 'Fitness', tags: ['Fitness'] },
-  { key: 'live_music', icon: '🎵', label: 'Live Music', tags: ['Live Music'] },
-  { key: 'restaurants', icon: '🍝', label: 'Restaurants', tags: ['Restaurants'] },
+  { key: 'live_music', icon: '🎵', label: 'Live Music', tags: ['Live Music', 'Concerts'] },
+  { key: 'restaurants', icon: '🍝', label: 'Restaurants', tags: ['Restaurants', 'Foodie'] },
   { key: 'outdoors', icon: '🏖️', label: 'Outdoors', tags: ['Outdoors'], group: 'outdoors_nature' },
   { key: 'arts', icon: '🎨', label: 'Arts', tags: ['Art'], group: 'arts_culture_learning' },
   { key: 'sports', icon: '⚽', label: 'Sports', tags: ['Sports'] },
-  { key: 'nightlife', icon: '🍸', label: 'Nightlife', tags: ['Bars & Lounges', 'Happy Hour'] },
+  { key: 'nightlife', icon: '🍸', label: 'Nightlife', tags: ['Nightlife', 'Bars & Lounges', 'Happy Hour'] },
   { key: 'games', icon: '🎲', label: 'Games', tags: ['Gaming', 'Board Games'] },
   { key: 'yoga', icon: '🧘', label: 'Yoga', tags: ['Yoga'] },
   { key: 'dogs', icon: '🐕', label: 'Dogs', tags: ['Dogs'] },
