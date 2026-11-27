@@ -4,7 +4,7 @@ Only the copy committed at HEAD counts. One line per kind; a FAIL line, a duplic
 production migration. Update after every release-compat run (scripts/compat/README.md). "through" = the highest database
 version the run covered; deploy.js refuses a migration above it.
 
-next: PASS build 88 @635b5e951 through 20270433 (runtime 15/15 at 0347, 0354, 0362, 0366, 0369, 0372, 0373, 0381, 0396, 0398, 0406, 0417, 0429, 0432, 0433; local replay; 2026-11-27, /workspaces/.nearby-verify/compat/b88-v3)
+next: PASS build 88 @6dfb64113 through 20270434 (runtime 15/15 at 0347, 0354, 0362, 0366, 0369, 0372, 0373, 0381, 0396, 0398, 0406, 0417, 0429, 0432, 0433, 0434; static at 0434 = the same 2 known fallbacks as 0433; local replay; 2026-11-27, /workspaces/.nearby-verify/compat/b88-vp2)
 released: PASS build 87 @2a28c8e85 through 20270372 (runtime 15/15 at 0354-0372; 14/15 at 0347 = the live Dating defect, fixed by 0348; fails from 0373 by design = client floor; 2026-11-27, /workspaces/.nearby-verify/compat/b87-v3)
 
 The two lines below are required from 20270373 on (client floor: build 88). Record them only when true:
