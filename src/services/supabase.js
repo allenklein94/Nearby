@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 import { checkRuntimeEnvironment, serviceSwitches } from '../config/environments';
 import { withActingBusiness } from './actingBusiness';
+import { withAppVersion } from './appVersion';
 
 // Which backend this build talks to comes ONLY from the values app.config.js embedded (src/config/environments.js).
 // A missing or mixed configuration creates no client: every use throws, App.js shows ConfigErrorScreen, no request is sent.
@@ -32,7 +33,8 @@ export const supabase = check.ok
     },
     // Multi-location (20270426): REST calls name the location Business Mode shows; the server refuses them once another
     // device switched the account to a different location (services/actingBusiness.js).
-    global: { fetch: withActingBusiness((...args) => fetch(...args)) },
+    // Every request also says which build sent it (20270434): the server refuses builds below an enforced minimum.
+    global: { fetch: withAppVersion(withActingBusiness((...args) => fetch(...args))) },
   })
   : refusingClient(check.error);
 
@@ -47,4 +49,16 @@ export function createIsolatedAuthClient() {
 export function functionUrl(name) {
   if (!SUPABASE_URL) throw new Error(`Nearby is not connected: ${ENVIRONMENT_ERROR}`);
   return `${SUPABASE_URL}/functions/v1/${name}`;
+}
+
+// The server's version policy for this platform (20270434), or null when this database has none yet (function missing).
+// Throws on a network / server failure so the caller keeps its last known policy instead of guessing.
+export async function readAppVersionPolicy(platform) {
+  if (!check.ok) return null;
+  const { data, error } = await supabase.rpc('get_app_version_policy', { platform_param: platform });
+  if (error) {
+    if (error.code === 'PGRST202' || error.code === '42883') return null;
+    throw new Error(error.message || 'version policy unavailable');
+  }
+  return data || null;
 }

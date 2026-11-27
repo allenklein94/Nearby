@@ -49,7 +49,7 @@ create table private.app_version_policy (
   platform text primary key check (platform in ('ios', 'android', 'web')),
   min_supported_build integer check (min_supported_build between 1 and 999999),
   latest_build integer check (latest_build between 1 and 999999),
-  update_url text check (update_url is null or update_url ~ '^(https://|itms-beta://|itms-apps://|market://)[^\s]{3,500}$'),
+  update_url text check (update_url is null or (length(update_url) <= 500 and update_url ~ '^(https://|itms-beta://|itms-apps://|market://)[^[:space:]]{3,}$')),
   enforced boolean not null default false,
   updated_at timestamptz not null default now(),
   updated_by text not null default 'migration 20270434',
