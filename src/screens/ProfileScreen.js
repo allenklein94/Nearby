@@ -1589,9 +1589,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   editSectionTitle: { ...typography.title, color: colors.textPrimary },
   editSectionSubtitle: { ...typography.body, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
+  // Item 31: a lighter completion card (useful, never a requirement): tighter padding, same section gap as its neighbours.
   completenessCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.lg,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.lg,
   },
   completenessTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 13, marginBottom: spacing.sm },
   completenessBarTrack: { height: 6, borderRadius: radius.full, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
@@ -1603,7 +1604,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   completenessMissingText: { color: colors.textSecondary, fontSize: 13 },
   completenessCta: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
-    alignItems: 'center', marginTop: spacing.md,
+    alignItems: 'center', marginTop: spacing.sm,
   },
   completenessCtaText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   timelineLink: {
@@ -1686,7 +1687,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   verifiedDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textTertiary, marginRight: 6 },
   verifiedDotActive: { backgroundColor: colors.success },
   verifiedText: { ...typography.caption, color: colors.textTertiary },
-  sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Device test 2026-11-27 (item 31): section headings read as headings (secondary text, bold), not faint captions.
+  sectionLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '700', marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xs },
   galleryItem: {
     width: 108, height: 108, borderRadius: radius.md, overflow: 'hidden',
