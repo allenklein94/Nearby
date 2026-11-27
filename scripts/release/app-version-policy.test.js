@@ -102,3 +102,36 @@ describe('main', () => {
     expect(P.affected(null, 88)).toBe(0);
   });
 });
+
+describe('strict mode (refuse unidentified clients)', () => {
+  const S = { ...STATUS, strict: { id: true, refuse_unidentified: false, updated_at: 'x', updated_by: 'y', reason: null } };
+  test('production: without a code it only plans; the printed code applies exactly that change', async () => {
+    const r = runFor(S); use(r);
+    const plan = await P.main(['strict', '--strict=on', '--target=prod'], {});
+    expect(r.calls.some((c) => /update private\.app_version_settings/.test(c))).toBe(false);
+    await expect(P.main(['strict', '--strict=on', '--target=prod'], { NEARBY_VERSION_APPROVAL: 'wrong' })).rejects.toThrow(/code/);
+    await expect(P.main(['strict', '--strict=on', '--target=prod'], { NEARBY_VERSION_APPROVAL: P.OFF_CODE })).rejects.toThrow(/code/);
+    const r2 = runFor(S); use(r2);
+    await P.main(['strict', '--strict=on', '--target=prod'], { NEARBY_VERSION_APPROVAL: plan.code });
+    expect(r2.calls.some((c) => /refuse_unidentified = true/.test(c))).toBe(true);
+  });
+  test('switching strict OFF also takes the fixed emergency code; off --platform=all clears strict mode too', async () => {
+    const on = { ...S, strict: { ...S.strict, refuse_unidentified: true } };
+    const r = runFor(on); use(r);
+    await P.main(['strict', '--strict=off', '--target=prod'], { NEARBY_VERSION_APPROVAL: P.OFF_CODE });
+    expect(r.calls.some((c) => /refuse_unidentified = false/.test(c))).toBe(true);
+    const r2 = runFor(on); use(r2);
+    await P.main(['off', '--platform=all', '--target=prod'], { NEARBY_VERSION_APPROVAL: P.OFF_CODE });
+    expect(r2.calls.some((c) => /refuse_unidentified = false/.test(c))).toBe(true);
+    const r3 = runFor(on); use(r3);
+    await P.main(['off', '--platform=ios', '--target=prod'], { NEARBY_VERSION_APPROVAL: P.OFF_CODE });
+    expect(r3.calls.some((c) => /refuse_unidentified/.test(c))).toBe(false);
+  });
+  test('staging needs no code; bad values refused', async () => {
+    const r = runFor(S); use(r, 'staging');
+    await P.main(['strict', '--strict=on', '--target=staging'], {});
+    expect(r.calls.some((c) => /refuse_unidentified = true/.test(c))).toBe(true);
+    use(runFor(S), 'staging');
+    await expect(P.main(['strict', '--strict=maybe', '--target=staging'], {})).rejects.toThrow(/on or off/);
+  });
+});
