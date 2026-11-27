@@ -4,6 +4,28 @@ PREPARATION ONLY. Nothing here is approved or deployed. Each migration below nee
 after the preconditions pass. Deploy branch `deploy/catchup-0348-0432`; isolated rehearsal results in
 `MIGRATION_CATCHUP_ISOLATED_TEST_PROGRESS_2026-11-25.md`.
 
+## Readiness, 2026-11-27 (priority: 0348 + 0349 fix confirmed production bugs)
+Why now: on production today build 87's Dating Browse + Crossed Paths come back empty (fixed by 0348) and "Set as main
+photo" fails (fixed by 0349). Both proven by the release compatibility run (`BUILD88_COMPATIBILITY_2026-11-26.md`).
+
+| Item | State |
+|---|---|
+| Approval codes below = the committed files | CHECKED 2026-11-27 (all 7 sha256 match HEAD) |
+| Build 87 through Batch 1 (15 runtime steps) | PASS at 0354 on a replay; production-copy run: see the compat report |
+| Build 88 through Batch 1 | PASS at 0354 |
+| Rollbacks 0354 -> 0348 | proven in isolation (2026-11-26) |
+| `deploy.js` release gates (enforced) | compat evidence: PASS (committed). Backup: NEEDS a verified + encrypted backup < 24 h before the first deploy (passphrase first). Client floor: none for Batch 1 |
+| R2 App Store Connect: no public build <= 86 | OWNER |
+| R3 Tier 1 on build 87 | OWNER (two expected defects, below: never a FAIL) |
+| R8 website five-tab pass before 0348 | OWNER |
+| `deploy.js --check` (rolled back) on production per migration | at deploy time, right before each approval (it runs the migration in a transaction on production) |
+
+Tier 1 expected results on build 87 at 0347 (known, fixed by Batch 1, record as KNOWN not FAIL): Dating Browse and
+Crossed Paths empty; Set as main photo shows an error; Friends Crossed Paths may show people you already passed (0433).
+
+Order on the day: backup (FULL_READ=1 bash scripts/backup/prod-backup-via-login-role.sh) -> encrypt-backup.sh -> owner
+downloads it -> R8 website pass -> per migration: --check, approval, deploy, its checks -> moderate-photo right after 0349.
+
 ## Preconditions for the whole batch (all must be true before the first approval)
 1. R2: no public App Store / external-tester copy of build 86 or older (owner, App Store Connect).
 2. R3: Tier 1 below passes on build 87 against production as it is (0347).
@@ -83,3 +105,9 @@ Owner 2026-11-26: items 1-5 APPROVED IN PRINCIPLE, subject to counsel review and
 Server-only, fixes build 87 with no new build. sha256 `2c858e95a804873a957b281eb529f1006463b9b724ff57e3741180d67bfdcb41`.
 `deploy.js` enforces number order, so as numbered it deploys after 0432. If you want it in Phase 1, say so: it would be
 renumbered (it depends on nothing after 0347) and re-tested; any renumbering changes its approval code.
+**Decision record (2026-11-27, owner asked: earlier without renumbering?): NO, sequence retained.** Its SQL would apply
+early (only 0350/0382 mention the table, inside function bodies; no grant conflict), but the ledger refuses any older
+version once a newer one is recorded: deploying 0433 first would block 0348-0432 for good, or need that rule loosened
+(rejected: it is the protection against out-of-order deploys). Renumbering was excluded by the owner. No client
+workaround exists (the app can't learn its own swipes without this grant). Impact while it waits: people you already
+passed on can reappear in Friends > Crossed Paths; no privacy or security effect.

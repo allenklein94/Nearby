@@ -28,10 +28,12 @@ NET=nearby-restore-internal
 TS=$(date -u +%Y%m%dT%H%M%SZ)
 umask 077
 mkdir -p "$OUT"; chmod 700 "$OUT"
-[ -f "$URL_FILE" ] || { echo "missing $URL_FILE (create it yourself, mode 0600)"; exit 2; }
-perm=$(stat -c %a "$URL_FILE"); [ "$perm" = 600 ] || { echo "$URL_FILE must be mode 600 (is $perm)"; exit 2; }
 ENVF=$(mktemp "$OUT/.env.XXXXXX"); trap 'rm -f "$ENVF"' EXIT
-printf 'SRC=%s\nPGOPTIONS=-c default_transaction_read_only=on\n' "$(tr -d '\n' < "$URL_FILE")" > "$ENVF"
+if [ -z "${RESTORE_ONLY:-}" ]; then   # restore-only never contacts the source, so it needs no connection (2026-11-27)
+  [ -f "$URL_FILE" ] || { echo "missing $URL_FILE (create it yourself, mode 0600)"; exit 2; }
+  perm=$(stat -c %a "$URL_FILE"); [ "$perm" = 600 ] || { echo "$URL_FILE must be mode 600 (is $perm)"; exit 2; }
+  printf 'SRC=%s\nPGOPTIONS=-c default_transaction_read_only=on\n' "$(tr -d '\n' < "$URL_FILE")" > "$ENVF"
+fi
 NETFLAG=${SOURCE_NETWORK:+--network $SOURCE_NETWORK}
 DUMP="$OUT/prod-$TS.dump"
 

@@ -134,7 +134,7 @@ Held: the rolled-back test on production (locks); the isolated database is teste
 `bash scripts/backup/prod-logical-backup.sh` (run from the deploy branch): read-only `pg_dump` of public, private, auth,
 storage -> a 0600 file outside the repo -> restored into a container on an internal network with no route out (PG 17.6,
 production's engine) -> every table's row count + row md5 compared source vs restored, schema diffed; any mismatch = FAIL.
-Needs `.claude/prod-db-url` (gitignored), created by you, mode 600, holding production's connection string (Supabase
+SUPERSEDED 2026-11-27 (no longer needed: the temporary-role wrapper `prod-backup-via-login-role.sh` supplies the connection). Formerly: needs `.claude/prod-db-url` (gitignored), created by you, mode 600, holding production's connection string (Supabase
 dashboard > Connect > Session pooler URI, with the database password). The script never prints it. The dump holds
 personal data: it stays in `/workspaces/.nearby-verify/backups/` (mode 700), never committed. Storage FILES (photos) are
 not in a database dump. Text check of the 85 files: none deletes storage objects directly; 0402/0403 only read them;
@@ -203,7 +203,7 @@ Build 87 is compatible with 0348-0372 by design (Wall B starts at 0373). Before 
 | R4 | Build 87 compatibility test at 0372: a journey running build 87's EXACT queries (2a28c8e8: own profile via `get_my_profile`, sign-up insert/update, profile edit, push register/logout, Friends, Dating, ViewProfile, id_verified retry, report submit, gathering create) on a from-scratch replay at 0347 then 0348-0372. `appVersionCompatibility` today encodes build 86 + an October "new build"; it needs a build-87 block | NOT BUILT | me, isolated replay only |
 | R5 | Fresh drift check: production schema == replay at 0347 (last 2026-10-29) | NOT RUN | me, read-only |
 | R6 | Full-sequence test 0001-0432 on an isolated replay: all journeys + 6 concurrency scripts + every rollback round trip, from the deploy branch (head 38b074e5d) | NOT RUN (owner held the production rolled-back test; isolated first) | me |
-| R7 | Verified backup (option B): dump + isolated restore + per-table md5 match, taken right before EACH batch | BLOCKED: `.claude/prod-db-url` doesn't exist yet | you create it (mode 600, session pooler URI), then I run it |
+| R7 | Verified backup (option B): dump + isolated restore + per-table md5 match, taken right before EACH batch | READY: no connection string needed (2026-11-27): `FULL_READ=1 bash scripts/backup/prod-backup-via-login-role.sh` (temporary Supabase role, read-only sessions, deleted after; verified 2026-11-26), then `encrypt-backup.sh`. deploy.js refuses without a verified + encrypted backup < 24 h | your go-ahead per run + the passphrase once |
 | R8 | 0348 sequence (approved 2026-10-29): you sign in on the website (Coastal Coffee) + open the five tabs + save a profile change BEFORE 0348; right after 0348 the `get_my_profile()` check (own / cross-user / signed out + catalog); then you repeat the website pass. Any failure = stop | READY | both |
 | R9 | Edge functions in step: `moderate-photo` redeploy right after 0349 (`delete-account` stays held), `report-presence` after 0363, `screen-business-content` at 0372 from the 0415 branch or later | READY in the deploy branch | me, each with your approval |
 | R10 | Privacy Policy sentences for 0355 + 0357 published with them | DRAFTED, not published | you approve |

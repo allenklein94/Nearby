@@ -1,36 +1,68 @@
-# Owner steps after the build 88 merge (2026-11-26). Nothing here is deployed by Claude.
+# Your remaining actions, in dependency order (updated 2026-11-27)
 
-## 1. Encrypt the backup (do first)
-In your OWN Codespace terminal (not `!`): `python3 /workspaces/.nearby-verify/wt-catchup/scripts/backup/set-backup-passphrase.py`.
-Save the passphrase in Bitwarden. Then tell Claude "passphrase set": Claude encrypts + verifies; you download the encrypted file.
+Only what needs your credentials, your phone or your approval. Everything else (tests, packets, gates, drafts) is done
+or done by Claude on request. Each step names what it unblocks. Nothing here is deployed by Claude without your word.
 
-## 2. Build 88 staging iPhone build (you run it; config dry-resolved OK: "Nearby Staging", com.allenklein.nearby.staging, project 6f49be3c...)
+## A. Now (no dependencies)
+1. **Backup passphrase.** In your OWN Codespace terminal (not `!`):
+   `python3 /workspaces/Nearby/scripts/backup/set-backup-passphrase.py`. Save it in Bitwarden.
+   Tell Claude "passphrase set". Claude encrypts + proves the 2026-11-26 backup opens. Unblocks: step 2 + every batch
+   (deploy.js refuses a migration without a verified + encrypted backup < 24 h).
+2. **Download the encrypted backup** (`/workspaces/.nearby-verify/backups/nearby-backup-<ts>.tar.gpg`) to your computer
+   (VS Code: right-click > Download), and check it opens there: `gpg -d <file> | tar -t | head`.
+3. **App Store Connect check.** List every build on the App Store and in TestFlight (internal + external groups) and
+   who has each. Tell Claude the result. Unblocks: Batch 1 (R2: no public build <= 86) and, later, the 0373 client-floor
+   gate ("distribution" line; deploy.js refuses 0373+ without it).
+4. **Privacy corrections to counsel.** Send `PRODUCT_AUDIT/PRIVACY_LEGAL_REVIEW_2026-11-27.md` (part 1 = processing
+   live today, expedited). Unblocks: publishing part 1 (separate approval).
+5. **Staging test sign-in expires 2026-11-28 15:23 UTC.** If you want staging phone tests after that, tell Claude to
+   renew it (staging only; a new fictional-number entry).
+
+## B. Tier 1 (needs build 87 on your iPhone; it is there)
+6. **Tier 1 on build 87** (`BATCH1_APPROVAL_PACKET_2026-11-25.md`, "Tier 1"). Three results are KNOWN and fixed by
+   migrations (record as known, not FAIL): Dating Browse/Crossed Paths empty, Set as main photo error, Friends Crossed
+   Paths repeats. Unblocks: Batch 1 (R3).
+
+## C. Batch 1 day (needs 1, 3, 6)
+7. Say "go: Batch 1 backup". Claude runs the temporary-role backup (no connection string needed) + encrypts it;
+   you download it (as step 2).
+8. **Website five-tab pass** on the Coastal Coffee account + one profile save (R8), right before 0348.
+9. **Approve each migration** 0348-0354 by its code (packet), then `moderate-photo` right after 0349. Claude deploys
+   one at a time, runs its checks, stops at the first failure.
+
+## D. Batches 2-5 (needs C passing)
+10. Approve the Privacy sentences that ship with 0355/0357 (packet "Privacy Policy wording"), then each migration.
+
+## E. Build 88 (can run in parallel with B-D)
+11. **Staging build** (iPhone already registered on Expo, team P3K6PZ46T6; Apple provisions it at this build):
 ```
 cd /workspaces/Nearby && git checkout main && git pull
-eas device:create                       # once: register the iPhone (open the link on the phone)
 export APP_VARIANT=staging NEARBY_STAGING_EAS_PROJECT_ID=6f49be3c-0885-45bf-892f-3b722cd4aa54 \
        NEARBY_STAGING_SUPABASE_URL=https://hxsioiiulubavhogzipo.supabase.co
 read -rs NEARBY_STAGING_PUBLISHABLE_KEY && export NEARBY_STAGING_PUBLISHABLE_KEY
-eas build -p ios --profile staging      # sign in to Apple when asked (ad hoc credentials)
+eas build -p ios --profile staging      # sign in to Apple when asked (ad hoc)
 ```
-Then run `PRODUCT_AUDIT/BUILD88_DEVICE_CHECKLIST_2026-11-26.md` on it (P3 first).
-Known: maps blank in staging (no staging Maps key). The staging test OTP expired 2026-11-28: renew before testing.
+   Then `BUILD88_DEVICE_CHECKLIST_2026-11-26.md` on it. Maps are blank in staging (no staging Maps key).
+12. **Anthropic:** fund production's org (screening, 0372+), and create + fund the separate staging org (new email).
+13. **Production build 88:** `eas build -p ios --profile production`, then approve the TestFlight submit. Install on
+    every device that has Nearby. Re-check App Store Connect (step 3) so no older build remains available.
 
-## 3. Resend on PRODUCTION (you set secrets; never paste the key in chat)
-Prod today has none of them (checked: names only). send-push v28 already sends the fallback email once set, but 0 business
-emails are verified, so nothing goes out until an owner verifies an address.
+## F. Wall B: 0373 onward (needs D, 12, 13)
+14. **Website:** approve re-export + publish from build 88 source (Claude prepares it). Gives the "website" line.
+15. Tell Claude the App Store Connect result after step 13 (the "distribution" line). deploy.js also checks, live, that
+    no older app build is still signed in: an old device must update or sign out first.
+16. **External services before their batch:** Google Web Risk key (before 0396), Resend production secrets (business
+    email; commands below), Twilio upgrade (before any outside business owner).
+17. Approve Batches 6-11 migration by migration.
+
+### Resend on production (step 16; never paste the key in chat)
 ```
 read -rs RESEND_API_KEY && supabase secrets set --project-ref enmosvippabmuqslzrox RESEND_API_KEY="$RESEND_API_KEY"; unset RESEND_API_KEY
 supabase secrets set --project-ref enmosvippabmuqslzrox EMAIL_FROM='Nearby for Business <alerts@mail.thisisnearby.com>' \
   EMAIL_REPLY_TO=support@thisisnearby.com BUSINESS_WEB_URL='https://allenklein94.github.io/Nearby/business/'
-supabase secrets list --project-ref enmosvippabmuqslzrox
 ```
-Use the PRODUCTION key. Change BUSINESS_WEB_URL only at the custom-domain cutover. Exact-request links arrive with 0428 + the send-push redeploy (Batch 10).
 
-## 4. Still yours
-- R2: App Store Connect, confirm no public / external-tester build 86 or older.
-- R3: Tier 1 on build 87 (`BATCH1_APPROVAL_PACKET_2026-11-25.md`).
-- `.claude/prod-db-url` via `scripts/backup/set-prod-db-url.py` (same-day backup before each batch).
-- Per-migration approvals: `MIGRATION_APPROVAL_PACKETS_0348-0433.md`.
-- Privacy wording + counsel: `PRIVACY_POLICY_GAP_AUDIT_2026-11-26.md` (A1 AI provider + A2 Cloudflare are gaps TODAY).
-- Anthropic credit (production org), Twilio upgrade before business onboarding, Google Web Risk key before 0396.
+## Removed from your list (2026-11-27)
+- `.claude/prod-db-url` / `set-prod-db-url.py`: not needed; backups use the temporary Supabase role.
+- Staging iPhone registration (`eas device:create`): already done, still registered.
+- Build 88 compatibility testing: done (`BUILD88_COMPATIBILITY_2026-11-26.md`).
