@@ -203,7 +203,8 @@ describe('guards', () => {
     expect(read('src/utils/askEligibility.js')).toMatch(/filterOpenNow\(items, ctx\.toEntity\)/);
     expect(resolver).toMatch(/toEntity: \(c\) => candidateEntity\(c, partnerInfo\)/);
     expect(discover).toMatch(/from '\.\.\/utils\/operatingStatus'/);
-    expect(discover).toMatch(/if \(result\.openNowOnly\) setOpenNowOnly\(true\)/);
+    // a new ask sets Open now from its own words (on for "what's open", off otherwise: device test 2026-11-27)
+    expect(discover).toMatch(/setOpenNowOnly\(result\.openNowOnly === true\)/);
     for (const f of [discover, resolver]) expect(f).not.toMatch(/openNow\s*===\s*true|open_now\s*===/);
   });
   test('14. no business-facing Open now signal: never stored, sent, or read by business code', () => {

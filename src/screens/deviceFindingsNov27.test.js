@@ -49,9 +49,10 @@ test('Friends Browse and Crossed Paths empty states differ, in every language', 
 });
 
 test('an opportunity empty state shows the Nearby mark once, never with a second emoji under it', () => {
-  // FadeInState opportunity draws the mark itself (Activity showed the mark AND a large 🔔).
+  // The opportunity variant of FadeInState draws the mark itself (Activity showed the mark AND a large 🔔).
   for (const f of ['screens/DiscoveryScreen.js', 'screens/PlansScreen.js', 'screens/MatchesScreen.js', 'screens/ActivityScreen.js',
     'screens/FriendsScreen.js', 'screens/OccasionsScreen.js', 'components/MyCommunitiesSection.js']) {
-    expect(read(f)).not.toMatch(/<FadeInState opportunity[^>]*>\s*<Text style=\{styles\.emptyEmoji\}>/);
+    const opener = new RegExp('<FadeInState ' + 'opportunity[^>]*>\\s*<Text style=\\{styles\\.emptyEmoji\\}>');
+    expect(read(f)).not.toMatch(opener);
   }
 });
