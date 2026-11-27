@@ -177,7 +177,9 @@ function evidenceFailures(version, repoRoot, floor, opts = {}) {
   if (floor.build) {
     const d = ev.distribution; const w = ev.website;
     if (!d || d.failed || d.build < floor.build) r.push(`release gate: ${v} needs build ${floor.build} (set by ${floor.from.join(', ')}): record "distribution: PASS build ${floor.build} <date> testflight-older: expired appstore-older: never-released"`);
-    else r.push(...distributionFailures(d.line, floor.build, v));
+    // With the server refusing older builds (20270434, enforced, minimum >= the floor, that build available), a returning
+    // older install can't reach the database, so older builds no longer have to be unlaunchable.
+    else if (!opts.serverFloor) r.push(...distributionFailures(d.line, floor.build, v));
     if (!w || w.failed || w.build < floor.build) r.push(`release gate: ${v} needs build ${floor.build}: record "website: PASS build ${floor.build} <commit> exported + published"`);
   }
   return r;
@@ -189,11 +191,12 @@ const SESSIONS_SQL = `select coalesce(substring(user_agent from '^Nearby/([0-9]+
   count(*)::int as n
   from auth.sessions where not_after is null or not_after > now() group by 1, 2`;
 
-function sessionFailures(rows, floor) {
+function sessionFailures(rows, floor, { serverFloor = false } = {}) {
   if (!floor.build) return [];
   const r = [];
   const old = rows.filter((x) => x.kind === 'app' && x.build < floor.build);
-  if (old.length) r.push(`release gate: ${old.reduce((a, x) => a + x.n, 0)} live session(s) from app build(s) ${old.map((x) => x.build).join(', ')} (< ${floor.build}): every device must run build ${floor.build}+ (or sign out) first`);
+  // Enforced server minimum: those sessions' requests are refused before anything runs, so they can't break.
+  if (old.length && !serverFloor) r.push(`release gate: ${old.reduce((a, x) => a + x.n, 0)} live session(s) from app build(s) ${old.map((x) => x.build).join(', ')} (< ${floor.build}): every device must run build ${floor.build}+ (or sign out) first`);
   const other = rows.filter((x) => x.kind === 'other');
   if (other.length) r.push(`release gate: ${other.reduce((a, x) => a + x.n, 0)} live session(s) from an unrecognised client (no Nearby/<build> or browser user agent): identify them before a breaking migration`);
   return r;
@@ -214,16 +217,45 @@ function backupFailures(dir, now = Date.now()) {
   return r;
 }
 
+// Server-side minimum version (20270434): does production itself refuse every app build below the floor? Needs, read live:
+// the iOS minimum ENFORCED at >= the floor with that build recorded as available on iOS (the database refuses enforcing
+// otherwise), and Android either enforced the same way or recorded as never released ("android: never-released" on the
+// distribution line; no Android build has ever been made). The website is covered by its own "website:" line (re-export).
+const POLICY_PRESENT_SQL = "select to_regclass('private.app_version_policy') is not null as present";
+const POLICY_SQL = `select p.platform, p.min_supported_build, p.enforced,
+  (select max(a.build) from private.app_build_availability a where a.platform = p.platform) as newest_available
+  from private.app_version_policy p`;
+function serverFloorCovers(rows, floor, distributionLine = '') {
+  if (!floor.build || !Array.isArray(rows)) return false;
+  const ok = (pf) => {
+    const x = rows.find((r) => r.platform === pf);
+    return !!x && x.enforced === true && Number(x.min_supported_build) >= floor.build && Number(x.newest_available) >= floor.build;
+  };
+  return ok('ios') && (ok('android') || /\bandroid:\s*never-released\b/i.test(distributionLine || ''));
+}
+async function readServerFloor(run, floor, repoRoot, evidenceOpts = {}) {
+  if (!floor.build) return { covered: false };
+  try {
+    const present = await run(POLICY_PRESENT_SQL);
+    if (!present?.[0]?.present) return { covered: false };
+    const rows = await run(POLICY_SQL);
+    const show = evidenceOpts.show || ((f) => { try { return git(repoRoot, ['show', `HEAD:${f}`]); } catch { return null; } });
+    const d = parseEvidence(show(EVIDENCE_FILE) || '').distribution;
+    return { covered: serverFloorCovers(rows, floor, d && !d.failed ? d.line : ''), rows };
+  } catch { return { covered: false }; } // unreadable = not covered: the older, stricter requirements apply
+}
+
 // All gates for one migration on production. run = the target's SQL runner (one read-only SELECT is sent).
 async function releaseGateFailures({ facts, run, repoRoot, backupDir = process.env.NEARBY_BACKUP_DIR || '/workspaces/.nearby-verify/backups', now, evidenceOpts }) {
   if (!facts.version) return [];
   const floor = effectiveFloor(facts.version, repoRoot);
-  const r = [...evidenceFailures(facts.version, repoRoot, floor, evidenceOpts), ...backupFailures(backupDir, now),
+  const server = await readServerFloor(run, floor, repoRoot, evidenceOpts);
+  const r = [...evidenceFailures(facts.version, repoRoot, floor, { ...evidenceOpts, serverFloor: server.covered }), ...backupFailures(backupDir, now),
     ...privacyFailures(facts.version, repoRoot, evidenceOpts)];
   if (floor.build) {
-    try { r.push(...sessionFailures(await run(SESSIONS_SQL), floor)); } catch (e) { r.push(`release gate: could not read live sessions (${e.message.slice(0, 120)}): refused`); }
+    try { r.push(...sessionFailures(await run(SESSIONS_SQL), floor, { serverFloor: server.covered })); } catch (e) { r.push(`release gate: could not read live sessions (${e.message.slice(0, 120)}): refused`); }
   }
   return r;
 }
 
-module.exports = { distributionFailures, appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
+module.exports = { serverFloorCovers, readServerFloor, POLICY_SQL, POLICY_PRESENT_SQL, distributionFailures, appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
