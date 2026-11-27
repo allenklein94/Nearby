@@ -9,7 +9,7 @@ Branch release/version-policy. 0434 stays in place (no renumbering). Production 
 - [x] Storage writes covered (restrictive policy, non-raising check) + real Storage API test (690fe295e, 2941afc01)
 - [x] Owner script: strict on/off with approval code (690fe295e, 6815ae2b9)
 - [x] deploy.js: server floor substitutes only with strict on AND the migration touches nothing uncovered (auth, realtime, static-page endpoints, unwired edge functions) (690fe295e)
-- [ ] Full rerun: Jest, journeys, replay, rollback, compat, exports
-- [x] Docs: CLAUDE.md, inventory, process, approval packet, device checklist (0264a79df; CLAUDE.md pending)
+- [x] Full rerun at 225e5bf3d: Jest 622/8506, journeys 1598, replay 558, concurrency 31, API 30/30, Storage 12/12, rollback + re-apply 0 diff, compat build 88 15/15 through 0434, exports clean
+- [x] Docs: CLAUDE.md, inventory, process, approval packet, device checklist (0264a79df; CLAUDE.md updated)
 - [ ] Merge to main + push
 - [x] Edge guard: every app-called edge function asks the gate or is exempt with a reason (4c23fed47)

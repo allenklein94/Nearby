@@ -4,11 +4,11 @@ Only the copy committed at HEAD counts. One line per kind; a FAIL line, a duplic
 production migration. Update after every release-compat run (scripts/compat/README.md). "through" = the highest database
 version the run covered; deploy.js refuses a migration above it.
 
-next: PASS build 88 @6dfb64113 through 20270434 (runtime 15/15 at 0347, 0354, 0362, 0366, 0369, 0372, 0373, 0381, 0396, 0398, 0406, 0417, 0429, 0432, 0433, 0434; static at 0434 = the same 2 known fallbacks as 0433; local replay; 2026-11-27, /workspaces/.nearby-verify/compat/b88-vp2)
+next: PASS build 88 @225e5bf3d through 20270434 (runtime 15/15 at 0347, 0354, 0362, 0366, 0369, 0372, 0373, 0381, 0396, 0398, 0406, 0417, 0429, 0432, 0433, 0434; static at 0434 = the same 2 known fallbacks as 0433; local replay; 2026-11-27, /workspaces/.nearby-verify/vp4/compat-b88)
 released: PASS build 87 @2a28c8e85 through 20270372 (runtime 15/15 at 0354-0372; 14/15 at 0347 = the live Dating defect, fixed by 0348; fails from 0373 by design = client floor; 2026-11-27, /workspaces/.nearby-verify/compat/b87-v3)
 
 The two lines below are required from 20270373 on (client floor: build 88). Record them only when true:
   (template) distribution: PASS build 88 <date> testflight-older: expired appstore-older: never-released (owner checked App Store Connect)
   Both tokens are required: a signed-out or dormant install isn't in auth.sessions, so only an expired TestFlight build
-  (won't launch) and no App Store release below 88, ever, keep it from coming back. There is no minimum-version check.
+  (won't launch) and no App Store release below 88, ever, keep it from coming back. Until 20270434 is live with the floor enforced AND strict mode on, nothing else stops it (and migrations listed by `serverFloorGaps` need these lines even then).
   (template) website: PASS build 88 <commit> business website exported from build 88 source + published (owner approved)
