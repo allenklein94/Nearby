@@ -631,6 +631,25 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setRevealToken((n) => n + 1);
   }
 
+  // Device test 2026-11-27 (item 10): each review row opens the step that owns it, with the person's values kept (no new
+  // screen, no error marking: this is an edit, not a correction). A skipped step (What after a quick pick) has no link.
+  function editStep(key) {
+    const i = STEP_DEFS.findIndex((s) => s.key === key);
+    if (i < 0) return;
+    setAttemptedStep(null);
+    if (key === 'details') setShowMoreOptions(true);
+    setStep(i);
+  }
+  function reviewEditLink(key) {
+    if (!STEP_DEFS.some((s) => s.key === key)) return null;
+    const label = STEP_DEFS.find((s) => s.key === key).label;
+    return (
+      <TouchableOpacity onPress={() => editStep(key)} accessibilityRole="button" accessibilityLabel={`${t('ui.gatheringForm.adjust')}: ${label}`} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Text style={styles.whenAdjustLink}>{t('ui.gatheringForm.adjust')}</Text>
+      </TouchableOpacity>
+    );
+  }
+
   async function submit() {
     // Re-run every required check now; earlier step checks are never trusted.
     if (publishProblems(validationForm, STEP_DEFS.map((s) => s.key)).length > 0) return;
@@ -1549,16 +1568,24 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.previewIcon}>{selectedStyle ? selectedStyle.icon : '🎉'}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.previewTitle}>{title || t('ui.gatheringForm.preview.untitled')}</Text>
-                {interestTag ? <Text style={styles.previewMeta}>{names.tag(interestTag)}</Text> : null}
+                {interestTag ? <Text style={styles.previewMeta}>{carriedActivity && gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }) === carriedActivity ? quickOptionLabel({ label: carriedActivity }, language) : names.tag(interestTag)}</Text> : null}
               </View>
+              {reviewEditLink('what')}
             </View>
-            {description ? <Text style={styles.previewDescription}>{description}</Text> : null}
+            {description ? (
+              <View style={[styles.previewRow, { alignItems: 'flex-start' }]}>
+                <Text style={[styles.previewDescription, { flex: 1 }]}>{description}</Text>
+                {reviewEditLink('details')}
+              </View>
+            ) : null}
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>🗓️</Text>
               <Text style={styles.previewRowText}>
-                {displayDateTime(scheduledAt, language)}
+                {/* Device test 2026-11-27 (item 10): no clock time is shown that the person never picked */}
+                {timeNeeded ? `${displayWeekdayDate(scheduledAt, language)} · ${t('ui.gatheringForm.alert.pickTime')}` : displayDateTime(scheduledAt, language)}
                 {recurrenceRule ? t(`ui.gatheringForm.preview.repeats.${recurrenceRule}`) : ''}
               </Text>
+              {reviewEditLink('whenWhere')}
             </View>
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>📍</Text>
@@ -1571,6 +1598,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 {selectedVisibility ? t(`ui.gatheringVocab.visibility.${selectedVisibility.key}.label`) : null}{visibility === 'community' && selectedCommunity ? ` — ${selectedCommunity.name}` : ''}
                 {visibility === 'invite_only' && !showOnMap ? t('ui.gatheringForm.preview.hiddenFromMap') : ''}
               </Text>
+              {reviewEditLink('who')}
             </View>
             {womenOnly && (
               <View style={styles.previewRow}>

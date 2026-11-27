@@ -26,3 +26,10 @@ test('wiring: Start Something passes the activity; Create renders the compact ro
   expect(c).toContain('compactActivityPicker(activityFromContext, interestTag, activityListOpen)');
   expect(c).toContain('setActivityListOpen(true)');
 });
+
+test('review step (item 10): no unpicked clock time, the activity word, an Adjust link per row that opens its step', () => {
+  const c = fs.readFileSync(path.join(__dirname, '..', 'screens/CreateGatheringScreen.js'), 'utf8');
+  expect(c).toContain("timeNeeded ? `${displayWeekdayDate(scheduledAt, language)} · ${t('ui.gatheringForm.alert.pickTime')}`");
+  for (const k of ['what', 'whenWhere', 'who', 'details']) expect(c).toContain(`reviewEditLink('${k}')`);
+  expect(c).toMatch(/function editStep\(key\) \{[\s\S]*?setAttemptedStep\(null\)/);
+});
