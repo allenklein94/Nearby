@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 
 export async function checkTextModeration(text) {
   if (!text || !text.trim()) return { safe: true };
@@ -8,7 +9,7 @@ export async function checkTextModeration(text) {
     const token = sessionData?.session?.access_token;
     if (!token) return { safe: true };
 
-    const response = await fetch(functionUrl('moderate-text'), {
+    const response = await functionFetch(functionUrl('moderate-text'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

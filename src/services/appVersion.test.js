@@ -6,7 +6,8 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(async (k, v) => { store[k] = v; }),
   removeItem: jest.fn(async (k) => { delete store[k]; }),
 }));
-jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+const mockAppState = { currentState: 'active' };
+jest.mock('react-native', () => ({ Platform: { OS: 'ios' }, AppState: mockAppState }));
 jest.mock('expo-application', () => ({ nativeBuildVersion: '88' }));
 
 function load() {
@@ -16,7 +17,8 @@ function load() {
 }
 const P = (min, latest) => ({ platform: 'ios', min_supported_build: min, latest_build: latest, update_url: 'itms-beta://x/y' });
 
-beforeEach(() => { Object.keys(store).forEach((k) => delete store[k]); });
+beforeEach(() => { Object.keys(store).forEach((k) => delete store[k]); mockAppState.currentState = 'active'; });
+afterEach(() => { jest.useRealTimers(); });
 
 test('build 88 identified from the native build number, headers sent', () => {
   const m = load();
@@ -95,4 +97,62 @@ test('dismissing the optional notice is remembered per latest build', async () =
   await m.dismissOptionalUpdate();
   expect(m.appVersionSnapshot().dismissedLatest).toBe(92);
   expect(store['nearby-app-update-dismissed-latest']).toBe('92');
+});
+
+test('a cached update screen, offline at start, is released WITHOUT a tap once online and the minimum is off', async () => {
+  let m = load();
+  await m.initAppVersion({ env: 'production', readPolicy: async () => P(90, 90) }); // last run: required, cached
+  jest.useFakeTimers();
+  m = load();
+  let answer = new Error('offline');
+  const read = jest.fn(async () => { if (answer instanceof Error) throw answer; return answer; });
+  await m.initAppVersion({ env: 'production', readPolicy: read });
+  expect(m.appVersionSnapshot().state).toBe('required'); // cached, offline
+  await jest.advanceTimersByTimeAsync(m.REQUIRED_RETRY_MS);
+  expect(m.appVersionSnapshot().state).toBe('required'); // still offline: nothing guessed
+  answer = { platform: 'ios', min_supported_build: null, latest_build: 90, update_url: 'itms-beta://x/y' }; // owner: off
+  const before = read.mock.calls.length;
+  await jest.advanceTimersByTimeAsync(m.REQUIRED_RETRY_MS);
+  expect(read.mock.calls.length).toBe(before + 1);
+  expect(m.appVersionSnapshot().state).toBe('optional');
+  await jest.advanceTimersByTimeAsync(m.REQUIRED_RETRY_MS * 3);
+  expect(read.mock.calls.length).toBe(before + 1); // released: the retry stopped
+});
+
+test('the retry never runs in the background, and never while the app is current', async () => {
+  jest.useFakeTimers();
+  const m = load();
+  let answer = P(90, 90);
+  const read = jest.fn(async () => answer);
+  await m.initAppVersion({ env: 'staging', readPolicy: read });
+  mockAppState.currentState = 'background';
+  const n = read.mock.calls.length;
+  await jest.advanceTimersByTimeAsync(m.REQUIRED_RETRY_MS * 3);
+  expect(read.mock.calls.length).toBe(n);
+  mockAppState.currentState = 'active';
+  answer = P(null, null);
+  await jest.advanceTimersByTimeAsync(m.REQUIRED_RETRY_MS);
+  expect(m.appVersionSnapshot().state).toBe('current');
+  const k = read.mock.calls.length;
+  await jest.advanceTimersByTimeAsync(m.REQUIRED_RETRY_MS * 3);
+  expect(read.mock.calls.length).toBe(k);
+});
+
+test('an edge function refusing the build (426 + hint) switches to required; other 426 / 400 bodies do not', async () => {
+  const m = load();
+  await m.initAppVersion({ env: 'production', readPolicy: async () => { throw new Error('offline'); } });
+  const resp = (status, body) => ({ status, clone: () => ({ json: async () => body }) });
+  const f = m.withAppVersion(jest.fn(async (url) => (url.endsWith('other') ? resp(426, { error: 'x' }) : resp(426, { code: 'P0001', hint: 'app_update_required' }))));
+  await f('https://x.supabase.co/functions/v1/other', {});
+  expect(m.appVersionSnapshot().state).toBe('current');
+  await f('https://x.supabase.co/functions/v1/moderate-text', {});
+  expect(m.appVersionSnapshot().state).toBe('required');
+});
+
+test('expired session: the policy read is independent of sign-in (a failing read keeps state, never signs out)', async () => {
+  const m = load();
+  await m.initAppVersion({ env: 'production', readPolicy: async () => P(null, null) });
+  const read = jest.fn(async () => { const e = new Error('JWT expired'); e.status = 401; throw e; });
+  await m.initAppVersion({ env: 'production', readPolicy: read });
+  expect(m.appVersionSnapshot().state).toBe('current');
 });

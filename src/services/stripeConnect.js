@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 
 import { readMyProfile } from './myProfile';
 import { actingBusiness } from './actingBusiness';
@@ -35,7 +36,7 @@ async function callFunction(name, body) {
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('Not signed in.');
 
-  const res = await fetch(functionUrl(name), {
+  const res = await functionFetch(functionUrl(name), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body || {}),

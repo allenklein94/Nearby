@@ -1,5 +1,6 @@
 import { pulseNoteNeedsScreening, cleanNote } from '../utils/businessNoteScreening';
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { readMyProfile } from './myProfile';
 import { expandSearchTerms } from '../constants/categorySynonyms';
 import { searchScope } from '../constants/categoryTree';
@@ -743,7 +744,7 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
 
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -787,7 +788,7 @@ export async function submitBusinessExperienceForScreening(partnerId, { experien
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
 
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -832,7 +833,7 @@ export async function submitBusinessOfferForScreening(partnerId, { title, descri
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
 
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -870,7 +871,7 @@ export async function submitBusinessUpdateForScreening(partnerId, title, body) {
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
 
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1115,7 +1116,7 @@ export async function callNoteScreening(payload, fallbackMessage) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),

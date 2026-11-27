@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { detectIntentRoute, navigateIntentRoute } from '../constants/intentRoutes';
 import { resolveAsk, toClassification, createParamsFromAsk } from '../utils/askResolver';
 import { createStartFromAsk } from '../utils/createStartTime';
@@ -33,7 +34,7 @@ export async function classifyCreateRequest(text) {
   // bad input), which keeps its own message.
   let response;
   try {
-    response = await fetch(functionUrl('create-assistant'), {
+    response = await functionFetch(functionUrl('create-assistant'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

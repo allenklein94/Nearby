@@ -12,6 +12,7 @@
 // app keeps today's check (moderate-text). That window is today's behaviour; once 20270373 is live the database enforces
 // screening whatever the app does.
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { checkTextModeration } from './textModeration';
 import { normalizeUgcText, ugcRefusalOf } from '../utils/ugcText';
 
@@ -34,7 +35,7 @@ export async function screenUserContent(items) {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
     if (!token) return { outcome: 'unavailable' };
-    const response = await fetch(functionUrl('screen-user-content'), {
+    const response = await functionFetch(functionUrl('screen-user-content'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ texts }),

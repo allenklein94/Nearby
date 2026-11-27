@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
+import { functionFetch } from '../services/functionFetch';
 import { readMyProfile } from '../services/myProfile';
 import { basicsOption } from '../i18n/basicsVocab';
 import { categoryName } from '../i18n/categoryNames';
@@ -194,7 +195,7 @@ export default function DatingPreferencesScreen({ navigation }) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
-      const response = await fetch(functionUrl('generate-strengths'), {
+      const response = await functionFetch(functionUrl('generate-strengths'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });

@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Alert, Platform } from 'react-native';
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 
 // Profile photo links (owner, 2026-10-28): a signed URL is a bearer link the server can't take back, so it lives 15 min
 // (every screen re-signs on focus) and the file is cached no longer. A new link is refused by the server as soon as a
@@ -145,7 +146,7 @@ export async function uploadProfilePhoto(userId, asset) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
 
-  fetch(functionUrl('moderate-photo'), {
+  functionFetch(functionUrl('moderate-photo'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   }).catch((err) => console.error('moderate-photo trigger failed', err));

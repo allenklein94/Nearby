@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
+import { functionFetch } from '../services/functionFetch';
 import { generateCompatibilityCompass, generateFrictionPoints } from '../services/compatibility';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
@@ -41,7 +42,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch(functionUrl('generate-introduction'), {
+      const response = await functionFetch(functionUrl('generate-introduction'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,13 +1,14 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 
 export async function requestDataExport() {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('No active session.');
 
-  const response = await fetch(functionUrl('export-data'), {
+  const response = await functionFetch(functionUrl('export-data'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });

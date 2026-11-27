@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 
 export async function getOnlineStatuses(userIds) {
   if (!userIds || userIds.length === 0) return {};
@@ -7,7 +8,7 @@ export async function getOnlineStatuses(userIds) {
   const token = sessionData?.session?.access_token;
 
   try {
-    const response = await fetch(functionUrl('get-online-status'), {
+    const response = await functionFetch(functionUrl('get-online-status'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

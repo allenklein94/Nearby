@@ -3,6 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert, ActivityIndicator } from 'react-native';
 import KeyboardSafeView from '../components/KeyboardSafeView';
 import { supabase, functionUrl } from '../services/supabase';
+import { functionFetch } from '../services/functionFetch';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -52,7 +53,7 @@ export default function RehearsalRoomScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch(functionUrl('rehearsal-chat'), {
+      const response = await functionFetch(functionUrl('rehearsal-chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

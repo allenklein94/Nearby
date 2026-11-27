@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 
 // "Intelligent demand inbox" Phase 3 (see CLAUDE.md, Sep 3 2026 section) --
 // a real AI-powered fast path on the business apply screen. Takes the
@@ -14,7 +15,7 @@ export async function classifyBusinessDescription(text) {
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('Sign in to use this.');
 
-  const response = await fetch(functionUrl('business-onboarding-assistant'), {
+  const response = await functionFetch(functionUrl('business-onboarding-assistant'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

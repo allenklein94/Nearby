@@ -3,6 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { isSignInBlocked } from '../utils/accountReview';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase, functionUrl, PUBLISHABLE_KEY } from '../services/supabase';
+import { functionFetch } from '../services/functionFetch';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -84,7 +85,7 @@ export default function LoginScreen({ navigation }) {
 
     if (isReviewerNumber(phoneInput)) {
       try {
-        const response = await fetch(functionUrl('review-login'), {
+        const response = await functionFetch(functionUrl('review-login'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

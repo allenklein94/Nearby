@@ -22,6 +22,7 @@ import { selectPeople } from './peopleRead';
 import { browseDatingCandidates } from './datingBrowse';
 import * as TaskManager from 'expo-task-manager';
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { readMyProfile } from './myProfile';
 import { calculateCompatibility } from './compatibility';
 import { getMyActiveLiveTrackingSession } from './liveTracking';
@@ -87,7 +88,7 @@ async function sendPresenceReport(latitude, longitude) {
   const userId = sessionData?.session?.user?.id;
   if (!token || !userId) return;
 
-  await fetch(functionUrl('report-presence'), {
+  await functionFetch(functionUrl('report-presence'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

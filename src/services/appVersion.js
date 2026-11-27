@@ -2,7 +2,7 @@
 // AppUpdateGate. Rechecked at start-up, on sign-in, when the app returns to the foreground, from "Check again", and at once
 // when the server refuses a request as too old. A failed read never makes the app stricter: it keeps the last policy it
 // had for this backend (offline after a required update = still required; otherwise = opens normally).
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
 import { WEB_RELEASE_BUILD } from '../constants/appRelease';
@@ -15,6 +15,10 @@ export const APP_BUILD = APP_PLATFORM === 'web' ? WEB_RELEASE_BUILD : normalizeB
 export const VERSION_HEADERS = versionHeaders({ build: APP_BUILD, platform: APP_PLATFORM });
 
 const DISMISS_KEY = 'nearby-app-update-dismissed-latest';
+// While the update screen shows, ask again this often (only while the app is in front): a minimum that was lowered or
+// switched off releases a cached "required" screen once the device is back online, without a tap.
+export const REQUIRED_RETRY_MS = 30000;
+let retryTimer = null;
 
 let snapshot = { state: 'current', policy: null, serverRefused: false, dismissedLatest: null, checking: false };
 let environment = null;
@@ -25,7 +29,21 @@ const listeners = new Set();
 function emit(next) {
   snapshot = { ...snapshot, ...next };
   snapshot.state = appUpdateState({ build: APP_BUILD, policy: snapshot.policy, serverRefused: snapshot.serverRefused });
+  syncRetry();
   listeners.forEach((l) => { try { l(snapshot); } catch { /* a listener never breaks the check */ } });
+}
+
+function syncRetry() {
+  if (snapshot.state === 'required' && reader && !retryTimer) {
+    retryTimer = setInterval(() => {
+      const s = AppState?.currentState;
+      if (!s || s === 'active') recheckAppVersion();
+    }, REQUIRED_RETRY_MS);
+    retryTimer?.unref?.(); // tests / Node only: never keeps a process alive (no effect in the app)
+  } else if (snapshot.state !== 'required' && retryTimer) {
+    clearInterval(retryTimer);
+    retryTimer = null;
+  }
 }
 
 export function appVersionSnapshot() { return snapshot; }
@@ -82,7 +100,8 @@ export function withAppVersion(baseFetch) {
     const headers = new Headers(init?.headers ?? (typeof input === 'object' ? input?.headers : undefined));
     Object.entries(VERSION_HEADERS).forEach(([k, v]) => headers.set(k, v));
     const response = await baseFetch(input, { ...init, headers });
-    if (response.status === 400) {
+    // 400 = PostgREST's pre-request refusal; 426 = an edge function's (supabase/functions/_shared/appVersion.ts)
+    if (response.status === 400 || response.status === 426) {
       try {
         if (isUpdateRequiredBody(await response.clone().json())) {
           emit({ serverRefused: true });

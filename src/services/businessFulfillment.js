@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { resetExperienceFeedbackCache } from './experienceFeedback';
 import { requireUserLocation, getUserLocation } from './userLocation';
 import { videoFrameTimes, videoLimitProblem } from '../utils/offerMedia';
@@ -152,7 +153,7 @@ export async function readOfferCreative(partnerId, { mediaPath, mediaType, frame
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
-  const response = await fetch(functionUrl('read-offer-creative'), {
+  const response = await functionFetch(functionUrl('read-offer-creative'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ partnerId, mediaPath, mediaType, framePaths }),
@@ -169,7 +170,7 @@ export async function rewriteOfferPlainLanguage(partnerId, { title, description,
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
-  const response = await fetch(functionUrl('rewrite-offer-plain-language'), {
+  const response = await functionFetch(functionUrl('rewrite-offer-plain-language'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ partnerId, title, description, ...context }),
@@ -199,7 +200,7 @@ async function callCreativeScreening(partnerId, payload) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ partnerId, targetType: 'creative', ...payload }),
@@ -924,7 +925,7 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
 
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1097,7 +1098,7 @@ export async function submitBusinessAvailabilityForScreening(partnerId, { catego
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
 
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1641,7 +1642,7 @@ export async function retryOfferSubmission(partnerId, submissionId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ partnerId, targetType: 'offer_response', async: true, retrySubmissionId: submissionId }),

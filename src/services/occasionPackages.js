@@ -6,6 +6,7 @@
 // rationale -- a genuinely different concept from a one-time posted
 // business_availability slot or a flat priority_occasions appetite signal.
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { serviceError } from '../utils/recoverableError';
 import { getUserLocation } from './userLocation';
 
@@ -33,7 +34,7 @@ async function submitOccasionPackageForScreening(partnerId, packageId, {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
-  const response = await fetch(functionUrl('screen-business-content'), {
+  const response = await functionFetch(functionUrl('screen-business-content'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({

@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { functionFetch } from './functionFetch';
 import { readMyProfile } from './myProfile';
 import { setMyNotificationGroup } from './notificationPrefs';
 import { isOwnerGroup } from '../constants/notificationPreferences';
@@ -10,7 +11,7 @@ async function callBusinessEmail(payload) {
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData?.session?.access_token;
   if (!accessToken) throw new Error('Not signed in');
-  const response = await fetch(functionUrl('business-email'), {
+  const response = await functionFetch(functionUrl('business-email'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(payload),
