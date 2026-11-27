@@ -2,6 +2,7 @@ import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent } from '../_shared/contentClassifier.ts';
+import { appVersionRefusal } from '../_shared/appVersion.ts';
 
 // "See it in plain language" (owner item 59, 2026-09-25). A business owner has already typed their OWN offer
 // title/description (which may be full of internal jargon, e.g. "Off-peak inventory optimization"); this function
@@ -84,6 +85,9 @@ export function claimProblem(suggestion: { title: string | null; description: st
 const WITHHELD = "We couldn't suggest wording that keeps your offer exactly as it is. Your own wording is unchanged.";
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Missing auth' }, 401);

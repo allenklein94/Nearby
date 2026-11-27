@@ -47,6 +47,7 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
     if (installed) {
       await db.query(`update private.app_version_policy set enforced = false, min_supported_build = null, latest_build = null, update_url = null where platform = 'ios'`);
       await db.query(`delete from private.app_build_availability where recorded_by = 'version-gate-api-local'`);
+      await db.query(`update private.app_version_settings set refuse_unidentified = false, updated_by = 'version-gate-api-local'`);
     }
     await db.query(`select set_config('app.trusted_update', 'true', false)`);
     await db.query(`delete from profiles where id = $1`, [USER]);
@@ -124,6 +125,26 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
     check('no identifying headers: allowed', (await call('GET', '/profiles?select=id&limit=1', { token: userJwt })).status === 200);
     const forged = await call('GET', '/profiles?select=id&limit=1', { build: 999999, token: userJwt });
     check('a forged higher build only passes the version check (RLS unchanged: same rows as unidentified)', forged.status === 200, forged);
+
+    // 4b. the edge-function probe: the same hook, over HTTP, with the client's forwarded headers
+    refusal('probe app_version_ok, build 89: refused', await call('POST', '/rpc/app_version_ok', { build: 89, body: {} }));
+    const probe90 = await call('POST', '/rpc/app_version_ok', { build: 90, body: {} });
+    check('probe app_version_ok, build 90: allowed', open ? probe90.status === 404 : probe90.status === 200 && probe90.body === true, probe90);
+
+    // 4c. strict mode: unidentified and malformed refused; identified, the policy read and service role still pass
+    await setPolicy(`update private.app_version_settings set refuse_unidentified = true, updated_by = 'version-gate-api-local'`);
+    refusal('strict: browser user agent, no header, refused', await call('GET', '/profiles?select=id&limit=1', { ua: 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15', token: userJwt }));
+    refusal('strict: no identifying headers, refused', await call('GET', '/profiles?select=id&limit=1', { token: userJwt }));
+    refusal('strict: malformed build header, refused', await call('GET', '/profiles?select=id&limit=1', { build: 'abc', token: userJwt }));
+    const s95 = await call('GET', '/profiles?select=id&limit=1', { build: 95, token: userJwt });
+    check('strict: identified build 95 allowed', s95.status === 200, s95);
+    const sPol = await call('POST', '/rpc/get_app_version_policy', { body: { platform_param: 'ios' } });
+    check('strict: policy read with no headers passes', open ? sPol.status === 404 : sPol.status === 200, sPol);
+    const sSvc = await call('GET', '/profiles?select=id&limit=1', { token: jwt({ role: 'service_role' }) });
+    check('strict: service_role with no headers passes', sSvc.status === 200, sSvc);
+    await setPolicy(`update private.app_version_settings set refuse_unidentified = false, updated_by = 'version-gate-api-local'`);
+    const sOff = await call('GET', '/profiles?select=id&limit=1', { ua: 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15', token: userJwt });
+    check('strict off again: browser allowed at once', sOff.status === 200, sOff);
 
     // 5. emergency recovery takes effect on the next request (no PostgREST reload)
     await setPolicy(`update private.app_version_policy set min_supported_build = 85 where platform = 'ios'`);

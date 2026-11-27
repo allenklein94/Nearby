@@ -2,6 +2,7 @@ import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { emailConfigured, sendEmail } from '../_shared/email.ts';
+import { appVersionRefusal } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -20,6 +21,9 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 // Business owner email notifications: { action: 'start', email } sends a 6-digit code, { action: 'confirm', code }
 // verifies it, { action: 'remove' } deletes the address. send-push emails only a verified + enabled address.
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Missing auth' }, 401);

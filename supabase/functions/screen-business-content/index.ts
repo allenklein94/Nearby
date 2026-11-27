@@ -6,6 +6,7 @@ import { classifyContent, classifyContentDetailed, RISK_CATEGORIES, reportClassi
 import { screeningFailureKind as healthFailureKind } from '../_shared/screeningHealth.js';
 import { screeningFailureKind } from '../_shared/screeningFailure.js';
 import { screenOfferMedia as screenOfferMediaShared, OFFER_MEDIA_BUCKET } from '../_shared/offerMediaScreening.js';
+import { appVersionRefusal, clientVersionHeaders } from '../_shared/appVersion.ts';
 
 // Aug 27 2026 plan (CLAUDE.md), Decision 6 -- the real Business Trust &
 // Safety content-screening layer. This is the one real classify-then-
@@ -395,6 +396,9 @@ function worseTier(a: string, b: string): string {
 // for the person who submitted it, on their saved offer, through the same validation and screening as Try again.
 // Any answer other than "started" settles the claimed row here, so a claimed row is never left hanging.
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   let workerSubmissionId: string | null = null;
   const res = await handleRequest(req, (id) => { workerSubmissionId = id; });
   if (workerSubmissionId && res.status !== 202) await settleWorkerRun(workerSubmissionId, res.clone());
@@ -465,7 +469,7 @@ async function handleRequest(req: Request, markWorker: (id: string) => void): Pr
     // reader doesn't exist: nothing is paused.
     // An automatic retry has no signed-in owner to tell; the database still refuses a paused manager's write.
     if (!autoRetry && RESTRICTED_TARGETS.includes(targetType)) {
-      const asCaller = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
+      const asCaller = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, { global: { headers: { ...clientVersionHeaders(req), Authorization: authHeader } } });
       const { data: pausedUntil, error: pausedError } = await asCaller.rpc('get_my_account_restriction', { capability_param: 'offers' });
       if (!pausedError && pausedUntil) {
         const r = restrictedResponse(JSON.stringify({ capability: 'offers', until: new Date(pausedUntil).toISOString().replace(/\.\d{3}Z$/, 'Z') }));
@@ -485,7 +489,7 @@ async function handleRequest(req: Request, markWorker: (id: string) => void): Pr
     const supabaseAsUser = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       // Multi-location (20270426): the user-scoped calls name the location this request was checked for, so a switch made
       // on another device while this runs (screening takes seconds) refuses them instead of writing to the new location.
-      global: { headers: { Authorization: authHeader, 'x-nearby-business': partnerId } },
+      global: { headers: { ...clientVersionHeaders(req), Authorization: authHeader, 'x-nearby-business': partnerId } },
     });
 
     // "Your photos & videos" (owner, 2026-10-10): the business adds media it already has to its creative library without

@@ -1,6 +1,7 @@
 import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { appVersionRefusal, clientVersionHeaders } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_ANON_KEY = publishableKey();
@@ -15,6 +16,9 @@ const DAILY_AI_LIMIT = 150;
 const MAX_QUESTION_LENGTH = 500;
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -71,7 +75,7 @@ serve(async (req) => {
     const supabaseAsUser = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       // Multi-location (20270426): the user-scoped calls name the location this request was checked for, so a switch made
       // on another device while this runs (screening takes seconds) refuses them instead of writing to the new location.
-      global: { headers: { Authorization: authHeader, 'x-nearby-business': partnerId } },
+      global: { headers: { ...clientVersionHeaders(req), Authorization: authHeader, 'x-nearby-business': partnerId } },
     });
 
     const [{ data: statsRows }, { data: growthRows }, { data: insightsRows }, { data: visitFreq }] = await Promise.all([

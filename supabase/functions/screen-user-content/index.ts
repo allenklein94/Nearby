@@ -24,6 +24,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { secretKey } from '../_shared/supabaseKeys.ts';
 import { classifyUserText, TEXT_KINDS, USER_CONTENT_MODEL } from '../_shared/userContentClassifier.ts';
 import { checkLinks } from '../_shared/linkSafety.ts';
+import { appVersionRefusal } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -192,6 +193,9 @@ async function screenChatBatch(admin: any) {
 }
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
     if (!authHeader || !SERVICE_ROLE_KEY) return json({ error: 'Missing auth' }, 401);

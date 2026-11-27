@@ -2,6 +2,7 @@ import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent } from '../_shared/contentClassifier.ts';
+import { appVersionRefusal, clientVersionHeaders } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -45,6 +46,9 @@ function toFormParams(obj: Record<string, unknown>, prefix = ''): string[] {
 }
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     if (!STRIPE_SECRET_KEY) return json({ error: "Payments aren't set up yet. Check back soon." }, 503);
     if (/^(sk|rk)_live_/.test(STRIPE_SECRET_KEY)
@@ -76,7 +80,7 @@ serve(async (req) => {
     if (description.length > 200) return json({ error: 'The description can be at most 200 characters.' }, 422);
 
     // Eligibility + availability BEFORE spending a screening call (as the caller, so ownership comes from their session).
-    const asUser = createClient(SUPABASE_URL!, ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
+    const asUser = createClient(SUPABASE_URL!, ANON_KEY!, { global: { headers: { ...clientVersionHeaders(req), Authorization: authHeader } } });
     const { data: check, error: checkError } = await asUser.rpc('check_my_sponsored_slot', { starts_param: startsAt.toISOString() });
     if (checkError) return json({ error: 'Could not check availability. Please try again.' }, 500);
     if (!check?.ok) {

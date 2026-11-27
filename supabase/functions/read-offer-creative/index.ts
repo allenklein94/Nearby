@@ -1,6 +1,7 @@
 import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { appVersionRefusal } from '../_shared/appVersion.ts';
 
 // "Read this for me" (creative extraction). A business owner TAPS a button to have Nearby read the photo (or up to three
 // frames sampled on the device from a video) they attached to an offer, and get back SUGGESTIONS for the existing offer
@@ -62,6 +63,9 @@ async function fetchImage(url: string) {
 }
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Missing auth' }, 401);

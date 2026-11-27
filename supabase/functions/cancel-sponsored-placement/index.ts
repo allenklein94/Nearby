@@ -1,6 +1,7 @@
 import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { appVersionRefusal, clientVersionHeaders } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -23,6 +24,9 @@ const REFUSALS: Record<string, [number, string]> = {
 };
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     if (!STRIPE_SECRET_KEY) return json({ error: 'Payments are not set up.' }, 503);
     if (STRIPE_SECRET_KEY.startsWith('sk_live_') || STRIPE_SECRET_KEY.startsWith('rk_live_')) {
@@ -36,7 +40,7 @@ serve(async (req) => {
     const placementId = typeof body?.placementId === 'string' ? body.placementId : '';
     if (!placementId) return json({ error: 'Choose a spotlight to cancel.' }, 400);
 
-    const asUser = createClient(SUPABASE_URL!, ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
+    const asUser = createClient(SUPABASE_URL!, ANON_KEY!, { global: { headers: { ...clientVersionHeaders(req), Authorization: authHeader } } });
     const { data: rows, error: reqError } = await asUser.rpc('owner_request_sponsored_cancel', { placement_id_param: placementId });
     if (reqError) {
       const code = /sponsored_cancel:(\w+)/.exec(reqError.message || '')?.[1];

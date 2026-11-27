@@ -1,6 +1,7 @@
 import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { appVersionRefusal, clientVersionHeaders } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -29,6 +30,9 @@ const REFUSALS: Record<string, [number, string]> = {
 };
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     if (!STRIPE_SECRET_KEY) return json({ error: 'Payments are not set up.' }, 503);
     if (STRIPE_SECRET_KEY.startsWith('sk_live_') || STRIPE_SECRET_KEY.startsWith('rk_live_')) {
@@ -46,7 +50,7 @@ serve(async (req) => {
     if (!paymentId || !kind) return json({ error: 'Choose a payment and a refund type.' }, 400);
 
     // As the CALLER: the database decides who may refund and how much.
-    const asUser = createClient(SUPABASE_URL!, ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
+    const asUser = createClient(SUPABASE_URL!, ANON_KEY!, { global: { headers: { ...clientVersionHeaders(req), Authorization: authHeader } } });
     const { data: reqRows, error: reqError } = await asUser.rpc('admin_sponsored_request_refund', {
       payment_id_param: paymentId, kind_param: kind, undelivered_days_param: days, reason_param: reason,
     });

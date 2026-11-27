@@ -1,6 +1,7 @@
 import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { appVersionRefusal } from '../_shared/appVersion.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -48,6 +49,9 @@ async function stripeRequest(path: string, params?: Record<string, unknown>) {
 }
 
 serve(async (req) => {
+  // Minimum supported app version (20270434): the database's policy decides, before any work (_shared/appVersion.ts).
+  const versionRefusal = await appVersionRefusal(req);
+  if (versionRefusal) return versionRefusal;
   try {
     if (!STRIPE_SECRET_KEY) {
       return new Response(JSON.stringify({ error: "Payments aren't set up yet. Check back soon." }), { status: 503 });

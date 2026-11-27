@@ -45,7 +45,8 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${req('off_old_ua', ua(OLD_IOS))}
   ${server}
   -- 2. a mandatory minimum needs that build to be AVAILABLE first
-  ${tryPolicy('enforce_unavailable', `update private.app_version_policy set min_supported_build = 90, latest_build = 90, enforced = true where platform = 'ios';`)}
+  ${tryPolicy('enforce_unavailable', `update private.app_version_policy set min_supported_build = 90, latest_build = 90, enforced = true,
+      update_url = 'itms-beta://testflight.apple.com/v1/app/0' where platform = 'ios';`)}
   insert into private.app_build_availability (platform, build, channel, recorded_by, evidence)
     values ('ios', 90, 'testflight', 'journey', 'journey fixture');
   ${tryPolicy('enforce_available', `update private.app_version_policy set min_supported_build = 90, latest_build = 90, enforced = true,
