@@ -8,5 +8,7 @@ next: PASS build 88 @635b5e951 through 20270433 (runtime 15/15 at 0347, 0354, 03
 released: PASS build 87 @2a28c8e85 through 20270372 (runtime 15/15 at 0354-0372; 14/15 at 0347 = the live Dating defect, fixed by 0348; fails from 0373 by design = client floor; 2026-11-27, /workspaces/.nearby-verify/compat/b87-v3)
 
 The two lines below are required from 20270373 on (client floor: build 88). Record them only when true:
-  (template) distribution: PASS build 88 <date> App Store Connect: no older build on the App Store or TestFlight (owner checked)
+  (template) distribution: PASS build 88 <date> testflight-older: expired appstore-older: never-released (owner checked App Store Connect)
+  Both tokens are required: a signed-out or dormant install isn't in auth.sessions, so only an expired TestFlight build
+  (won't launch) and no App Store release below 88, ever, keep it from coming back. There is no minimum-version check.
   (template) website: PASS build 88 <commit> business website exported from build 88 source + published (owner approved)

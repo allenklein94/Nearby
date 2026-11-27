@@ -137,6 +137,19 @@ function appSourceChanged(repoRoot, commit) {
   } catch { return true; }
 }
 
+// Signed-out, dormant or expired-session installs never show up in auth.sessions, so the session read alone can't protect
+// them (owner, 2026-11-27). Nearby has NO minimum-version check; the only thing that stops an older installed build from
+// coming back is that it can't be opened: every TestFlight build below the floor EXPIRED in App Store Connect (an expired
+// beta won't launch), and no build below the floor was EVER released on the App Store (a released build stays installed
+// and launchable even after it's removed from sale). If an App Store release below the floor ever existed, this gate
+// can't pass: the migration then needs a server-side minimum-version refusal first (separate owner decision).
+function distributionFailures(line, build, v) {
+  const r = [];
+  if (!/\btestflight-older:\s*expired\b/i.test(line)) r.push(`release gate: ${v} needs build ${build}: the distribution line must say "testflight-older: expired" (every TestFlight build below ${build} expired in App Store Connect, so a signed-out or dormant install can't launch it)`);
+  if (!/\bappstore-older:\s*never-released\b/i.test(line)) r.push(`release gate: ${v} needs build ${build}: the distribution line must say "appstore-older: never-released" (no App Store release below ${build}, ever); if one existed, a server-side minimum-version refusal is required first`);
+  return r;
+}
+
 function evidenceFailures(version, repoRoot, floor, opts = {}) {
   const r = [];
   const v = Number(version);
@@ -163,7 +176,8 @@ function evidenceFailures(version, repoRoot, floor, opts = {}) {
   else if (!relBelowFloor && rel.through < v) r.push(`release gate: released build ${rel.build} was proven only through ${rel.through}; rerun release-compat through ${v}`);
   if (floor.build) {
     const d = ev.distribution; const w = ev.website;
-    if (!d || d.failed || d.build < floor.build) r.push(`release gate: ${v} needs build ${floor.build} (set by ${floor.from.join(', ')}): record "distribution: PASS build ${floor.build} <date> App Store Connect: no older build on the App Store or TestFlight"`);
+    if (!d || d.failed || d.build < floor.build) r.push(`release gate: ${v} needs build ${floor.build} (set by ${floor.from.join(', ')}): record "distribution: PASS build ${floor.build} <date> testflight-older: expired appstore-older: never-released"`);
+    else r.push(...distributionFailures(d.line, floor.build, v));
     if (!w || w.failed || w.build < floor.build) r.push(`release gate: ${v} needs build ${floor.build}: record "website: PASS build ${floor.build} <commit> exported + published"`);
   }
   return r;
@@ -212,4 +226,4 @@ async function releaseGateFailures({ facts, run, repoRoot, backupDir = process.e
   return r;
 }
 
-module.exports = { appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
+module.exports = { distributionFailures, appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };

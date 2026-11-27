@@ -7,7 +7,7 @@ const REPO = path.resolve(__dirname, '../..');
 const ev = (lines) => ({ show: () => lines.join('\n'), dirty: () => false, srcChanged: () => false });
 const NEXT = 'next: PASS build 88 @abc1234 through 20270433 (run)';
 const REL = 'released: PASS build 87 @2a28c8e85 through 20270372 (run)';
-const DIST = 'distribution: PASS build 88 2026-12-01 App Store Connect checked';
+const DIST = 'distribution: PASS build 88 2026-12-01 testflight-older: expired appstore-older: never-released (owner checked App Store Connect)';
 const WEB = 'website: PASS build 88 deadbee exported + published';
 
 describe('client floor', () => {
@@ -147,5 +147,22 @@ describe('policy with the change (rule 8)', () => {
     fs.mkdirSync(path.join(dir, 'supabase/migrations'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'supabase/migrations/20279999_x.sql'), '-- release-gate: privacy\nselect 1;');
     expect(G.privacyRequired('20279999', dir)).toBe('declared in the migration header');
+  });
+});
+
+describe('returning older installs (signed out, dormant, expired session)', () => {
+  test('a distribution line that only says "checked" is refused at 0373', () => {
+    const f = G.distributionFailures('distribution: PASS build 88 2026-12-01 App Store Connect checked', 88, '20270373');
+    expect(f).toHaveLength(2);
+  });
+  test('older TestFlight builds still available = refused', () => {
+    expect(G.distributionFailures('distribution: PASS build 88 x testflight-older: available appstore-older: never-released', 88, '20270373')).toHaveLength(1);
+  });
+  test('expired + never released passes', () => {
+    expect(G.distributionFailures(DIST, 88, '20270373')).toEqual([]);
+  });
+  test('wired into the evidence gate', () => {
+    const f = G.evidenceFailures('20270373', REPO, { build: 88, from: [20270373] }, ev([NEXT, REL, 'distribution: PASS build 88 2026-12-01 App Store Connect checked', WEB]));
+    expect(f.some((x) => /testflight-older: expired/.test(x))).toBe(true);
   });
 });
