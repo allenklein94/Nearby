@@ -73,3 +73,13 @@ describe('buildOccasionWhoForParams', () => {
     });
   });
 });
+
+describe('item 28: a carried recipient is not asked again', () => {
+  const { skipsCarriedWhoFor } = require('./createHubWhoFor');
+  test('skips who_for after the occasion only when the Create tab carried it', () => {
+    expect(skipsCarriedWhoFor('occasion', 'who_for', 'friend')).toBe(true);
+    expect(skipsCarriedWhoFor('occasion', 'who_for', null)).toBe(false);
+    expect(skipsCarriedWhoFor('occasion', 'who_for', 'me')).toBe(false);
+    expect(skipsCarriedWhoFor('activity', 'when', 'friend')).toBe(false);
+  });
+});

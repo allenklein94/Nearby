@@ -38,3 +38,8 @@ export function buildOccasionWhoForParams({ whoFor, whoForName, whoForFriendId }
     initialWhoForFriendId: whoFor !== 'me' ? (whoForFriendId ?? null) : null,
   };
 }
+
+// Device test 2026-11-27 (item 28): Plan for Someone never re-asks who it is for when the Create tab already carried it in.
+export function skipsCarriedWhoFor(currentStepKey, nextStepKey, carriedWhoFor) {
+  return currentStepKey === 'occasion' && nextStepKey === 'who_for' && !!carriedWhoFor && carriedWhoFor !== 'me'; // Me is only the default there, never a real answer for Plan for Someone
+}

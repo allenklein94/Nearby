@@ -54,6 +54,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { skipsCarriedWhoFor } from '../utils/createHubWhoFor';
 
 // Item 61 ("Celebrate Something" life-events planning layer, CLAUDE.md):
 // occasion -> who's it for -> what to do -> when -> who's involved, then
@@ -930,6 +931,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       return proceedToDestination();
     }
     Haptics.selectionAsync();
+    // Device test 2026-11-27 (item 28): the Create tab already asked "Who is this for?"; after the occasion, the carried
+    // answer is kept and its step is skipped (Back still reaches it to change it).
+    if (skipsCarriedWhoFor(stepKey, stepDefs[step + 1]?.key, route.params?.initialWhoFor)) {
+      setStep((s) => Math.min(s + 2, stepDefs.length - 1));
+      return;
+    }
     setStep((s) => Math.min(s + 1, stepDefs.length - 1));
   }
 
