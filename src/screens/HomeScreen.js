@@ -2859,7 +2859,11 @@ export default function HomeScreen({ navigation }) {
               accessibilityLabel={quickPickLabel(item, language)}
               accessibilityRole="button"
             >
-              <Ionicons name={iconNameForCategory(item.category)} size={22} color={colors.primary} style={styles.quickActionIcon} />
+              {/* Device test 2026-11-27 (item 24): each tile carries its own category's colour in a small tinted circle
+                  (the same restrained category palette Create's chips use), instead of identical coral outlines. */}
+              <View style={[styles.quickActionIconWrap, { backgroundColor: `${categoryStyleFor(item.category).color}1F` }]}>
+                <Ionicons name={iconNameForCategory(item.category)} size={20} color={categoryStyleFor(item.category).color} />
+              </View>
               <Text style={styles.quickActionLabel}>{quickPickLabel(item, language)}</Text>
             </TouchableOpacity>
           ))}
@@ -3087,6 +3091,7 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginRight: spacing.sm, minWidth: 84,
   },
   quickActionIcon: { marginBottom: 4 },
+  quickActionIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
   quickActionLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   happeningNowChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1.5,
