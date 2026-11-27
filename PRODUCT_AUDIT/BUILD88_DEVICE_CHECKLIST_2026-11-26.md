@@ -57,5 +57,17 @@ Two accounts (a second phone, or a simulator) are marked **[2]**.
 - 6b Trending appears only with 5+ established attendees (needs 0409).
 - 6c Hand-written offers screen and send (needs Anthropic credit).
 
+## 7. App update screen (20270434; SETUP-BLOCKED until 0434 is on that project; try it on STAGING first, never by enforcing on production for a test)
+Staging steps use `app-version-policy.js --target=staging` (no approval code). Afterwards switch everything off again.
+- 7a Policy off (as installed): the app opens normally, with no notice. Airplane mode at launch: the app still opens.
+- 7b Latest = a build above the installed one (recorded available on staging): one "A new version of Nearby is available." notice at the top; Not now hides it; it stays hidden after relaunch until a newer latest build is set. It never covers the tab bar or header buttons.
+- 7c Minimum enforced above the installed build: "Time for an update" replaces the app at launch. Update Nearby opens the link (TestFlight on staging). Check again with nothing changed shows "This version still needs an update."
+- 7d While 7c is set, switch it `off`: Check again (or returning to the app) opens the app normally. No reinstall, no sign-out.
+- 7e With the app open on any screen, enforce the minimum: the next action that reaches the server shows the update screen (no endless spinner, no crash).
+- 7f Sign out and back in while enforced: the update screen shows, not the sign-in loop.
+- 7g Light and dark mode, the largest text size, VoiceOver: title read as a heading, buttons named, "Checking…" read while busy.
+- 7h [2] Build 87 on the second phone while 7c is set: its screens show errors (expected: no update screen in 87). Record what it shows.
+- 7i Website (browser): a page left open past an enforced web minimum shows "This page is out of date" + Reload.
+
 ## Results go to the owner as
 Actual results / launch blockers / usability / fixes in priority order (same format as the Tier 1 run order).

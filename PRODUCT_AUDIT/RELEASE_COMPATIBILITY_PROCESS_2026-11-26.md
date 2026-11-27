@@ -85,9 +85,52 @@ Production Auth: sessions never expire (`sessions_timebox` 0, `sessions_inactivi
 So from 0373 the distribution line must say `testflight-older: expired appstore-older: never-released` (deploy.js refuses
 otherwise; tests in `releaseGates.test.js`). An expired TestFlight build won't launch, which covers every row above.
 If App Store Connect shows ANY App Store release below build 88, the gate can't pass and 0373 needs a server-side
-minimum-version refusal first (proposal only, not built: refuse requests whose user agent is `Nearby/<88` in the
-pre-request hook with an "update the app" hint, plus a build-88 screen for that hint; owner decision).
+minimum-version refusal first. That refusal is now BUILT + STAGED as 20270434 (`release/version-policy`; see "Minimum
+supported version" below), NOT deployed, enforcement off.
 Order: expire build 86 and older now (0348 already breaks build 86); expire build 87 only after build 88 is installed on
 every device and Tier 1 is done.
 Web: a business-website tab left open keeps the old JavaScript until reloaded; the website line requires the re-export,
 and a reload picks it up (one business account today).
+
+## Minimum supported version (20270434, owner 2026-11-27; STAGED, NOT deployed, enforcement OFF everywhere)
+What it is: a per-project server policy (`private.app_version_policy`, one row each for ios / android / web: minimum
+supported build, latest build, update link, enforced yes/no), plus a record of which builds people can actually get
+(`private.app_build_availability`: testflight, staging_internal, app_store, google_play, website) and an append-only change
+log. Staging and production each have their own rows, so a staging setting can't affect production. Only the owner-run
+`scripts/release/app-version-policy.js` changes the rows (status / record-available / plan / set / off).
+
+| Build state | Server (once enforced) | App (build 88+) |
+|---|---|---|
+| >= latest | passes | opens normally |
+| >= minimum, < latest | passes | opens + one dismissible "A new version of Nearby is available." notice (once per newer build) |
+| < enforced minimum, 88+ | every PostgREST request refused (P0001, hint `app_update_required`) | "Time for an update" screen instead of the app: Update Nearby (the policy's link) + "Already updated? Check again" |
+| <= 87 (no mechanism) | refused the same way, identified by its `Nearby/<build> CFNetwork` user agent | no update screen: the old screens show their ordinary errors |
+
+Safeguards:
+- **Nothing enforced points at an unavailable build.** The database refuses enforcing a minimum (or announcing a latest)
+  above the newest build recorded as available on that platform, and a store link (App Store / Google Play / TestFlight)
+  unless that store carries the build. Testers are never sent to a public listing that doesn't have it.
+- **Emergency recovery.** Lowering the minimum, clearing it or `off` (fixed production code `version-off`) is never blocked
+  and takes effect on the next request; no app release is needed.
+- **Fail open.** A fault in the check (bad row, unreadable headers) lets the request through. Offline, an unreachable
+  policy, an unknown version, signed out or an expired session never lock a supported user out; the app keeps the last
+  policy it read, and the policy read itself is signed out with a 10 s limit.
+- **Not a security boundary.** A client can claim any build. The header can only make the server refuse, never grant
+  anything; permissions stay with RLS and the server functions. Unidentified clients (browsers without the header,
+  scripts, service-role calls, Android builds before this mechanism) pass.
+- **Not covered:** Auth (sign-in still works; every REST call after it is refused), Storage, Realtime, edge functions.
+- **Checks run** at start-up, sign-in, return to the foreground, "Check again", and whenever the server refuses a request
+  as too old.
+
+Build 87 and the catch-up: build 87 has no update screen, but its requests ARE refused once a minimum >= 88 is enforced.
+0434 is numbered after 0373 and `deploy.js` deploys in number order, so it can't protect build 87 during the 0348-0433
+catch-up: until 0434 is live and enforced, 0373+ still need the distribution line (older TestFlight builds expired, no App
+Store release below 88) and no live sessions below the floor. Once 0434 is live with iOS enforced at >= the floor (and that
+build recorded available) and Android enforced or recorded `android: never-released` on the distribution line,
+`deploy.js` accepts it in place of "older builds unlaunchable" and live old sessions (`releaseGates.js`
+`serverFloorCovers`). Moving 0434 ahead of 0373 would need a renumber (owner decision). The website still needs its
+re-export line.
+
+Enforcing in production is a SEPARATE owner approval from deploying 0434. Order: record the build as available
+(`record-available`, with App Store Connect evidence) -> `plan` -> owner approves the printed code -> `set` -> check a
+build below the minimum on a device (device checklist section 7) -> record.
