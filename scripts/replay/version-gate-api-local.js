@@ -60,7 +60,11 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
       '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon', '-e', `PGRST_JWT_SECRET=${SECRET}`, IMAGE]);
     const ip = sh(['inspect', '-f', `{{(index .NetworkSettings.Networks "${NET}").IPAddress}}`, REST]).trim();
     const base = `http://${ip}:3000`;
-    for (let i = 0; i < 60; i += 1) { try { await fetch(`${base}/`); break; } catch { await new Promise((r) => setTimeout(r, 1000)); } }
+    // ready = the schema cache is loaded (503 PGRST002 until then)
+    for (let i = 0; i < 90; i += 1) {
+      try { if ((await fetch(`${base}/`)).status === 200) break; } catch { /* not up yet */ }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
 
     // One real signed-in person (profile with a bio we can watch).
     await db.query(`insert into auth.users (id, aud, role, email, phone, phone_confirmed_at, created_at) values ($1::uuid, 'authenticated', 'authenticated', $1::text || '@version.invalid', '1555' || lpad((('x0' || substr(md5($1::text), 1, 7))::bit(32)::int % 100000000)::text, 8, '0'), now(), now() - interval '30 days')`, [USER]);
@@ -85,23 +89,23 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
 
     // 1. the policy read always passes, for an old build, GET and POST, and with an expired token never sent
     const pg = await call('GET', '/rpc/get_app_version_policy?platform_param=ios', { build: 80 });
-    check('policy read (GET) passes for build 80', pg.status === 200 && (open || pg.body?.min_supported_build === 90), pg);
+    check('policy read (GET) passes for build 80', open ? pg.status === 404 : pg.status === 200 && pg.body?.min_supported_build === 90, pg);
     const pp = await call('POST', '/rpc/get_app_version_policy', { ua: OLD_UA, body: { platform_param: 'ios' } });
     check('policy read (POST) passes for build 87 (user agent)', open ? pp.status === 404 : pp.status === 200 && pp.body?.update_url?.startsWith('itms-beta:'), pp);
 
     // 2. below the minimum: refused before anything runs
     refusal('build 89 header, signed out, read', await call('GET', '/profiles?select=id&limit=1', { build: 89 }));
     refusal('build 87 user agent (no header), signed in, read', await call('GET', '/profiles?select=id&limit=1', { ua: OLD_UA, token: userJwt }));
-    refusal('build 87 user agent, signed in, RPC', await call('POST', '/rpc/get_my_plans_this_month', { ua: OLD_UA, token: userJwt, body: {} }));
-    refusal('build 87 user agent, signed in, own-profile write', await call('PATCH', `/profiles?id=eq.${USER}`, { ua: OLD_UA, token: userJwt, body: { bio: 'after-87' } }));
-    const bio = (await db.query(`select bio from profiles where id = $1`, [USER])).rows[0].bio;
-    check(open ? 'the old build\'s write landed (0434 rolled back)' : 'the refused write changed nothing', open ? bio === 'after-87' : bio === 'before', bio);
+    refusal('build 87 user agent, signed in, RPC', await call('POST', '/rpc/get_my_experience_feedback', { ua: OLD_UA, token: userJwt, body: {} }));
+    refusal('build 87 user agent, signed in, own-profile write', await call('PATCH', `/profiles?id=eq.${USER}`, { ua: OLD_UA, token: userJwt, body: { timezone: 'Europe/Paris' } }));
+    const bio = (await db.query(`select timezone from profiles where id = $1`, [USER])).rows[0].timezone;
+    check(open ? 'the old build\'s write landed (0434 rolled back)' : 'the refused write changed nothing', open ? bio === 'Europe/Paris' : bio === 'America/New_York', bio);
     await db.query(`select set_config('app.trusted_update', 'true', false)`);
-    await db.query(`update profiles set bio = 'before' where id = $1`, [USER]);
+    await db.query(`update profiles set timezone = 'America/New_York' where id = $1`, [USER]);
     await db.query(`select set_config('app.trusted_update', 'false', false)`);
 
     // 3. supabase-js surfaces the hint (services/appVersion.js switches to "required" on it)
-    const old = createClient(base, 'local-anon', { auth: { persistSession: false, autoRefreshToken: false },
+    const old = createClient(base, jwt({ role: 'anon' }), { auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { 'x-nearby-build': '89', 'x-nearby-platform': 'ios' } } });
     // supabase-js targets <url>/rest/v1: point it at PostgREST's root instead.
     old.rest.url = base;
@@ -112,13 +116,13 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
     // 4. at / above the minimum, other platforms, browsers, unidentified: untouched
     const at = await call('GET', '/profiles?select=id&limit=1', { build: 90, token: userJwt });
     check('build 90 header, signed in: allowed', at.status === 200, at);
-    const w = await call('PATCH', `/profiles?id=eq.${USER}`, { build: 90, token: userJwt, body: { bio: 'after-90' } });
-    const bio90 = (await db.query(`select bio from profiles where id = $1`, [USER])).rows[0].bio;
-    check('build 90 write lands', w.status < 300 && bio90 === 'after-90', { w, bio90 });
-    check('android build 1: allowed', (await call('GET', '/profiles?select=id&limit=1', { build: 1, platform: 'android' })).status === 200);
-    check('browser user agent, no header: allowed', (await call('GET', '/profiles?select=id&limit=1', { ua: 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15' })).status === 200);
-    check('no identifying headers: allowed', (await call('GET', '/profiles?select=id&limit=1')).status === 200);
-    const forged = await call('GET', '/profiles?select=id&limit=1', { build: 999999 });
+    const w = await call('PATCH', `/profiles?id=eq.${USER}`, { build: 90, token: userJwt, body: { timezone: 'Europe/Berlin' } });
+    const bio90 = (await db.query(`select timezone from profiles where id = $1`, [USER])).rows[0].timezone;
+    check('build 90 write lands', w.status < 300 && bio90 === 'Europe/Berlin', { w, bio90 });
+    check('android build 1: allowed', (await call('GET', '/profiles?select=id&limit=1', { build: 1, platform: 'android', token: userJwt })).status === 200);
+    check('browser user agent, no header: allowed', (await call('GET', '/profiles?select=id&limit=1', { ua: 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15', token: userJwt })).status === 200);
+    check('no identifying headers: allowed', (await call('GET', '/profiles?select=id&limit=1', { token: userJwt })).status === 200);
+    const forged = await call('GET', '/profiles?select=id&limit=1', { build: 999999, token: userJwt });
     check('a forged higher build only passes the version check (RLS unchanged: same rows as unidentified)', forged.status === 200, forged);
 
     // 5. emergency recovery takes effect on the next request (no PostgREST reload)
@@ -127,7 +131,7 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
     check('lowered to 85: build 87 allowed at once', after85.status === 200, after85);
     refusal('lowered to 85: build 84 still refused', await call('GET', '/profiles?select=id&limit=1', { build: 84 }));
     await setPolicy(`update private.app_version_policy set enforced = false where platform = 'ios'`);
-    const off = await call('GET', '/profiles?select=id&limit=1', { build: 1 });
+    const off = await call('GET', '/profiles?select=id&limit=1', { build: 1, token: userJwt });
     check('switched off: build 1 allowed at once', off.status === 200, off);
     const pOff = await call('GET', '/rpc/get_app_version_policy?platform_param=ios');
     check('switched off: the policy read shows no minimum', open ? pOff.status === 404 : pOff.status === 200 && pOff.body?.min_supported_build === null, pOff);
