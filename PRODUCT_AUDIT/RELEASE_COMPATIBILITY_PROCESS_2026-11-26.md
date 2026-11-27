@@ -97,13 +97,13 @@ What it is: a per-project server policy (`private.app_version_policy`, one row e
 supported build, latest build, update link, enforced yes/no), plus a record of which builds people can actually get
 (`private.app_build_availability`: testflight, staging_internal, app_store, google_play, website) and an append-only change
 log. Staging and production each have their own rows, so a staging setting can't affect production. Only the owner-run
-`scripts/release/app-version-policy.js` changes the rows (status / record-available / plan / set / off).
+`scripts/release/app-version-policy.js` changes the rows (status / record-available / plan / set / off / strict).
 
 | Build state | Server (once enforced) | App (build 88+) |
 |---|---|---|
 | >= latest | passes | opens normally |
 | >= minimum, < latest | passes | opens + one dismissible "A new version of Nearby is available." notice (once per newer build) |
-| < enforced minimum, 88+ | every PostgREST request refused (P0001, hint `app_update_required`) | "Time for an update" screen instead of the app: Update Nearby (the policy's link) + "Already updated? Check again" |
+| < enforced minimum, 88+ | every PostgREST request, app-called edge function (426) and Storage write refused (P0001, hint `app_update_required`) | "Time for an update" screen instead of the app: Update Nearby (the policy's link) + "Already updated? Check again" |
 | <= 87 (no mechanism) | refused the same way, identified by its `Nearby/<build> CFNetwork` user agent | no update screen: the old screens show their ordinary errors |
 
 Safeguards:
@@ -112,23 +112,42 @@ Safeguards:
   unless that store carries the build. Testers are never sent to a public listing that doesn't have it.
 - **Emergency recovery.** Lowering the minimum, clearing it or `off` (fixed production code `version-off`) is never blocked
   and takes effect on the next request; no app release is needed.
-- **Fail open.** A fault in the check (bad row, unreadable headers) lets the request through. Offline, an unreachable
-  policy, an unknown version, signed out or an expired session never lock a supported user out; the app keeps the last
-  policy it read, and the policy read itself is signed out with a 10 s limit.
+- **Strict mode (unidentified clients; owner step, default OFF).** `strict --strict=on` (production: its own printed
+  code) makes the server refuse a request whose build can't be identified (no `x-nearby-build`/`x-nearby-platform`
+  header and no `Nearby/<build> CFNetwork` user agent, or a malformed header): an old website tab, an Android build from
+  before the mechanism, an unknown client. Still passing: service-role callers (edge functions' own calls, cron,
+  scripts), the policy read, and ONLY the static GitHub Pages' fixed signed-out endpoints (docs/invite, occasion-invite,
+  shared-night, track, business.html: 5 RPCs + the acquisition-event insert, POST, anon role, exact path). Turn it on
+  only after the current website export (which sends the headers) is published. `off --platform=all` also switches it off.
+- **Fail open / closed.** Strict OFF: a fault in the check (bad row, unreadable headers) lets the request through. Strict
+  ON: a check that can't complete refuses (the policy read + service role still pass, so recovery always works). An
+  edge function whose version probe can't run (network, PostgREST down) fails open: its own as-user database calls carry
+  the forwarded headers, so the hook still decides there. Offline, an unreachable policy, signed out or an expired
+  session never lock a supported user out; the app keeps the last policy it read (policy read signed out, 10 s limit).
+- **Releasing a cached update screen.** While "Time for an update" shows, the app re-reads the policy every 30 s (only in
+  the foreground, until it no longer says required), besides start-up / sign-in / foreground / "Check again": once the
+  device is back online, a lowered minimum or `off` releases the screen without a tap.
 - **Not a security boundary.** A client can claim any build. The header can only make the server refuse, never grant
-  anything; permissions stay with RLS and the server functions. Unidentified clients (browsers without the header,
-  scripts, service-role calls, Android builds before this mechanism) pass.
-- **Not covered:** Auth (sign-in still works; every REST call after it is refused), Storage, Realtime, edge functions.
-- **Checks run** at start-up, sign-in, return to the foreground, "Check again", and whenever the server refuses a request
-  as too old.
+  anything; permissions stay with RLS and the server functions.
+- **Covered:** PostgREST (pre-request hook), Storage WRITES (restrictive `storage.objects` policies for insert / update /
+  delete, asking the same gate from the headers the Storage API passes through), and every edge function the app calls
+  (`_shared/appVersion.ts` probe, guard `src/utils/edgeFunctionVersionGuard.test.js`) except four never refused on
+  purpose: `delete-account` + `export-data` (data rights), `review-login` (sign-in), `submit-business-application` (static page).
+- **Not covered, on purpose:** Auth (sign-in, recovery, sign-out keep working; everything after them is refused), Storage
+  reads and Realtime (read-only, RLS-filtered), server-side / webhook edge functions.
+- **Checks run** at start-up, sign-in, return to the foreground, "Check again", every 30 s while required, and whenever
+  the server or an edge function refuses a request as too old.
 
 Build 87 and the catch-up: build 87 has no update screen, but its requests ARE refused once a minimum >= 88 is enforced.
 0434 is numbered after 0373 and `deploy.js` deploys in number order, so it can't protect build 87 during the 0348-0433
 catch-up: until 0434 is live and enforced, 0373+ still need the distribution line (older TestFlight builds expired, no App
 Store release below 88) and no live sessions below the floor. Once 0434 is live with iOS enforced at >= the floor (and that
-build recorded available) and Android enforced or recorded `android: never-released` on the distribution line,
-`deploy.js` accepts it in place of "older builds unlaunchable" and live old sessions (`releaseGates.js`
-`serverFloorCovers`). Moving 0434 ahead of 0373 would need a renumber (owner decision). The website still needs its
+build recorded available), Android enforced or recorded `android: never-released` on the distribution line, AND strict
+mode ON, `deploy.js` accepts it in place of "older builds unlaunchable" and live old sessions (`releaseGates.js`
+`serverFloorCovers`), but only for a migration that touches nothing the gate can't cover: Auth (a trigger / policy /
+grant / table change on the auth schema, or an Auth hook), Realtime, Storage reads or buckets, or a static page endpoint
+(`serverFloorGaps`). Such a migration still needs the older builds retired. Of 0348-0434 these are 0348, 0349, 0354,
+0359, 0367, 0369, 0373-0376, 0390, 0391, 0400, 0402, 0403, 0406 (and 0434 itself, which isn't live before it applies). Moving 0434 ahead of 0373 would need a renumber (owner decision). The website still needs its
 re-export line.
 
 Enforcing in production is a SEPARATE owner approval from deploying 0434. Order: record the build as available

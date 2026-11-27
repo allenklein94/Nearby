@@ -68,6 +68,10 @@ Staging steps use `app-version-policy.js --target=staging` (no approval code). A
 - 7g Light and dark mode, the largest text size, VoiceOver: title read as a heading, buttons named, "Checking…" read while busy.
 - 7h [2] Build 87 on the second phone while 7c is set: its screens show errors (expected: no update screen in 87). Record what it shows.
 - 7i Website (browser): a page left open past an enforced web minimum shows "This page is out of date" + Reload.
+- 7j With 7c showing, put the phone in airplane mode, relaunch (screen stays: last policy kept), then switch the minimum `off` on staging and turn airplane mode off WITHOUT touching the app: within about 30 s the app opens by itself.
+- 7k While enforced, a photo upload (profile photo) and an AI feature (e.g. a message translation) from a build below the minimum: the update screen shows, nothing is saved.
+- 7l Strict mode on (staging): the current build works everywhere; a shared gathering invite page (docs/invite.html) still opens in a browser; an old website tab is refused.
+- 7m Delete account and Export my data still work from a build below an enforced minimum (never refused, on purpose); sign-out works.
 
 ## Results go to the owner as
 Actual results / launch blockers / usability / fixes in priority order (same format as the Tier 1 run order).
