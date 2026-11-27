@@ -6,6 +6,7 @@ import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES, infoOpacity } from '../motion/motionBudget';
 import { categoryName, groupName } from '../i18n/categoryNames';
+import { cuisineName } from '../utils/gatheringCuisine';
 import { PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
 import { understoodPieces, understoodKey, takeUnderstoodPlay, understoodChoices, sameClock, UNDERSTOOD_CHANGEABLE } from '../utils/askUnderstood';
 import { localClock } from '../i18n/format';
@@ -63,7 +64,7 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
   const dayText = (key) => { const d = dayFromKey(key); return displayWeekdayDate(d, language, { withYear: d.getFullYear() !== new Date().getFullYear() }); };
   const label = (p) => {
     if (p.key === 'clock') return clockText(p.clock);
-    if (p.key === 'what') return p.category ? categoryName(p.category, language) : groupName(p.group, language);
+    if (p.key === 'what') return p.category ? `${p.cuisine ? `${cuisineName(p.cuisine, language)} · ` : ''}${categoryName(p.category, language)}` : groupName(p.group, language);
     if (p.key === 'when') return p.date ? dayText(p.date) : t(`ui.gatherings.dateFilter.${p.window}`);
     if (p.key === 'where') return t(p.environment === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
     if (p.key === 'people') return t('ui.common.count.people', { count: p.count });

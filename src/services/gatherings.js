@@ -1,3 +1,4 @@
+import { writeWithOptionalColumns } from '../utils/optionalProfileColumns';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { completedPlanFor } from '../utils/gatheringCompletion';
 import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadius';
@@ -80,7 +81,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, ticketRequired = false, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null, locationSource = null, googlePlaceId = null, activity = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, ticketRequired = false, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null, locationSource = null, googlePlaceId = null, activity = null, cuisine = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -95,9 +96,11 @@ export async function createGathering({ title, description, interestTag, schedul
     lng = location.coords.longitude;
   }
 
-  const { data, error } = await supabase
-    .from('gatherings')
-    .insert({
+  // 2026-11-27: cuisine (20270435) is sent only when there is one, and dropped once if the server predates the column, so
+  // creating a gathering never fails on production before that migration is live.
+  const insertRow = (values) => supabase.from('gatherings').insert(values).select(SAFE_GATHERING_FIELDS).single();
+  const { data, error } = await writeWithOptionalColumns(insertRow, {
+      ...(cuisine ? { cuisine } : {}),
       host_id: hostId,
       title,
       description,
@@ -141,12 +144,29 @@ export async function createGathering({ title, description, interestTag, schedul
       // Flywheel gap 1: the typed ask this gathering was explicitly created from; the server keeps it only if it is the
       // host's own ask and never lets it change afterwards.
       ...(submissionId ? { submission_id: submissionId } : {}),
-    })
-    // Item 146: named columns, never `*` (precise_lat/lng are not client-readable; a bare select() is refused).
-    .select(SAFE_GATHERING_FIELDS)
-    .single();
+    // Item 146: insertRow selects named columns, never `*` (precise_lat/lng are not client-readable).
+    }, GATHERING_CUISINE_COLUMNS);
   if (error) throw error;
   return data;
+}
+
+// A gathering's cuisine (20270435), read and written on its own so the shared select list never names a column production
+// may not have yet: missing column = no cuisine (null), never an error the screen shows.
+export const GATHERING_CUISINE_COLUMNS = Object.freeze(['cuisine']);
+export async function getGatheringCuisine(gatheringId) {
+  if (!gatheringId) return null;
+  const { data, error } = await supabase.from('gatherings').select('cuisine').eq('id', gatheringId).maybeSingle();
+  if (error) return null;
+  return data?.cuisine ?? null;
+}
+export async function setGatheringCuisine(gatheringId, cuisine) {
+  const { error, available } = await writeWithOptionalColumns(
+    (values) => supabase.from('gatherings').update(values).eq('id', gatheringId),
+    { cuisine: cuisine ?? null },
+    GATHERING_CUISINE_COLUMNS,
+  );
+  if (error) throw error;
+  return available;
 }
 
 const LOCAL_TIER_MAX_MILES = 1;

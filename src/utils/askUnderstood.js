@@ -186,7 +186,8 @@ export function understoodPieces(classifyResult, typedText) {
   // fun outside tonight" unclear (no category) although it read the time and the environment and the search finds results.
   if (c.intent === 'business_partner') return [];
   const out = [];
-  if (typeof c.category === 'string' && c.category) out.push({ key: 'what', category: c.category });
+  // A stated cuisine ("italian dinner") belongs to WHAT: one chip "Italian · Dinner", removed with it (2026-11-27).
+  if (typeof c.category === 'string' && c.category) out.push({ key: 'what', category: c.category, ...(typeof c.cuisine === 'string' && c.cuisine ? { cuisine: c.cuisine } : {}) });
   else if (typeof c.narrowGroup === 'string' && c.narrowGroup) out.push({ key: 'what', group: c.narrowGroup });
   // Owner 2026-10-23: a named weekday or an explicit date is its own WHEN piece (its date, e.g. "Sat, Oct 3"), in place of the
   // "This weekend" a named Saturday/Sunday also gives; changed or removed like any WHEN.
@@ -209,7 +210,7 @@ export function understoodPieces(classifyResult, typedText) {
 export function removeUnderstoodPiece(classifyResult, key) {
   const c = { ...(classifyResult ?? {}) };
   if (!UNDERSTOOD_KEYS.includes(key)) return c;
-  if (key === 'what') c.category = null; // a Browse group (item 108) is the rail's own choice: services/askRefine.js clears it there
+  if (key === 'what') { c.category = null; c.cuisine = null; } // a Browse group (item 108) is the rail's own choice: services/askRefine.js clears it there
   if (key === 'when') { c.dateWindow = null; delete c.whenDate; }
   if (key === 'who') c.partyType = null;
   if (key === 'people') c.partySize = null;

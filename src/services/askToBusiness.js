@@ -9,6 +9,7 @@ import { understoodPartySize, statedStartMinutes, statedCalendarDay } from '../u
 const localDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 import { requestCarriedRows } from '../utils/fromWhatYouSaid';
 import { statedDateFromText } from '../constants/clockWindow';
+import { statedCuisine } from '../utils/gatheringCuisine';
 
 export function askBusinessParamsFromAsk({ classifyResult, typedText, submissionId }) {
   const c = classifyResult ?? {};
@@ -33,6 +34,8 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
     ...(named ? { prefillPickedDateISO: `${localDateKey(named.date)}T12:00:00.000Z` } : {}),
     prefillStartMinutes: startMinutes,
     prefillOccasion: c.occasion ?? null,
+    // 2026-11-27: "italian dinner" -> Italian preselected (the form's own cuisine field; a request's cuisine ranks businesses)
+    prefillCuisine: statedCuisine(c),
     prefillSubmissionId: submissionId ?? null,
     // Owner item 84: opened from an ask -> "From what you said" on top and each missing required field marked before Send.
     prefillFromAsk: true,

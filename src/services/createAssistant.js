@@ -1,3 +1,4 @@
+import { statedCuisine } from '../utils/gatheringCuisine';
 import { supabase, functionUrl } from './supabase';
 import { functionFetch } from './functionFetch';
 import { detectIntentRoute, navigateIntentRoute } from '../constants/intentRoutes';
@@ -86,7 +87,9 @@ export async function classifyCreateRequest(text) {
 // Create's params from an ask + the exact start time the ask established (the same reading AskBusiness carries).
 export function createFromAsk(r, typedText, result = null) {
   const params = createParamsFromAsk(r, typedText, result);
-  return { ...params, ...createStartFromAsk(result, typedText, params.quickStartWhenPreset) };
+  // 2026-11-27: a stated cuisine ("italian dinner") is its own fact, carried beside the category, never folded into the title.
+  const cuisine = statedCuisine({ cuisine: r?.cuisine ?? result?.cuisine ?? null });
+  return { ...params, ...createStartFromAsk(result, typedText, params.quickStartWhenPreset), ...(cuisine ? { quickStartCuisine: cuisine } : {}) };
 }
 
 function withAsk(params, submissionId) {

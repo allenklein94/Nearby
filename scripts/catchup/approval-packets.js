@@ -15,7 +15,7 @@ const outArg = process.argv.indexOf('--out');
 const out = outArg > 0 ? process.argv[outArg + 1] : path.join(root, 'PRODUCT_AUDIT', 'MIGRATION_APPROVAL_PACKETS_0348-0433.md');
 
 const FIRST = '20270348';
-const LAST = '20270434';
+const LAST = '20270435';
 const tracked = (dir) => git('ls-tree', '--name-only', `HEAD:${dir}`).toString().split('\n').filter(Boolean);
 const migs = tracked('supabase/migrations').filter((f) => f.endsWith('.sql') && f.slice(0, 8) >= FIRST && f.slice(0, 8) <= LAST).sort();
 const rollbacks = tracked('scripts/rollback');
@@ -28,7 +28,7 @@ const BATCHES = [
   [1, '20270348', '20270354', 1], [2, '20270355', '20270362', 1], [3, '20270363', '20270366', 1], [4, '20270367', '20270369', 1],
   [5, '20270370', '20270372', 1], [6, '20270373', '20270381', 2], [7, '20270382', '20270398', 2], [8, '20270399', '20270406', 2],
   [9, '20270407', '20270417', 2], [10, '20270418', '20270429', 2], [11, '20270430', '20270433', 2],
-  [12, '20270434', '20270434', 2],
+  [12, '20270434', '20270434', 2], [13, '20270435', '20270435', 2],
 ];
 const PHASE_GATE = {
   1: 'Wall A: R1 build 87 on every device, R2 no public build <= 86, R3 Tier 1 PASS on build 87 at 0347, R7 backup taken the same day + restored + PASS (encrypted copy downloaded by the owner).',
@@ -71,6 +71,7 @@ const NOTES = {
   '20270430': { with: 'New app + website first (builds <= 87 show "Visit confirmed" for the customer\'s own tap). Native review of the strings.', rb: 'Rolling back 0432 -> 0430 LOSES who confirmed each visit.' },
   '20270431': { rb: 'See 0430.' }, '20270432': { rb: 'See 0430.' },
   '20270434': { with: 'Installs the version policy with enforcement OFF and strict mode OFF on every platform (nothing refused), plus three restrictive storage.objects policies that pass every write while nothing is enforced. Enforcing a minimum and strict mode are SEPARATE owner approvals via `scripts/release/app-version-policy.js` (the build recorded available first; strict only after the current website export is published). Right after: journey appVersionPolicy on prod as prelude-free check; a REST call and a photo upload from the installed app still work; the static invite page still opens.', rb: 'Rollback removes the version check entirely, incl. the Storage write policies (with enforcement on, older builds are no longer refused); the policy change log goes with it (configuration, not personal data).' },
+  '20270435': { with: 'Client side ships in the build after 88 (falls back when the column is missing, so it may deploy before or after). Right after: journey gatheringCuisine on prod; a Create with Italian on a food category saves it, a gathering\'s business request carries it.', rb: 'Drops every gathering\'s cuisine: count + export first (see the rollback header).' },
   '20270433': { with: 'Server only; build 87 benefits too. Number order puts it last unless the owner renumbers it.' },
 };
 
