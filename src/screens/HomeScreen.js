@@ -117,6 +117,7 @@ import { homeQuickStatRows } from '../utils/homeQuiet';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { openExploreDiscover } from '../utils/discoverEntry';
 
 // Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
 const PERIOD_DATE_FILTER = { morning: 'morning', afternoon: 'afternoon', evening: 'tonight', weekend: 'weekend' };
@@ -2960,7 +2961,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.home.exploreNearbyA11y')} accessibilityRole="button">
+        <TouchableOpacity style={styles.browseButton} onPress={() => openExploreDiscover(navigation)} accessibilityLabel={t('ui.home.exploreNearbyA11y')} accessibilityRole="button">
           <Text style={styles.browseButtonText}>{t('ui.home.exploreNearby')}</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -114,7 +114,8 @@ import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe'
 import { matchesDateFilter, DATE_OPTIONS } from '../utils/gatheringDateFilter';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { activitySuggestions } from '../utils/activitySuggestions';
-import { applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, selectActivity, pickedActivity, clearPick, createParamsFromGatheringFilters, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
+import { isFreshDiscoverEntry, sessionPredatesFreshEntry } from '../utils/discoverEntry';
+import { filtersForNewAsk, applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, selectActivity, pickedActivity, clearPick, createParamsFromGatheringFilters, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
 import useMyInterests from '../hooks/useMyInterests';
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { lightenHex } from '../utils/colorUtils';
@@ -467,9 +468,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const lastSynced = useRef(null); // {sessionId, updatedAt} last known to match the account
   const clearedSession = useRef(null);
   const accountApplied = useRef(false);
+  // When the person last opened a clean Discover (a general entry, utils/discoverEntry.js); asks saved before it never restore.
+  // A contextual entry (a Home tile, the weather card, a perk link) counts too: it is its own request.
+  const freshEntrySince = useRef(isFreshDiscoverEntry(route.params) ? route.params.freshDiscovery
+    : (route.params?.initialTypeTab || route.params?.initialEnvironment ? Date.now() : null));
   function applyAccountSession(session, editAtStart) {
     if (localEdit.current !== editAtStart) return;
     accountApplied.current = true;
+    if (session && sessionPredatesFreshEntry(session, freshEntrySince.current)) {
+      // the person opened a clean Discover after this ask (utils/discoverEntry.js): end it everywhere, never restore it
+      discoverSession.clear(myUserId);
+      if (clearedSession.current !== session.sessionId) {
+        clearedSession.current = session.sessionId;
+        pushClear(session.sessionId).catch((e) => console.warn('Discover session clear not synced', e?.message));
+      }
+      lastSynced.current = null;
+      return;
+    }
     if (sameSession(session, lastSynced.current)) return;
     lastSynced.current = session ? { sessionId: session.sessionId, updatedAt: session.updatedAt } : null;
     if (!session) {
@@ -489,6 +504,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
     syncDiscoverSession(myUserId)
       .then((session) => applyAccountSession(session, editAtStart))
       .catch((e) => console.warn('Discover session sync unavailable; using this device', e?.message));
+  }
+  // The previous typed ask (or Surprise Me) leaves the screen and its saved session ends: a new entry is a new request.
+  function endPreviousAsk() {
+    ++intentSearchRequestId.current; // an ask still loading never lands afterwards
+    setIntentSearching(false);
+    if (intentSearch || restoreFailed) endSearchSession();
+    setIntentSearch(null);
+    setDiscoverSurprise(null);
+    setSearchQuery('');
   }
   function endSearchSession() {
     ++localEdit.current;
@@ -549,6 +573,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const p = route.params;
     if (!p || p === appliedParamsRef.current) return;
     appliedParamsRef.current = p;
+    if (isFreshDiscoverEntry(p)) {
+      // A general entry ("Explore Nearby"): a new discovery session, nothing from the last entry or ask carried over.
+      freshEntrySince.current = p.freshDiscovery;
+      linkReturnRef.current = null;
+      endPreviousAsk();
+      setPeopleFromAsk(null);
+      setMode('things');
+      setTypeFilter('all');
+      setGatheringFilters(GATHERING_FILTER_DEFAULTS);
+      setEnvironmentFilter(null);
+      setOpenNowOnly(false);
+      setDateView(null);
+      closeContext();
+      clearPerkSelection();
+      return;
+    }
     // a new navigation into Discover carries its own context (Home's people ask: what it understood, for the chips)
     setPeopleFromAsk(p.understood ? { tonight: false, understood: p.understood, inPlace: false } : null);
     // Owner item 27 (2026-10-11) reopens item 206's "a navigation never lands inside a date view" for this one link only.
@@ -564,6 +604,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
       setDateView(p.openDateView);
       return;
     }
+    // A contextual entry (a Home tile, the weather card, a perk link) is its own request: an earlier typed ask in the search
+    // box ends instead of showing beside it (device test, owner 2026-11-27). People entries keep their own handling above.
+    if (p.initialTypeTab || p.initialEnvironment) { freshEntrySince.current = Date.now(); endPreviousAsk(); }
     if (p.initialMode === 'things' || p.initialMode === 'people') setMode(p.initialMode);
     if (p.initialPeopleSubMode === 'dating' || p.initialPeopleSubMode === 'friends') setPeopleSubMode(p.initialPeopleSubMode);
     if (p.initialTypeTab) setTypeFilter(p.initialTypeTab);
@@ -1785,8 +1828,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
         onPhase: (p) => { if (thisRequestId === intentSearchRequestId.current) setIntentPhase({ ...p, typedText }); },
       });
       if (thisRequestId !== intentSearchRequestId.current) return;
-      // "what's open" / "still open" turns on the same Open-now chip (one definition, utils/operatingStatus.js).
-      if (result.openNowOnly) setOpenNowOnly(true);
+      // Device test (owner, 2026-11-27): a NEW request replaces the previous one's activity, category, time and setting
+      // (utils/gatheringFilters.js filtersForNewAsk); its own words then say what it understood. "what's open" / "still open"
+      // turns on the same Open-now chip (one definition, utils/operatingStatus.js); otherwise a new ask starts with it off.
+      setGatheringFilters((cur) => filtersForNewAsk(cur));
+      setEnvironmentFilter(null);
+      setDateView(null);
+      closeContext();
+      setOpenNowOnly(result.openNowOnly === true);
       if (result.outcome === 'business_partner') {
         setIntentSearch(null);
         routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
@@ -1829,6 +1878,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (!myUserId || sessionCheckedFor.current === myUserId) return;
     sessionCheckedFor.current = myUserId;
     if (searchQuery || intentSearch) return;
+    if (freshEntrySince.current) { discoverSession.clear(myUserId); return; } // opened clean: the saved ask is not restored
     // the device cache first (instant), then the account (the source of truth) replaces it if another device changed it
     discoverSession.load(myUserId).then((saved) => {
       if (!saved || sessionCheckedFor.current !== myUserId || accountApplied.current) return;

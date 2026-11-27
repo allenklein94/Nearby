@@ -24,6 +24,7 @@ import { spacing, radius, typography } from '../theme';
 import { mergePlanRows } from '../utils/planRows';
 import { businessPlanPlacement, experiencePlanTab, untimedPlanTab, orderPlanRows } from '../utils/planHistory';
 import { attendingFigure } from '../utils/gatheringFullness';
+import { openExploreDiscover } from '../utils/discoverEntry';
 // Tab labels are ui.plans.tab<Key> (display only; the key is the state).
 const TABS = [{ key: 'upcoming', labelKey: 'tabUpcoming' }, { key: 'hosting', labelKey: 'tabHosting' }, { key: 'past', labelKey: 'tabPast' }];
 
@@ -306,7 +307,7 @@ export default function PlansScreen({ navigation, route }) {
                     <Text style={styles.emptyActionText}>{p('hostCta')}</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={p('exploreA11y')} accessibilityRole="button">
+                  <TouchableOpacity onPress={() => openExploreDiscover(navigation)} accessibilityLabel={p('exploreA11y')} accessibilityRole="button">
                     <Text style={styles.emptyActionText}>{p('exploreCta')}</Text>
                   </TouchableOpacity>
                 )}

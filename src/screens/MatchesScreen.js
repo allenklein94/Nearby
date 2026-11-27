@@ -26,6 +26,7 @@ import { Share } from 'react-native';
 import { parseDate } from '../utils/timeLabels';
 import { tr, DEFAULT_LANGUAGE } from '../i18n/translate';
 import { displayDateTime } from '../i18n/display';
+import { openExploreDiscover } from '../utils/discoverEntry';
 
 function formatMatchedTime(iso, language) {
   const then = parseDate(iso);
@@ -328,7 +329,7 @@ export default function MatchesScreen({ navigation }) {
                 state (the item's own worked example). */}
             <View style={styles.emptyActionsRow}>
               <TouchableOpacity
-                onPress={() => navigation.navigate('Discover')}
+                onPress={() => openExploreDiscover(navigation)}
                 accessibilityLabel={t('ui.matches.exploreThingsToDoA11y')}
                 accessibilityRole="button"
               >

@@ -33,6 +33,7 @@ import { activityLoadNotice } from '../utils/homeLoadNotice';
 import { displayAgo } from '../i18n/display';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { openExploreDiscover } from '../utils/discoverEntry';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
 // and other activity all interleaved by recency into one
@@ -627,7 +628,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               {/* Thursday plan item 25: a real next action instead of a
                   dead end while waiting for something to show up here. */}
               <View style={styles.emptyActionsRow}>
-                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.activity.exploreA11y')} accessibilityRole="button">
+                <TouchableOpacity onPress={() => openExploreDiscover(navigation)} accessibilityLabel={t('ui.activity.exploreA11y')} accessibilityRole="button">
                   <Text style={styles.emptyActionText}>{t('ui.activity.exploreCta')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Discover', { ...PEOPLE_FRIENDS })} accessibilityLabel={t('ui.activity.peopleA11y')} accessibilityRole="button">

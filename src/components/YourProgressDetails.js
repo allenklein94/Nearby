@@ -14,6 +14,7 @@ import { displayDay, displayCount } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
 import { navigateKeepingTrail } from '../services/openDestination';
 import { gatheringsTabParams } from '../utils/gatheringFilters';
+import { openExploreDiscover } from '../utils/discoverEntry';
 
 function deltaSymbol(current, previous) {
   if (current > previous) return '▲';
@@ -80,7 +81,7 @@ export default function YourProgressDetails({ momentum, insights, navigation, on
               <EmptyCopy id="momentum_empty" vars={{ weeks: momentum.weeks.length }} />
               {/* Item 56 ("no dead ends"): a real next action, same
                   destination ActivityScreen's own empty state already uses. */}
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.momentum.exploreThingsToDoA11y')} accessibilityRole="button" style={{ marginTop: spacing.md }}>
+              <TouchableOpacity onPress={() => openExploreDiscover(navigation)} accessibilityLabel={t('ui.momentum.exploreThingsToDoA11y')} accessibilityRole="button" style={{ marginTop: spacing.md }}>
                 <Text style={styles.emptyActionText}>{t('ui.momentum.exploreThingsToDo')}</Text>
               </TouchableOpacity>
             </View>

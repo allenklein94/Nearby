@@ -114,6 +114,14 @@ export function selectActivity(f, activity) {
     ? { ...base, pick: activity.pick, category: activity.category, term: activity.term ?? null }
     : { ...base, pick: null, category: activity.category, term: null };
 }
+// Device test (owner, 2026-11-27): a NEW typed request ("dinner tomorrow") ran while an earlier Home tile's "Hiking" pick and
+// "This afternoon" were still selected, so both requests showed at once. A new request replaces the previous request's
+// activity (pick, category, word, For you) and time; the person's own refinements that don't conflict with any request
+// (Trending, price, plan kind, Local) stay. The ask's own words then set what it understood. Refining the SAME ask (item 107
+// chips) and picking a suggested activity (selectActivity) never come through here.
+export function filtersForNewAsk(f) {
+  return { ...GATHERING_FILTER_DEFAULTS, ...(f ?? {}), when: 'anytime', category: null, term: null, pick: null, forYou: false };
+}
 export function selectCategory(f, tag) {
   const base = f.pick ? { ...f, pick: null, term: null } : f;
   return { ...base, category: f.category === tag ? null : tag, forYou: false };

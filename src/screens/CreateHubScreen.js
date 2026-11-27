@@ -14,6 +14,7 @@ import { spacing, radius, typography } from '../theme';
 import { NLoader } from '../motion';
 import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { openExploreDiscover } from '../utils/discoverEntry';
 // "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
 // with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
 // replaced the old "big-button icon grid + With people/With businesses/
@@ -252,7 +253,7 @@ export default function CreateHubScreen({ navigation, route }) {
           {!showSomethingElse && (
             <TouchableOpacity
               style={styles.browseLink}
-              onPress={() => navigation.navigate('Discover')}
+              onPress={() => openExploreDiscover(navigation)}
               accessibilityLabel={t('ui.createHub.browseGatheringsCommunitiesPlacesAndA11y')}
               accessibilityRole="button"
             >
