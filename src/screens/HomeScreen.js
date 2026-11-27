@@ -77,11 +77,10 @@ import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, PLAN_STATUS_META } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
 import { readMyProfile } from '../services/myProfile';
-import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import DiningPreferencesPromptModal from '../components/DiningPreferencesPromptModal';
-import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/interestGraph';
+import { shouldOfferDiningPrompt } from '../constants/interestGraph';
 import useMyGoals from '../hooks/useMyGoals';
 import usePlacesToGo from '../hooks/usePlacesToGo';
 import PlacesToGoSection from '../components/PlacesToGoSection';
@@ -271,7 +270,6 @@ export default function HomeScreen({ navigation }) {
   const [loadError, setLoadError] = useState(false);
   const [offersLoadFailed, setOffersLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [startModalVisible, setStartModalVisible] = useState(false);
   const [socialForecast, setSocialForecast] = useState(null);
   // No position at all (permission off/undetermined, no stored fix): nearby sections can't fill, so Home
   // says so and invites turning it on, instead of implying a quiet night.
@@ -1099,9 +1097,6 @@ export default function HomeScreen({ navigation }) {
     setRefreshing(false);
   }
 
-  function closeStartModal() {
-    setStartModalVisible(false);
-  }
 
   function handleQuickAction(item) {
     // Discover-first, unconditionally — every Quick Pick browses what
@@ -2966,35 +2961,8 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </ScrollView>
 
-      <TouchableOpacity
-        style={[styles.fab, shadow.button]}
-        onPress={() => setStartModalVisible(true)}
-        activeOpacity={0.85}
-        accessibilityLabel={t('ui.home.startA11y')}
-        accessibilityRole="button"
-      >
-        <Text style={styles.fabText}>{t('ui.home.start')}</Text>
-      </TouchableOpacity>
-
-      {/* Aug 23 2026 (CLAUDE.md): topLevelOptions is now always the fixed
-          CREATE_HUB_OPTIONS set, not the modal's own default fallback
-          (getQuickPrompts()) -- that default is period-flavored, and for
-          the weekend period it's the exact same 3 items (Beach Volleyball/
-          Beach Cleanup/Wine Tasting) already rendered a few sections up in
-          Home's own Quick Picks row. Tapping "+ Start Something" would
-          have opened a sheet showing the identical suggestions Home just
-          showed, one tap away, from the same screen -- a real, confirmed
-          duplication, not a stylistic quibble. CREATE_HUB_OPTIONS is a
-          different, stable category set (Coffee/Dinner/Walk/Sports/Games/
-          Music/Volunteer), matching what the Create tab's own grid shows,
-          so the FAB now genuinely offers something Home's own Quick Picks
-          row didn't already just say. */}
-      <StartSomethingModal
-        visible={startModalVisible}
-        onClose={closeStartModal}
-        navigation={navigation}
-        topLevelOptions={personalizeQuickOptions(CREATE_HUB_OPTIONS, myDeclaredInterests, (t) => categoryStyleFor(t).icon)}
-      />
+      {/* Device test 2026-11-27 (item 23): the floating "+ Start Something" button and its activity sheet moved into the
+          Create tab (its Gathering card opens the same sheet), so Home has one way to start something: the Create tab. */}
       <DiningPreferencesPromptModal
         visible={diningModalVisible}
         onClose={handleDiningDismiss}

@@ -15,6 +15,7 @@ import { NLoader } from '../motion';
 import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
 import { disabledButtonStyle } from '../constants/buttonStates';
 import { openExploreDiscover } from '../utils/discoverEntry';
+import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 // "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
 // with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
 // replaced the old "big-button icon grid + With people/With businesses/
@@ -101,6 +102,7 @@ export default function CreateHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [showSomethingElse, setShowSomethingElse] = useState(false);
+  const [startSheetVisible, setStartSheetVisible] = useState(false);
   const [assistantText, setAssistantText] = useState('');
   const [thinking, setThinking] = useState(false);
 
@@ -175,6 +177,10 @@ export default function CreateHubScreen({ navigation, route }) {
   function handlePrimaryCardPress(opt) {
     if (opt.key === 'occasion') {
       navigation.navigate(opt.route, buildOccasionWhoForParams({ whoFor, whoForName: whoForName.trim() || null, whoForFriendId }));
+    } else if (opt.key === 'gathering' && whoFor === 'me') {
+      // Device test 2026-11-27 (item 23): the activity sheet that used to sit behind Home's floating "+ Start Something"
+      // (Coffee / Dinner -> cuisine / Walk / ... / Something Else) is now here, the one place to start something.
+      setStartSheetVisible(true);
     } else if (opt.key === 'gathering') {
       const quickStartTitle = buildGatheringQuickStartTitle(whoFor, whoForName.trim() || null);
       navigation.navigate(opt.route, quickStartTitle ? { quickStartTitle } : undefined);
@@ -414,6 +420,12 @@ export default function CreateHubScreen({ navigation, route }) {
             </>
           )}
         </ScrollView>
+        <StartSomethingModal
+          visible={startSheetVisible}
+          onClose={() => setStartSheetVisible(false)}
+          navigation={navigation}
+          topLevelOptions={CREATE_HUB_OPTIONS}
+        />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

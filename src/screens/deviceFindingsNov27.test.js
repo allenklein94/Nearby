@@ -56,3 +56,17 @@ test('an opportunity empty state shows the Nearby mark once, never with a second
     expect(read(f)).not.toMatch(opener);
   }
 });
+
+describe('item 23: one way to start something', () => {
+  const rd = (f) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8');
+  test('Home has no floating Start Something button or its sheet', () => {
+    const home = rd('screens/HomeScreen.js');
+    expect(home).not.toMatch(/styles\.fab\b/);
+    expect(home).not.toMatch(/<StartSomethingModal/);
+  });
+  test("Create's Gathering card (for me) opens the same activity sheet", () => {
+    const hub = rd('screens/CreateHubScreen.js');
+    expect(hub).toMatch(/opt\.key === 'gathering' && whoFor === 'me'[\s\S]*?setStartSheetVisible\(true\)/);
+    expect(hub).toContain('<StartSomethingModal');
+  });
+});
