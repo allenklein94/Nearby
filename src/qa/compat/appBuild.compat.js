@@ -118,9 +118,18 @@ let mockClient = null;
 jest.mock('../../services/supabase', () => {
   const { createClient } = require('@supabase/supabase-js');
   const { withActingBusiness } = require('../../services/actingBusiness');
+  // 20270434: the build's own version headers on every REST call, as services/appVersion.js's withAppVersion sends them
+  // (native modules are stubbed here, so the build number comes from the run: NEARBY_COMPAT_BUILD, default 88).
+  const { versionHeaders } = require('../../utils/appUpdatePolicy');
+  const mockVersion = versionHeaders({ build: process.env.NEARBY_COMPAT_BUILD || 88, platform: 'ios' });
+  const withVersion = (f) => (input, init = {}) => {
+    const h = new Headers(init.headers || {});
+    Object.entries(mockVersion || {}).forEach(([k, v]) => h.set(k, v));
+    return f(input, { ...init, headers: h });
+  };
   mockClient = createClient('http://compat.local', 'compat-publishable', {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    global: { fetch: withActingBusiness((...a) => mockFetch(...a)) }, // the app's own wrapper (services/supabase.js)
+    global: { fetch: withVersion(withActingBusiness((...a) => mockFetch(...a))) }, // the app's own wrappers (services/supabase.js)
   });
   const session = () => (mockActor.current
     ? { access_token: mockJwtFor(mockActor.current), user: { id: mockActor.current } } : null);

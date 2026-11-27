@@ -4,7 +4,8 @@ import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
 import { checkRuntimeEnvironment, serviceSwitches } from '../config/environments';
 import { withActingBusiness } from './actingBusiness';
-import { withAppVersion } from './appVersion';
+import { withAppVersion, VERSION_HEADERS } from './appVersion';
+import { policyFromResponse } from '../utils/appUpdatePolicy';
 
 // Which backend this build talks to comes ONLY from the values app.config.js embedded (src/config/environments.js).
 // A missing or mixed configuration creates no client: every use throws, App.js shows ConfigErrorScreen, no request is sent.
@@ -52,13 +53,24 @@ export function functionUrl(name) {
 }
 
 // The server's version policy for this platform (20270434), or null when this database has none yet (function missing).
-// Throws on a network / server failure so the caller keeps its last known policy instead of guessing.
+// A plain signed-out call with only the publishable key: an expired or unrefreshable session never stops the check (and
+// never logs anyone out). Throws on a network / server failure or after 10 s, so the caller keeps its last known policy
+// instead of guessing.
 export async function readAppVersionPolicy(platform) {
   if (!check.ok) return null;
-  const { data, error } = await supabase.rpc('get_app_version_policy', { platform_param: platform });
-  if (error) {
-    if (error.code === 'PGRST202' || error.code === '42883') return null;
-    throw new Error(error.message || 'version policy unavailable');
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 10000) : null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_version_policy`, {
+      method: 'POST',
+      headers: { apikey: check.env.publishableKey, 'Content-Type': 'application/json', ...(VERSION_HEADERS || {}) },
+      body: JSON.stringify({ platform_param: platform }),
+      signal: controller?.signal,
+    });
+    let body = null;
+    try { body = await res.json(); } catch { /* empty or not JSON */ }
+    return policyFromResponse(res.status, body);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-  return data || null;
 }

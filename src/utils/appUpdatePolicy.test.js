@@ -71,3 +71,22 @@ describe('links, headers, refusals', () => {
     expect(cacheKey('staging', 'ios')).not.toBe(cacheKey('production', 'ios'));
   });
 });
+
+describe('policyFromResponse', () => {
+  const { policyFromResponse } = require('./appUpdatePolicy');
+  test('200 = the row; no row = no policy', () => {
+    expect(policyFromResponse(200, { platform: 'ios', min_supported_build: 88 })).toEqual({ platform: 'ios', min_supported_build: 88 });
+    expect(policyFromResponse(200, null)).toBeNull();
+    expect(policyFromResponse(200, [])).toBeNull();
+  });
+  test('a database before 20270434 (function missing) = no policy, never "required"', () => {
+    expect(policyFromResponse(404, { code: 'PGRST202' })).toBeNull();
+    expect(policyFromResponse(404, null)).toBeNull();
+  });
+  test('everything else = unavailable (keep the last known state)', () => {
+    expect(() => policyFromResponse(500, {})).toThrow(/unavailable/);
+    expect(() => policyFromResponse(401, { code: 'PGRST301' })).toThrow(/unavailable/);
+    expect(() => policyFromResponse(503, null)).toThrow(/unavailable/);
+    expect(() => policyFromResponse(404, { code: 'PGRST205' })).toThrow(/unavailable/);
+  });
+});

@@ -64,3 +64,12 @@ export function versionHeaders({ build, platform }) {
 export function cacheKey(environment, platform) {
   return `nearby-app-version-policy:${environment || 'unknown'}:${platform}`;
 }
+
+// The policy read's answer (POST /rest/v1/rpc/get_app_version_policy, signed out): 200 = the row (null = no row for this
+// platform); the function missing = this database predates 20270434 = no policy; anything else = unavailable (throws, so
+// the app keeps its last known state instead of guessing either way).
+export function policyFromResponse(status, body) {
+  if (status === 200) return body && typeof body === 'object' && !Array.isArray(body) ? body : null;
+  if (status === 404 && (!body || body.code === 'PGRST202' || body.code === '42883')) return null;
+  throw new Error(`version policy unavailable (${status})`);
+}
