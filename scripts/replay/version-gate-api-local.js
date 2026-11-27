@@ -142,6 +142,12 @@ const OLD_UA = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
     check('strict: policy read with no headers passes', open ? sPol.status === 404 : sPol.status === 200, sPol);
     const sSvc = await call('GET', '/profiles?select=id&limit=1', { token: jwt({ role: 'service_role' }) });
     check('strict: service_role with no headers passes', sSvc.status === 200, sSvc);
+    // the static GitHub Pages (docs/shared-night.html etc.): signed out with the anon key, no build, fixed endpoint only
+    const notVersionRefused = (r) => !(r.status === 400 && r.body?.hint === 'app_update_required');
+    const sPage = await call('POST', '/rpc/get_public_shared_night', { ua: 'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15', token: jwt({ role: 'anon' }), body: { token_param: 'nope' } });
+    check('strict: static page endpoint, signed out, passes the version check', notVersionRefused(sPage), sPage);
+    refusal('strict: same endpoint signed in with no build, refused', await call('POST', '/rpc/get_public_shared_night', { token: userJwt, body: { token_param: 'nope' } }));
+    refusal('strict: another endpoint signed out with no build, refused', await call('POST', '/rpc/app_version_ok', { token: jwt({ role: 'anon' }), body: {} }));
     await setPolicy(`update private.app_version_settings set refuse_unidentified = false, updated_by = 'version-gate-api-local'`);
     const sOff = await call('GET', '/profiles?select=id&limit=1', { ua: 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15', token: userJwt });
     check('strict off again: browser allowed at once', sOff.status === 200, sOff);

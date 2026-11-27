@@ -23,6 +23,13 @@ const req = (step, headers, path = '/rpc/get_my_plans_this_month') => `perform s
     get stacked diagnostics v_hint = pg_exception_hint;
     ${rec(step, `jsonb_build_object('result', 'refused', 'hint', v_hint)`)}
   end;`;
+const reqm = (step, method, headers, path) => `perform set_config('request.method', '${method}', true);
+  ${req(step, headers, path)}
+  perform set_config('request.method', '', true);`;
+// Storage writes: the restrictive storage.objects policy's check, for the request as it stands
+const allows = (step, headers) => `perform set_config('request.headers', ${headers}, true);
+  perform set_config('request.path', '/object/photos/x.jpg', true);
+  ${rec(step, 'to_jsonb(public.app_version_allows())')}`;
 const hdr = (build, platform = 'ios', extra = '') => `json_build_object('x-nearby-build', '${build}', 'x-nearby-platform', '${platform}'${extra})::text`;
 const ua = (s) => `json_build_object('user-agent', '${s}')::text`;
 const OLD_IOS = 'Nearby/87 CFNetwork/3826.500.111 Darwin/25.0.0';
@@ -80,6 +87,9 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${req('probe_89', hdr(89), '/rpc/app_version_ok')}
   ${req('probe_90', hdr(90), '/rpc/app_version_ok')}
   ${tryPolicy('probe_runs_as_anon', `perform public.app_version_ok();`)}
+  ${allows('storage_old_ua', ua(OLD_IOS))}
+  ${allows('storage_90', hdr(90))}
+  ${allows('storage_browser_strict_off', ua('Mozilla/5.0'))}
   ${server}
   -- 3b. strict mode: unidentified / malformed clients refused too; server callers + the policy read still pass
   update private.app_version_settings set refuse_unidentified = true, updated_by = 'journey';
@@ -90,6 +100,14 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${req('strict_unknown_platform', hdr(95, 'windows'))}
   ${req('strict_identified_95', hdr(95))}
   ${req('strict_policy_read', `'{}'`, '/rpc/get_app_version_policy')}
+  ${reqm('strict_static_page', 'POST', `'{}'`, '/rpc/get_public_shared_night')}
+  ${reqm('strict_static_event', 'POST', ua('Mozilla/5.0'), '/business_acquisition_events')}
+  ${reqm('strict_static_wrong_method', 'GET', `'{}'`, '/rpc/get_public_shared_night')}
+  ${reqm('strict_static_lookalike', 'POST', `'{}'`, '/rpc/get_public_shared_night_x')}
+  ${allows('strict_storage_no_headers', `'{}'`)}
+  ${allows('strict_storage_identified', hdr(95))}
+  ${signedIn}
+  ${reqm('strict_static_signed_in', 'POST', `'{}'`, '/rpc/get_public_shared_night')}
   ${server}
   perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
   ${req('strict_service_role', `'{}'`)}
@@ -132,6 +150,9 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${rec('log_rows', `to_jsonb(v_n)`)}
   select count(*) into v_n from private.app_version_policy_log where platform = '*';
   ${rec('settings_log_rows', `to_jsonb(v_n)`)}
+  select count(*) into v_n from pg_policies where schemaname = 'storage' and tablename = 'objects'
+    and policyname like 'nearby_app_version_%' and permissive = 'RESTRICTIVE';
+  ${rec('storage_policies', `to_jsonb(v_n)`)}
 `);
     s = stepMap(log);
   }, 120000);
@@ -181,6 +202,21 @@ d('journey: an app build below an enforced minimum is refused by the server, and
     expect(res('strict_service_role')).toBe('allowed');
     expect(res('strict_gate_bad_json')).toBe('refused');
     expect(res('strict_off_browser')).toBe('allowed');
+  });
+  test('strict mode exempts only the static pages\' fixed endpoints, signed out, POST, exact path', () => {
+    expect(res('strict_static_page')).toBe('allowed');
+    expect(res('strict_static_event')).toBe('allowed');
+    expect(res('strict_static_wrong_method')).toBe('refused');
+    expect(res('strict_static_lookalike')).toBe('refused');
+    expect(res('strict_static_signed_in')).toBe('refused');
+  });
+  test('Storage writes ask the same gate (restrictive policy check): old build / strict-unidentified refused', () => {
+    expect(s.storage_old_ua.data).toBe(false);
+    expect(s.storage_90.data).toBe(true);
+    expect(s.storage_browser_strict_off.data).toBe(true);
+    expect(s.strict_storage_no_headers.data).toBe(false);
+    expect(s.strict_storage_identified.data).toBe(true);
+    expect(s.storage_policies.data).toBe(3);
     expect(s.settings_log_rows.data).toBe(2);
   });
   test('below the minimum = refused, at or above = allowed, signed out and signed in', () => {
