@@ -24,4 +24,6 @@ gpg --batch --quiet --pinentry-mode loopback --passphrase-file "$PASS" -d "$ENC"
 (cd "$CHK" && find . -type f -print0 | sort -z | xargs -0 sha256sum) | diff -q - "$OUT/.inner.sha256" >/dev/null \
   || { echo "FAIL: decrypted contents differ"; exit 1; }
 echo "PASS: $ENC decrypts and every file matches ($(wc -l < "$OUT/.inner.sha256") files, $(du -h "$ENC" | cut -f1))"
+printf '{"ts":"%s","encrypted_at":"%s","file":"%s","sha256":"%s"}\n' "$TS" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(basename "$ENC")" \
+  "$(sha256sum "$ENC" | cut -d' ' -f1)" > "$OUT/encrypted-$TS.json"; chmod 600 "$OUT/encrypted-$TS.json"  # read by the backup gate
 rm -f "$OUT/.inner.sha256"

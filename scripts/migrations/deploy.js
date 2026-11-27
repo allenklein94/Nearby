@@ -31,6 +31,14 @@ async function main(argv, env = process.env, repoRoot = REPO) {
     : fileFacts;
   const ledger = await L.readLedger(run);
   const refusals = L.preflight({ facts, env, ledger, target });
+  // Release gates (owner, 2026-11-27): compatibility evidence, client floor (live session read), verified + encrypted backup.
+  // Production only (a missing target never gets here: runner() refuses it).
+  // In --check (always rolled back) they are reported as what a real deploy would refuse, and the check still runs.
+  if (target === 'prod') {
+    const gates = await require('./releaseGates').releaseGateFailures({ facts, run, repoRoot });
+    if (check) gates.forEach((g) => console.error(`WOULD REFUSE AT DEPLOY: ${g}`));
+    else refusals.push(...gates);
+  }
   console.log(`target: ${name}\nmigration: ${facts.rel}\nversion: ${facts.version}\nsha256: ${facts.sha256}\ncommit: ${facts.commit}`);
   if (refusals.length) {
     console.error(`REFUSED (nothing sent):\n- ${refusals.join('\n- ')}`);

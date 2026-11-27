@@ -144,3 +144,6 @@ chmod 600 "$OUT"/*-"$TS"* 2>/dev/null || true
 if [ "$grants" != 0 ]; then echo "FAIL: restored grants differ from the source (see schema-diff-$TS.txt)"; exit 1; fi
 if [ "$bad" != 0 ]; then echo "FAIL: restored data differs (see fp-*-$TS.txt)"; exit 1; fi
 echo "PASS: backup $DUMP restores with identical rows in every table ($tables). Restored copy left running as $NAME."
+# Machine-readable pass record, read by deploy.js's backup gate (scripts/migrations/releaseGates.js): only written on PASS.
+printf '{"ts":"%s","verified_at":"%s","tables":%s,"dump_sha256":"%s"}\n' "$TS" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tables" \
+  "$(sha256sum "$DUMP" | cut -d' ' -f1)" > "$OUT/verified-$TS.json"; chmod 600 "$OUT/verified-$TS.json"
