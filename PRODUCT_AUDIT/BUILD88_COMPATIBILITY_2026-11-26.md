@@ -45,7 +45,24 @@ Checkpoints = production today (0347) + every proposed batch boundary + the thre
 - At 0433 two flags remain, both pre-0348-only fallbacks (`preferencePolls.js:87`, `peopleRead.js:56`).
 
 ## Build 87 (tag build-87-ios): see below
-BUILD87_PENDING
+Same 15 steps (runner adapted by `scripts/compat/make-build87-runner.js`; build 87 never screens content), same 16
+checkpoints. This is what the migration order must keep working until build 88 is on every device.
+
+| Version | Runtime | Failing steps | Meaning |
+|---|---|---|---|
+| 0347 (production today) | 14/15 | Dating Browse | LIVE defect (below); fixed by 0348 |
+| 0354, 0362, 0366, 0369, 0372 | **15/15** | none | **Batches 1-5 are safe for build 87** (and Batch 1 repairs its Dating) |
+| 0373, 0381 | 10/15 | sign-up, profile save, gathering, its chat, community | **Wall B = 0373**: public text must be screened, build 87 never asks. Expected, by design |
+| 0382 .. 0433 | 9/15 | the five above + Dating Browse | **0382 also needs build 88** (Browse only through `browse_dating_candidates`) |
+
+Business request, Business Mode, offer, booking and visit confirmation pass on build 87 at every version, incl. 0430-0432
+(the server records it correctly; build 87's SCREENS show the old wording, a display gate the runner can't see, already
+listed as "new app first" for Batch 11). Static flags at 0433: 1 (`preferencePolls.js:87`, pre-0348 fallback).
+
+### "Needs build 88" gates, confirmed by run
+- **0373** (break: public text refused) and **0382** (break: Dating Browse empty). Both already in the catch-up plan.
+- 0407 / 0409 / 0422 / 0430: mislead, not break (the runner passes them; the plan's display reasons stand).
+- Nothing in 0348-0372 needs build 88.
 
 ## Circular dependencies: none
 Build 88 passes at 0347, i.e. it needs NO pending migration. So no migration can be in a cycle with it: every

@@ -28,7 +28,7 @@ function listFiles(root) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (/\.js$/.test(e.name) && !/\.(test|journey)\.js$/.test(e.name)) out.push(p);
+      else if (/\.js$/.test(e.name) && !/\.(test|journey|live|compat)\.js$/.test(e.name)) out.push(p);
     }
   };
   walk(path.join(root, 'src'));

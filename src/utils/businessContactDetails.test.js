@@ -49,7 +49,7 @@ describe('privacy wiring', () => {
       for (const f of fs.readdirSync(dir)) {
         const full = path.join(dir, f);
         if (fs.statSync(full).isDirectory()) walk(full);
-        else if (/\.js$/.test(f) && !/\.test\.js$|\.journey\.js$/.test(f)) {
+        else if (/\.js$/.test(f) && !/\.test\.js$|\.journey\.js$|\.compat\.js$/.test(f)) {
           const src = fs.readFileSync(full, 'utf8');
           if (/get_business_contact_details|getBusinessContactDetails/.test(src)) hits.push(path.relative(root, full));
         }
