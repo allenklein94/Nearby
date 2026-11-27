@@ -302,9 +302,9 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
     ...(interestFilters.length > 2 ? [`+${interestFilters.length - 2}`] : []),
     ...(distanceFilter ? [distanceFilter] : []),
     ...(verifiedOnlyFilter ? [t('ui.friends.verified')] : []),
-    ...(onlineOnlyFilter ? ['Online'] : []),
+    ...(onlineOnlyFilter ? [t('ui.friends.online')] : []),
   ];
-  const filterSummary = filterSummaryParts.length > 0 ? filterSummaryParts.join(' · ') : 'All';
+  const filterSummary = filterSummaryParts.length > 0 ? filterSummaryParts.join(' · ') : t('ui.requestPartner.all'); // translated (was English-only, device test 2026-11-27)
 
   // Reused identically across every render branch below so the screen
   // never again reads as blank -- the native header (headerTransparent,
@@ -316,13 +316,16 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
   const Header = () => (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        {!embedded ? (
-          <Text style={styles.headerTitle} accessibilityRole="header">
-            {tr('ui.friends.friends')}
-          </Text>
-        ) : (
-          <View style={{ flex: 1 }} />
-        )}
+        {/* Device test 2026-11-27 (item 16): the same header layout as Dating (DiscoveryScreen.js): title area, then one
+            right-hand icon group with the same spacing; Friends' own On switch stays last in that group. */}
+        <View style={{ flex: 1 }}>
+          {!embedded && (
+            <Text style={styles.headerTitle} accessibilityRole="header">
+              {tr('ui.friends.friends')}
+            </Text>
+          )}
+        </View>
+        <View style={styles.headerIconsRow}>
         {enabled && (
           <TouchableOpacity
             onPress={toggleViewStyle}
@@ -339,6 +342,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
             <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} accessibilityLabel={`${tr('ui.friends.friends')}: ${tr('ui.friends.on')}`} />
           </View>
         )}
+        </View>
       </View>
       <Text style={styles.headerSubtitle}>
         {tr('ui.friends.peopleNearbyWhoAreAlso')}
@@ -618,12 +622,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // headerSubtitle -- reused verbatim, not approximated, so the two
   // screens' chrome is genuinely identical, not just similar.
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  headerIconsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   // Same values as DiscoveryScreen.js's own headerIconButton/headerIconText (its list/cards toggle).
-  headerIconButton: { padding: spacing.xs, marginRight: spacing.xs },
+  headerIconButton: { padding: spacing.xs },
   headerIconText: { fontSize: 17, color: colors.textSecondary },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
   // Unified Crossed Paths, step 5: same two-button switcher shape used

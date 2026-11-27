@@ -70,3 +70,20 @@ describe('item 23: one way to start something', () => {
     expect(hub).toContain('<StartSomethingModal');
   });
 });
+
+describe('item 16: Dating and Friends headers share one layout', () => {
+  const rd = (f) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8');
+  test('both group their controls in headerIconsRow with the same button padding', () => {
+    for (const f of ['screens/DiscoveryScreen.js', 'screens/FriendDiscoveryScreen.js']) {
+      const src = rd(f);
+      expect(src).toContain('<View style={styles.headerIconsRow}>');
+      expect(src).toContain("headerIconsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs }");
+      expect(src).toContain('headerIconButton: { padding: spacing.xs }');
+    }
+  });
+  test('Friends filter summary is translated', () => {
+    const src = rd('screens/FriendDiscoveryScreen.js');
+    expect(src).not.toContain("['Online']");
+    expect(src).not.toMatch(/: 'All';/);
+  });
+});
