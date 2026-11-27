@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +10,7 @@ import { quickPickActivityFor } from '../utils/createActivityPicker';
 import { iconNameForOption } from '../constants/quickPickIcons';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
+import { ACTIVITY_REFINEMENTS } from '../constants/activityRefinements';
 
 import { modalAnimation } from '../motion';
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
@@ -31,32 +32,14 @@ export const CREATE_HUB_OPTIONS = [
   SOMETHING_ELSE,
 ];
 
-export const SUB_OPTIONS = {
-  Dinner: [
-    { icon: '🍕', label: 'Pizza' },
-    { icon: '🌮', label: 'Mexican' },
-    { icon: '🍣', label: 'Sushi' },
-    { icon: '🍔', label: 'Burgers' },
-    { icon: '🥗', label: 'Healthy' },
-    { icon: '🍝', label: 'Italian' },
-    { icon: '➕', label: "Doesn't matter" },
-  ],
-};
+// The Dinner cuisines live in one place (constants/activityRefinements.js) and are asked in Create's What step.
+export const SUB_OPTIONS = ACTIVITY_REFINEMENTS;
 
-export default function StartSomethingModal({ visible, onClose, navigation, initialCategory = null, topLevelOptions = null }) {
+export default function StartSomethingModal({ visible, onClose, navigation, topLevelOptions = null }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
-  const [activeCategory, setActiveCategory] = useState(null);
-
-  useEffect(() => {
-    if (visible && initialCategory) {
-      setActiveCategory(initialCategory);
-    }
-  }, [visible, initialCategory]);
-
   function handleClose() {
-    setActiveCategory(null);
     onClose();
   }
 
@@ -66,10 +49,7 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
       navigation.navigate('CreateGathering');
       return;
     }
-    if (SUB_OPTIONS[item.label]) {
-      setActiveCategory(item);
-      return;
-    }
+    // Dinner goes straight to Create, whose What step offers the cuisine (item 7: asked in one place, optional)
     handleClose();
     // The title is only a prefill the person edits, so it is in their language (like the date-proposal message)
     navigation.navigate('CreateGathering', {
@@ -80,29 +60,13 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
     });
   }
 
-  function handlePickSub(subLabel) {
-    handleClose();
-    navigation.navigate('CreateGathering', {
-      quickStartTitle: quickOptionLabel(subLabel === "Doesn't matter" || subLabel === 'Other' ? activeCategory : { label: subLabel }, language),
-      quickStartCategory: activeCategory.category,
-      // Device test 2026-11-27 (item 5): the cuisine only names the title; the activity stays "Dinner" (gatherings.activity),
-      // so editing the title never loses it.
-      quickStartActivity: activeCategory.label,
-    });
-  }
-
-  const options = activeCategory ? SUB_OPTIONS[activeCategory.label] : topLevelOptions ?? [...getQuickPrompts(), SOMETHING_ELSE];
-  const title = activeCategory ? t('ui.startSomething.whatKindOfDinner') : t('ui.startSomething.iWantTo');
+  const options = topLevelOptions ?? [...getQuickPrompts(), SOMETHING_ELSE];
+  const title = t('ui.startSomething.iWantTo');
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          {activeCategory && (
-            <TouchableOpacity onPress={() => setActiveCategory(null)} accessibilityLabel={t('ui.startSomething.backA11y')} accessibilityRole="button">
-              <Text style={styles.backText}>{t('ui.startSomething.back')}</Text>
-            </TouchableOpacity>
-          )}
           <Text style={styles.title}>{title}</Text>
           <View style={styles.grid}>
             {options.map((item) => {
@@ -118,7 +82,7 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
                     styles.option,
                     !photoUrl && (categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated }),
                   ]}
-                  onPress={() => (activeCategory ? handlePickSub(item.label) : handlePick(item))}
+                  onPress={() => handlePick(item)}
                   accessibilityLabel={quickOptionLabel(item, language)}
                   accessibilityRole="button"
                 >
@@ -150,7 +114,6 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
 const getStyles = (colors) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
-  backText: { color: colors.primary, fontWeight: '600', marginBottom: spacing.sm },
   title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {

@@ -37,7 +37,7 @@ import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayForPreset } from '../utils/whenPresets';
-import { compactActivityPicker } from '../utils/createActivityPicker';
+import { compactActivityPicker, quickPickActivityFor, refinementOptions, refinementsOffered, titleForRefinement, refinementSelected } from '../utils/createActivityPicker';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
@@ -169,7 +169,11 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [description, setDescription] = useState('');
   const [interestTag, setInterestTag] = useState(null);
   // Owner 2026-10-27: the Quick Pick Create was opened from ("Dinner"); stored as the gathering's activity at publish.
-  const carriedActivity = route.params?.quickStartActivity ?? null;
+  // Item 7 (2026-11-27): state, so a cuisine pick can pin the activity ("Dinner") the words gave before the title becomes "Sushi".
+  const [carriedActivity, setCarriedActivity] = useState(route.params?.quickStartActivity ?? null);
+  useEffect(() => {
+    if (route.params?.quickStartActivity) setCarriedActivity(route.params.quickStartActivity);
+  }, [route.params?.quickStartActivity]);
   // Device test 2026-11-27 (item 7): when the activity arrived with the person (a quick pick, an ask, Start Something),
   // the What step shows it compactly instead of the full category list; "Adjust" opens the full list. Picking from the
   // full list keeps it open (the person is choosing).
@@ -870,6 +874,37 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
               </View>
             ))}
+            {(() => {
+              // Item 7: optional, only for an activity with refinements (Dinner -> cuisines), only while the title is a prefill
+              const candidate = carriedActivity ?? gatheringActivityAtPublish({ interestTag, title: title.trim(), description: description.trim() });
+              // a category changed with Adjust (Dinner -> Coffee) drops the Dinner refinements
+              const activity = quickPickActivityFor({ label: candidate, category: interestTag });
+              const labelOf = (label) => quickOptionLabel({ label }, language);
+              if (!refinementsOffered(activity, title, labelOf, route.params?.quickStartTitle)) return null;
+              return (
+                <View style={{ marginBottom: spacing.sm }}>
+                  <Text style={styles.subLabel}>{t('ui.startSomething.whatKindOfDinner')}</Text>
+                  <View style={styles.chipsWrap}>
+                    {refinementOptions(activity).map((option) => {
+                      const selected = refinementSelected(activity, option.label, title, labelOf);
+                      return (
+                        <TouchableOpacity
+                          key={option.label}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                          onPress={() => { setCarriedActivity(activity); setTitle(titleForRefinement(activity, option.label, labelOf)); }}
+                          activeOpacity={0.85}
+                          accessibilityLabel={labelOf(option.label)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                        >
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.icon} {labelOf(option.label)}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })()}
           </>
         )}
 

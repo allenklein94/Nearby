@@ -16,6 +16,9 @@ import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
 import { disabledButtonStyle } from '../constants/buttonStates';
 import { openExploreDiscover } from '../utils/discoverEntry';
 import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
+import useMyInterests from '../hooks/useMyInterests';
+import { personalizeQuickOptions } from '../constants/interestGraph';
+import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 // "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
 // with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
 // replaced the old "big-button icon grid + With people/With businesses/
@@ -103,6 +106,8 @@ export default function CreateHubScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
   const [showSomethingElse, setShowSomethingElse] = useState(false);
   const [startSheetVisible, setStartSheetVisible] = useState(false);
+  // the sheet keeps Home's old personalization (declared interests first, up to 2 extra), moved here with it (item 23)
+  const myInterests = useMyInterests();
   const [assistantText, setAssistantText] = useState('');
   const [thinking, setThinking] = useState(false);
 
@@ -431,7 +436,7 @@ export default function CreateHubScreen({ navigation, route }) {
           visible={startSheetVisible}
           onClose={() => setStartSheetVisible(false)}
           navigation={navigation}
-          topLevelOptions={CREATE_HUB_OPTIONS}
+          topLevelOptions={personalizeQuickOptions(CREATE_HUB_OPTIONS, myInterests, (tag) => categoryStyleFor(tag).icon)}
         />
       </SafeAreaView>
     </KeyboardAvoidingView>
