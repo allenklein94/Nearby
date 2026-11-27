@@ -390,7 +390,6 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     if (locationOff) {
       return (
         <FadeInState opportunity style={styles.emptyState}>
-          <Text style={styles.emptyEmoji}>📍</Text>
           <Text style={styles.emptyTitle}>{t('ui.dating.turnOnLocationToSee')}</Text>
           <Text style={styles.emptyText}>{t('ui.dating.nearbyUsesYourLocationTo')}</Text>
           <TouchableOpacity
@@ -406,7 +405,6 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     const filtered = discoveryMode === 'browse' || anyFilterActive;
     return (
       <FadeInState opportunity style={styles.emptyState}>
-        <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
         <Text style={styles.emptyTitle}>
           {discoveryMode === 'browse'
             ? t('ui.dating.noOneMatchesYourFilters')

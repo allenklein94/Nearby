@@ -623,7 +623,6 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
           ) : null}
           ListEmptyComponent={hasAnyGroupContent ? null : (
             <FadeInState opportunity style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🔔</Text>
               <EmptyCopy id="activity" />
               {/* Thursday plan item 25: a real next action instead of a
                   dead end while waiting for something to show up here. */}

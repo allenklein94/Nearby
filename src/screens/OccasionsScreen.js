@@ -618,7 +618,6 @@ export default function OccasionsScreen({ navigation, route }) {
 
           {occasions.length === 0 && (
             <FadeInState opportunity style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>📅</Text>
               <EmptyCopy id="occasions" />
               {/* Item 134: an empty state that animates into an invitation needs a real action. */}
               <TouchableOpacity

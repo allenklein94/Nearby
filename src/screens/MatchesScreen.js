@@ -320,7 +320,6 @@ export default function MatchesScreen({ navigation }) {
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <FadeInState opportunity style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>✨</Text>
             <Text style={styles.emptyText}>{t('matches.emptyText')}</Text>
             {/* Thursday plan item 25: a real next action instead of a dead
                 end -- matches this screen's own suggested "Explore Things

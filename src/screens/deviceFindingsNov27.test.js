@@ -47,3 +47,11 @@ test('Friends Browse and Crossed Paths empty states differ, in every language', 
   // never claims tracking is on
   expect(EMPTY_STATES.friend_crossed_paths_empty.body).toMatch(/depends on your location settings/);
 });
+
+test('an opportunity empty state shows the Nearby mark once, never with a second emoji under it', () => {
+  // FadeInState opportunity draws the mark itself (Activity showed the mark AND a large 🔔).
+  for (const f of ['screens/DiscoveryScreen.js', 'screens/PlansScreen.js', 'screens/MatchesScreen.js', 'screens/ActivityScreen.js',
+    'screens/FriendsScreen.js', 'screens/OccasionsScreen.js', 'components/MyCommunitiesSection.js']) {
+    expect(read(f)).not.toMatch(/<FadeInState opportunity[^>]*>\s*<Text style=\{styles\.emptyEmoji\}>/);
+  }
+});

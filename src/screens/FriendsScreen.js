@@ -392,7 +392,6 @@ export default function FriendsScreen({ navigation }) {
         ListEmptyComponent={
           !loading && (
             <FadeInState opportunity style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🤝</Text>
               <Text style={styles.emptyText}>
                 {t('ui.friends.addFriendsFromAnyonesProfile')}
               </Text>

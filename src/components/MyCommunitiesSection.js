@@ -96,7 +96,6 @@ export default function MyCommunitiesSection({ navigation }) {
   if (myCommunities.length === 0) {
     return (
       <FadeInState opportunity style={styles.emptyState}>
-        <Text style={styles.emptyEmoji}>🏘️</Text>
         <EmptyCopy id="communities_mine" />
         {discoverLink}
         <TouchableOpacity
