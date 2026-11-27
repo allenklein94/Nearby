@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -53,7 +53,13 @@ export default function MessagesScreen({ navigation, route }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [mode, setMode] = useState('matches');
+  const [mode, setMode] = useState(route?.params?.initialMode === 'friends' ? 'friends' : 'matches');
+  // Device test 2026-11-27 (item 29): an entry that names a tab (Create's "Plan a Date" = Matches) opens on it even when an
+  // existing Messages screen is reused; a fresh params object per tap, so the person's own switch is kept otherwise.
+  useEffect(() => {
+    const m = route?.params?.initialMode;
+    if (m === 'matches' || m === 'friends') setMode(m);
+  }, [route?.params]);
   const [groupChats, setGroupChats] = useState([]);
 
   useLayoutEffect(() => {

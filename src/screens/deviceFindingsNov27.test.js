@@ -108,3 +108,12 @@ describe('item 34: Business Mode messages button uses the outline icon set', () 
     expect(src).toContain('name={FUNCTIONAL_ICONS.messages}');
   });
 });
+
+describe('item 29: Plan a Date opens Messages on Matches', () => {
+  const fs = require('fs'); const path = require('path');
+  test('Create passes the tab; Messages honours it on a reused screen', () => {
+    expect(fs.readFileSync(path.join(__dirname, 'CreateHubScreen.js'), 'utf8')).toContain("key: 'planADate', route: 'Messages', params: { initialMode: 'matches' }");
+    const m = fs.readFileSync(path.join(__dirname, 'MessagesScreen.js'), 'utf8');
+    expect(m).toMatch(/useEffect\(\(\) => \{\s*const m = route\?\.params\?\.initialMode;/);
+  });
+});

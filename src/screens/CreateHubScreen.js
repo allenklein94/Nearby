@@ -80,7 +80,8 @@ const WHO_FOR_OPTIONS = [
 
 const QUICK_ACTIONS = [
   { icon: 'person-add-outline', key: 'inviteFriends', route: 'InviteFriends' },
-  { icon: 'heart-outline', key: 'planADate', route: 'Messages' },
+  // Item 29: a date is proposed from a match, so Plan a Date opens Messages on Matches (never the last-used Friends tab)
+  { icon: 'heart-outline', key: 'planADate', route: 'Messages', params: { initialMode: 'matches' } },
   // The canonical People -> Friends surface, opened in place from this tab (owner, 2026-10-04).
   { icon: 'people-outline', key: 'meetNewPeople', route: 'Discover', params: PEOPLE_FRIENDS },
   { icon: 'storefront-outline', key: 'askNearbyBusinesses', route: 'AskBusiness' },
