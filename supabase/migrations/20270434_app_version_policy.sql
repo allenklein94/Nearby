@@ -84,15 +84,46 @@ returns trigger
 language plpgsql
 set search_path = private, public, pg_temp
 as $$
-declare v_newest integer;
+declare
+  v_newest integer;
+  v_store text;
+  v_target integer;
+  v_stricter boolean;
 begin
+  -- Only a change that makes things stricter or changes the link is checked: lowering, clearing and switching off always
+  -- go through (emergency recovery can never be blocked by these checks).
+  v_stricter := tg_op = 'INSERT' or new.update_url is distinct from old.update_url
+    or (new.enforced and not old.enforced)
+    or (new.enforced and new.min_supported_build > coalesce(old.min_supported_build, 0))
+    or (new.latest_build > coalesce(old.latest_build, 0));
+  select max(build) into v_newest from private.app_build_availability where platform = new.platform;
   -- Raising (or enforcing) a minimum needs that build to be available on this platform. Lowering / switching off: always.
   if new.enforced and (tg_op = 'INSERT' or not old.enforced or new.min_supported_build > coalesce(old.min_supported_build, 0)) then
-    select max(build) into v_newest from private.app_build_availability where platform = new.platform;
     if v_newest is null or new.min_supported_build > v_newest then
       raise exception 'Build % is not recorded as available on % (newest available: %); a mandatory update would point people at a build they cannot get',
         new.min_supported_build, new.platform, coalesce(v_newest::text, 'none') using hint = 'build_not_available';
     end if;
+  end if;
+  -- Raising the optional "a newer version is available" build needs it to be available too (never announce a build
+  -- nobody can install). Lowering or clearing it: always.
+  if new.latest_build is not null and (tg_op = 'INSERT' or new.latest_build > coalesce(old.latest_build, 0)) then
+    if v_newest is null or new.latest_build > v_newest then
+      raise exception 'Build % is not recorded as available on % (newest available: %)', new.latest_build, new.platform,
+        coalesce(v_newest::text, 'none') using hint = 'build_not_available';
+    end if;
+  end if;
+  -- A public store link only once that store really has the build people are sent for (testers on TestFlight are never
+  -- pointed at an App Store / Google Play listing that doesn't carry it yet).
+  v_store := case
+    when new.update_url ~* '^(itms-apps://|https://apps\.apple\.com/)' then 'app_store'
+    when new.update_url ~* '^(market://|https://play\.google\.com/)' then 'google_play'
+    when new.update_url ~* '^(itms-beta://|https://testflight\.apple\.com/)' then 'testflight' end;
+  v_target := coalesce(case when new.enforced then new.min_supported_build end, new.latest_build);
+  if v_stricter and v_store is not null and v_target is not null and not exists (
+      select 1 from private.app_build_availability a
+      where a.platform = new.platform and a.channel = v_store and a.build >= v_target) then
+    raise exception 'The update link goes to % but build % is not recorded as available there', v_store, v_target
+      using hint = 'link_channel_unavailable';
   end if;
   new.updated_at := now();
   insert into private.app_version_policy_log (platform, old_row, new_row)

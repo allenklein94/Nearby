@@ -48,9 +48,11 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${tryPolicy('enforce_unavailable', `update private.app_version_policy set min_supported_build = 90, latest_build = 90, enforced = true where platform = 'ios';`)}
   insert into private.app_build_availability (platform, build, channel, recorded_by, evidence)
     values ('ios', 90, 'testflight', 'journey', 'journey fixture');
-  ${tryPolicy('enforce_available', `update private.app_version_policy set min_supported_build = 90, latest_build = 91, enforced = true,
+  ${tryPolicy('enforce_available', `update private.app_version_policy set min_supported_build = 90, latest_build = 90, enforced = true,
       update_url = 'itms-beta://testflight.apple.com/v1/app/0' where platform = 'ios';`)}
   ${tryPolicy('raise_above_available', `update private.app_version_policy set min_supported_build = 91 where platform = 'ios';`)}
+  ${tryPolicy('latest_unavailable', `update private.app_version_policy set latest_build = 92 where platform = 'ios';`)}
+  ${tryPolicy('store_link_testflight_only', `update private.app_version_policy set update_url = 'itms-apps://apps.apple.com/app/id0' where platform = 'ios';`)}
   ${tryPolicy('bad_url', `update private.app_version_policy set update_url = 'javascript:alert(1)' where platform = 'ios';`)}
   -- 3. enforced: below = refused, at / above = allowed, signed out and signed in
   ${anon}
@@ -83,6 +85,8 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   perform set_config('request.headers', '{not json', true);
   perform set_config('request.path', '/rpc/x', true);
   ${tryPolicy('gate_bad_json', `perform private._app_version_gate();`)}
+  -- the build's availability record disappears (mistake, cleanup): recovery below must still go through
+  delete from private.app_build_availability where platform = 'ios' and build = 90;
   -- 6. emergency recovery: lowering and switching off are always allowed and take effect on the next request
   ${tryPolicy('lower_to_80', `update private.app_version_policy set min_supported_build = 80 where platform = 'ios';`)}
   ${anon}
@@ -115,6 +119,12 @@ d('journey: an app build below an enforced minimum is refused by the server, and
     expect(res('raise_above_available')).toBe('refused');
     expect(hint('raise_above_available')).toBe('build_not_available');
     expect(res('bad_url')).toBe('refused');
+    expect(res('latest_unavailable')).toBe('refused');
+    expect(hint('latest_unavailable')).toBe('build_not_available');
+  });
+  test('a public store link only once that store carries the build (testers never sent to an empty listing)', () => {
+    expect(res('store_link_testflight_only')).toBe('refused');
+    expect(hint('store_link_testflight_only')).toBe('link_channel_unavailable');
   });
   test('below the minimum = refused, at or above = allowed, signed out and signed in', () => {
     expect(res('anon_89')).toBe('refused');
@@ -131,7 +141,7 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   });
   test('the policy read always passes and shows the minimum only while enforced', () => {
     expect(res('anon_policy_read_old')).toBe('allowed');
-    expect(s.policy_ios.data).toMatchObject({ platform: 'ios', min_supported_build: 90, latest_build: 91 });
+    expect(s.policy_ios.data).toMatchObject({ platform: 'ios', min_supported_build: 90, latest_build: 90 });
     expect(s.policy_ios.data.update_url).toMatch(/^itms-beta:/);
     expect(s.policy_android.data).toMatchObject({ platform: 'android', min_supported_build: null });
     expect(s.policy_after_off.data.min_supported_build).toBeNull();
@@ -153,7 +163,7 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   test('fail open: a broken request never locks anyone out of the version check', () => {
     expect(res('gate_bad_json')).toBe('allowed');
   });
-  test('emergency recovery: lowering and switching off always work, at once', () => {
+  test('emergency recovery: lowering and switching off always work, at once (even with no availability record left)', () => {
     expect(res('lower_to_80')).toBe('allowed');
     expect(res('after_lower_old_ua')).toBe('allowed');
     expect(res('after_lower_79')).toBe('refused');
