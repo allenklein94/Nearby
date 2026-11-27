@@ -12,6 +12,10 @@ every production step keeps its own approval.
 3. **Test both builds at every batch boundary.** Before a batch is approved: `release-compat.sh` for the NEXT build (this
    checkout) and for the RELEASED build (`APP_ROOT=<worktree of its tag>`), from production's current version through every
    batch boundary. Runtime must pass; every static flag at the latest version must be a deliberate fallback.
+   Build 87 is the one exception: its tag predates the runner, so `node scripts/compat/make-build87-runner.js <worktree>`
+   writes an adapted copy into a worktree of `build-87-ios` first. Every tag from build 88 on carries the runner itself.
+   A runtime step that the released build CAN'T pass at a version (e.g. build 87 from 0373) is listed, by migration, as
+   that migration's "needs build N" gate; it is never a reason to weaken the migration.
 4. **Off until ready.** A feature whose server, client, provider key or legal sentence isn't all in place stays switched
    off (a server switch or the missing-function fallback), never half on.
 5. **Integrate weekly.** Approved work merges into main within a week of approval (behind a switch if needed). No feature
@@ -32,8 +36,12 @@ every production step keeps its own approval.
 4. Batches in number order, each: backup -> packet checks -> deploy -> post-deploy checks -> next.
 5. After the last batch: `migration:status` = repo; no migration on main without a ledger row.
 
+## Session start check (rule 6, so the backlog can't build up silently)
+`npm run migration:status -- --target=prod` (read-only) + `git branch -r --no-merged main`: report the number of
+migrations on main without a production ledger row, the oldest one's age, and branches older than 14 days.
+
 ## Status of this process
-- Tools built and run for build 88 (2026-11-26): `PRODUCT_AUDIT/BUILD88_COMPATIBILITY_2026-11-26.md`.
+- Tools built and run for build 88 and build 87 (2026-11-26/27): `PRODUCT_AUDIT/BUILD88_COMPATIBILITY_2026-11-26.md`.
 - Rules 1-8: PROPOSED, need the owner's approval to become standing conventions (then one line each in CLAUDE.md).
 - Not automated: there is no CI (GitHub Actions) in this repo; the checks run in a session. Running them in CI would need
   Docker-capable runners and is a separate decision.

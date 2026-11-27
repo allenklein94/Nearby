@@ -81,3 +81,45 @@ describe('readMyProfile', () => {
     expect(isMissingFunction(null)).toBe(false);
   });
 });
+
+// The 0347 Dating view (production today): no age AND no hide switches, gender / ethnicity raw. Found by the release
+// compatibility run 2026-11-27 (build 87 + 88 Dating Browse came back empty on 0347).
+describe('selectPeople on a view without hide switches (dating_candidates_visible_to_me before 20270348)', () => {
+  const MISSING_AGE = { data: null, error: { code: '42703', message: 'column dating_candidates_visible_to_me.age does not exist' } };
+  const MISSING_SWITCH = { data: null, error: { code: '42703', message: 'column dating_candidates_visible_to_me.ethnicity_hidden does not exist' } };
+  const rows = [
+    { id: 'shown', birthdate: '1990-01-01', ethnicity: 'e1', gender_identity: ['w'], interested_in_genders: ['m'] },
+    { id: 'hid', birthdate: '1991-01-01', ethnicity: 'e2', gender_identity: ['m'], interested_in_genders: ['w'] },
+    { id: 'unknown', birthdate: '1992-01-01', ethnicity: 'e3', gender_identity: ['w'], interested_in_genders: ['w'] },
+  ];
+  const run = jest.fn(async (cols) => {
+    if (!cols.includes('birthdate')) return MISSING_AGE;
+    if (cols.includes('_hidden')) return MISSING_SWITCH;
+    return { data: rows, error: null };
+  });
+
+  test('switches read from people_visible_to_me; hidden fields emptied; a person with no switch row = hidden', async () => {
+    const reader = jest.fn(async () => new Map([
+      ['shown', { id: 'shown', gender_hidden: false, ethnicity_hidden: false }],
+      ['hid', { id: 'hid', gender_hidden: true, ethnicity_hidden: true }],
+    ]));
+    const res = await selectPeople(run, 'id, age, ethnicity, gender_identity, interested_in_genders', reader);
+    expect(run.mock.calls[2][0]).toBe('id, birthdate, ethnicity, gender_identity, interested_in_genders');
+    expect(reader).toHaveBeenCalledWith(['shown', 'hid', 'unknown']);
+    const by = Object.fromEntries(res.data.map((r) => [r.id, r]));
+    expect(by.shown).toMatchObject({ ethnicity: 'e1', gender_identity: ['w'], interested_in_genders: ['m'] });
+    expect(by.hid).toMatchObject({ ethnicity: null, gender_identity: null, interested_in_genders: null });
+    expect(by.unknown).toMatchObject({ ethnicity: null, gender_identity: null, interested_in_genders: null });
+    for (const r of res.data) { expect(r).not.toHaveProperty('birthdate'); expect(r).not.toHaveProperty('ethnicity_hidden'); expect(typeof r.age).toBe('number'); }
+  });
+
+  test('switch read fails = everyone treated as hidden (never shown by default)', async () => {
+    const res = await selectPeople(run, 'id, age, ethnicity', async () => { throw new Error('offline'); });
+    expect(res.data.map((r) => r.ethnicity)).toEqual([null, null, null]);
+  });
+
+  test('id is fetched for the switch lookup but not returned when the caller did not ask for it', async () => {
+    const res = await selectPeople(run, 'age, ethnicity', async () => new Map());
+    expect(res.data[0]).not.toHaveProperty('id');
+  });
+});

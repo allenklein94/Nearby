@@ -133,21 +133,27 @@ jest.mock('../../services/supabase', () => {
 });
 // Each run gets its own spot (earlier checkpoints' test people and business stay in the disposable database and would
 // otherwise fill Browse's first page and the routing candidates at a shared point).
-const mockLat = Math.round((27 + Math.random() * 20) * 10) / 10 + 0.04;
-const mockLng = Math.round((-118 + Math.random() * 44) * 10) / 10 + 0.04;
+// NEARBY_COMPAT_LATLNG="27.04,-80.04" pins it (e.g. to force a whole-degree bucket, "27,-80").
+const mockFixed = (process.env.NEARBY_COMPAT_LATLNG || '').split(',').map(Number);
+const mockLat = mockFixed.length === 2 ? mockFixed[0] : Math.round((27 + Math.random() * 20) * 10) / 10 + 0.04;
+const mockLng = mockFixed.length === 2 ? mockFixed[1] : Math.round((-118 + Math.random() * 44) * 10) / 10 + 0.04;
 const mockCoords = { coords: { latitude: mockLat, longitude: mockLng, accuracy: 10 }, timestamp: Date.now() };
 jest.mock('../../services/userLocation', () => ({
   ...jest.requireActual('../../services/userLocation'),
   getUserLocation: async () => mockCoords, requireUserLocation: async () => mockCoords, getCachedUserLocation: () => mockCoords,
 }));
 
+// services/proximity.js registers its background location task at import; nothing runs a task here.
+jest.mock('expo-task-manager', () => ({ defineTask: () => {}, isTaskRegisteredAsync: async () => false }));
 global.fetch = (url, init) => (String(url).startsWith('http://compat.local/') ? mockFetch(url, init) : mockRealFetch(url, init));
 
-const BUCKET = `${mockLat.toFixed(1)},${mockLng.toFixed(1)}`; // the 0.1-degree wide_area the app writes
+// The 0.1-degree wide_area exactly as the app writes it (services/proximity.js wideAreaLabel: Math.round, so 27.0 -> "27");
+// toFixed(1) wrote "27.0", which no neighbour-bucket list ever contains (a runner bug, found 2026-11-27).
+const BUCKET = `${Math.round(mockLat * 10) / 10},${Math.round(mockLng * 10) / 10}`;
 const d = enabled ? describe : describe.skip;
 
 d(`app build x database ${VERSION}: real service code through PostgREST`, () => {
-  const ids = { A: crypto.randomUUID(), B: crypto.randomUUID(), C: crypto.randomUUID(), N: crypto.randomUUID(), O: crypto.randomUUID(), P: crypto.randomUUID() };
+  const ids = { A: crypto.randomUUID(), B: crypto.randomUUID(), C: crypto.randomUUID(), N: crypto.randomUUID(), O: crypto.randomUUID(), P: crypto.randomUUID(), D: crypto.randomUUID() };
   const st = {};
   const results = [];
   let errors = [];
@@ -175,12 +181,12 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
     const { actorsSql } = require('../../journeys/journeyHarness');
     const L = (k) => `'${ids[k]}'::uuid`;
     await svc(`do $$ begin ${actorsSql({
-      people: [L('A'), L('B'), L('C'), L('O')], friends: [[L('A'), L('B')]],
+      people: [L('A'), L('B'), L('C'), L('D'), L('O')], friends: [[L('A'), L('B')]],
       business: { owner: L('O'), partner: L('P'), lat: mockLat, lng: mockLng, subcategory: 'Coffee' },
     })}
       update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
         wide_area = '${BUCKET}', photo_url = 'https://example.invalid/compat.jpg', interests = array['Coffee']
-        where id in (${L('A')}, ${L('C')});
+        where id in (${L('A')}, ${L('C')}, ${L('D')});
       update profiles set photo_url = 'https://example.invalid/compat.jpg' where id in (${L('B')}, ${L('O')});
     end $$`);
     // 20270373: every language starts 'pending' (a low result is HELD for a person) until the owner-approved activation
@@ -277,18 +283,26 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
   });
 
   // ---- Dating (Browse) ----
+  // The screen's own read (services/proximity.js getBrowseMatches, the app's column list incl. gender / ethnicity, its
+  // exclusions and filters), paged as Discovery's infinite list does. Accepted friends never show in Browse and the
+  // Friends step has just made C A's friend, so D is a separate opted-in stranger in the same area. Build 87 returns an
+  // array, later builds { items, hasMore, failed }.
   run('dating: Browse returns the other opted-in person', async () => {
-    const { browseDatingCandidates } = require('../../services/datingBrowse');
+    const { getBrowseMatches } = require('../../services/proximity');
     as('A');
     let seen = 0;
-    for (let offset = 0; offset < 200; offset += 20) { // Browse pages, as the app's infinite list does
-      const { data, error } = await browseDatingCandidates({ buckets: [BUCKET], offset, limit: 20, columns: 'id, display_name' });
-      if (error) throw error;
-      seen += (data ?? []).length;
-      if ((data ?? []).some((p) => p.id === ids.C)) return { rows: seen, page: offset / 20 };
-      if ((data ?? []).length < 20) break;
+    let offset = 0;
+    for (let page = 0; page < 10; page += 1) {
+      const res = await getBrowseMatches(offset);
+      if (res?.failed) throw new Error('Browse read failed');
+      const data = Array.isArray(res) ? res : (res?.items ?? []);
+      seen += data.length;
+      if (data.some((p) => p.id === ids.D)) return { rows: seen, page };
+      const more = Array.isArray(res) ? data.length >= 20 : res.hasMore;
+      if (!more) break;
+      offset = Array.isArray(res) ? offset + 20 : res.nextOffset;
     }
-    throw new Error(`C not in Browse (${seen} rows)`);
+    throw new Error(`D not in Browse (${seen} rows)`);
   });
 
   // ---- Gatherings ----

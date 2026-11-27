@@ -41,12 +41,48 @@ export function shapeLegacyRow(row, columns, today = new Date()) {
   return out;
 }
 
+const HIDE_SWITCHES = ['gender_hidden', 'ethnicity_hidden'];
+export function isMissingHideSwitch(error) {
+  return !!error && error.code === '42703' && /\b(gender_hidden|ethnicity_hidden)\b/.test(String(error.message || ''));
+}
+
+// Before 20270348, dating_candidates_visible_to_me passes gender / ethnicity through RAW and has no hide switches (only
+// people_visible_to_me has them), so the legacy read above fails on the switch column (42703) and Dating Browse / Crossed
+// Paths came back empty (found by the release compatibility run, 2026-11-27; live on production for build 87). The
+// switches are then read for those people from people_visible_to_me; a person whose switches can't be read is treated as
+// having hidden both (never shown by default).
+async function readHideSwitches(ids) {
+  const { supabase } = require('./supabase');
+  const { data, error } = await supabase.from('people_visible_to_me').select('id, gender_hidden, ethnicity_hidden').in('id', ids);
+  if (error || !Array.isArray(data)) return null;
+  return new Map(data.map((r) => [r.id, r]));
+}
+
 // run(columns) builds and awaits the query (single row or list); returns { data, error } with rows shaped as above.
-export async function selectPeople(run, columns) {
+export async function selectPeople(run, columns, switchReader = readHideSwitches) {
   const first = await selectWithIdVerified(run, columns);
   if (!isMissingAge(first?.error)) return first;
-  const res = await selectWithIdVerified(run, legacyColumns(columns));
+  const legacy = legacyColumns(columns);
+  let res = await selectWithIdVerified(run, legacy);
+  let switches = null;
+  const retried = isMissingHideSwitch(res?.error);
+  if (retried) {
+    const cols = listOf(legacy).filter((c) => !HIDE_SWITCHES.includes(c));
+    if (!cols.includes('id')) cols.push('id');
+    res = await selectWithIdVerified(run, cols.join(', '));
+    if (res?.error || !res?.data) return res;
+    const rows = Array.isArray(res.data) ? res.data : [res.data];
+    switches = await switchReader(rows.map((r) => r.id).filter(Boolean)).catch(() => null);
+  }
   if (res?.error || !res?.data) return res;
-  const data = Array.isArray(res.data) ? res.data.map((r) => shapeLegacyRow(r, columns)) : shapeLegacyRow(res.data, columns);
+  const asked = new Set(listOf(columns));
+  const shape = (r) => {
+    if (!r || !retried) return shapeLegacyRow(r, columns);
+    const sw = switches?.get(r.id);
+    const out = shapeLegacyRow({ ...r, gender_hidden: sw ? !!sw.gender_hidden : true, ethnicity_hidden: sw ? !!sw.ethnicity_hidden : true }, columns);
+    if (!asked.has('id')) delete out.id;
+    return out;
+  };
+  const data = Array.isArray(res.data) ? res.data.map(shape) : shape(res.data);
   return { ...res, data };
 }
