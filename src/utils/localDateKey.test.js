@@ -29,3 +29,20 @@ test('Celebrate: Tonight / Tomorrow show the date with no clock time', () => {
   const src = read('screens/CelebrateSomethingScreen.js');
   expect(src).toContain('presetLeavesTime(whenPreset) ? localDate(scheduledAt, language)');
 });
+
+describe('dayOnlyMoment: Celebrate keeps the named local day', () => {
+  const { dayOnlyMoment, localDateKey } = require('./whenPresets');
+  test('Tonight picked at 8 PM is still today and still ahead', () => {
+    const now = new Date(2026, 10, 27, 20, 0, 0);
+    const d = dayOnlyMoment('tonight', now);
+    expect(localDateKey(d)).toBe('2026-11-27');
+    expect(d.getTime()).toBeGreaterThan(now.getTime());
+  });
+  test('Tomorrow is the next local day, even late at night', () => {
+    expect(localDateKey(dayOnlyMoment('tomorrow', new Date(2026, 10, 27, 23, 30)))).toBe('2026-11-28');
+  });
+  test('Celebrate uses it for the day-only presets', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/CelebrateSomethingScreen.js'), 'utf8');
+    expect(src).toContain('setScheduledAt(presetLeavesTime(key) ? dayOnlyMoment(key) : dateForPreset(key));');
+  });
+});

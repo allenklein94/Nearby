@@ -24,7 +24,7 @@ import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../service
 import { sendPreferencePoll, getMyAskedPreferencePolls } from '../services/preferencePolls';
 import { PREFERENCE_POLL_QUESTIONS } from '../constants/preferencePollQuestions';
 import { occasionGroupOptions } from '../constants/businessAttributes';
-import { WHEN_PRESETS, dateForPreset, presetLeavesTime, localDateKey } from '../utils/whenPresets';
+import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayOnlyMoment, localDateKey } from '../utils/whenPresets';
 import {
   composeCelebrationTitle,
   composeCelebrationAskText,
@@ -576,7 +576,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     if (key === 'custom') {
       setShowDatePicker(true);
     } else {
-      setScheduledAt(dateForPreset(key));
+      // Tonight / Tomorrow name a day only (shown without a time); Tonight after 7 PM stays today (device test 2026-11-27)
+      setScheduledAt(presetLeavesTime(key) ? dayOnlyMoment(key) : dateForPreset(key));
     }
   }
 

@@ -28,6 +28,15 @@ export function dayForPreset(preset, now = new Date()) {
   return d;
 }
 
+// For a screen that holds one Date but shows only the day of a day-only preset (Celebrate Something): a moment on that LOCAL day
+// that is still ahead, so "Tonight" picked at 8 PM stays today (dateForPreset's 7 PM rolls over to tomorrow). Never shown as a time.
+export function dayOnlyMoment(preset, now = new Date()) {
+  const d = dayForPreset(preset, now);
+  if (preset === 'tonight') d.setHours(23, 59, 0, 0);
+  else d.setHours(12, 0, 0, 0);
+  return d;
+}
+
 export function dateForPreset(preset) {
   const now = new Date();
   if (preset === 'now') return new Date(now.getTime() + 15 * 60 * 1000);
