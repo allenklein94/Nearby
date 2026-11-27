@@ -12,6 +12,11 @@
 //      TestFlight) and that the business website was re-exported from that build's source. Installing the new build on one
 //      phone is not enough: the session read covers every signed-in device; the distribution line covers signed-out installs.
 //   3. backup (rule 7): a verified backup (prod-logical-backup.sh PASS record) under 24 hours old, and its encrypted copy.
+//   4. policy with the change (rule 8): a migration that starts new processing of personal data needs its Privacy Policy
+//      sentence PUBLISHED (GitHub Pages serves main:docs/privacy.html, so origin/main's copy is what readers see), marked
+//      by an HTML comment "<!-- nearby-processing: <version> -->" next to the sentence. The marker travels with the
+//      sentence, so counsel can reword it freely. A new migration declares the need in its header instead:
+//      "-- release-gate: privacy".
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -28,6 +33,29 @@ const CLIENT_FLOOR = {
   20270422: { build: 88, why: 'offer read receipts move; build 87 business Performance prints a literal placeholder' },
   20270430: { build: 88, why: 'visit confirmation split; build 87 shows the customer\'s own tap as "Visit confirmed"' },
 };
+
+// Migrations whose processing the current Privacy Policy doesn't describe (PRODUCT_AUDIT/PRIVACY_LEGAL_REVIEW_2026-11-27.md
+// part 2). 0413's detector and 0428's emails start only with a separate switch / secrets, not with the migration.
+const PRIVACY_REQUIRED = {
+  20270351: 'data requests while suspended (support address)',
+  20270355: 'reported content kept with the report, 12 months after resolution',
+  20270356: 'rate limits by phone verification + account age',
+  20270357: 'photo fingerprints for duplicate-account review',
+  20270363: 'rejected impossible location jumps: rough area, 1 hour',
+  20270373: 'public text screened by the AI provider before publication',
+  20270374: 'suspended-number code kept 12 months',
+  20270375: 'security-event log kept 12 months',
+  20270376: 'device-token code (90 days / 12 months)',
+  20270378: 'repeated-text code kept 30 days',
+  20270391: 'reported photo kept for review',
+  20270396: 'links in public text checked with Google Web Risk',
+  20270400: 'ID document retention schedule',
+  20270402: 'limited records kept after deletion (held accounts)',
+  20270403: 'deletion + what is kept',
+  20270414: 'business details compared across applications',
+};
+const PRIVACY_FILE = 'docs/privacy.html';
+const PUBLISHED_REF = 'origin/main';
 
 const git = (root, args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 
@@ -55,6 +83,24 @@ function effectiveFloor(version, repoRoot, readFile = (f) => fs.readFileSync(f, 
     from.push(Number(n));
   }
   return { build, from: from.sort() };
+}
+
+function privacyRequired(version, repoRoot, readFile = (f) => fs.readFileSync(f, 'utf8')) {
+  const v = Number(version);
+  if (PRIVACY_REQUIRED[v]) return PRIVACY_REQUIRED[v];
+  const dir = path.join(repoRoot, 'supabase/migrations');
+  const f = fs.existsSync(dir) ? fs.readdirSync(dir).find((x) => x.startsWith(`${v}_`) && x.endsWith('.sql')) : null;
+  return f && /^--\s*release-gate:\s*privacy\s*$/im.test(readFile(path.join(dir, f))) ? 'declared in the migration header' : null;
+}
+
+function privacyFailures(version, repoRoot, opts = {}) {
+  const what = privacyRequired(version, repoRoot);
+  if (!what) return [];
+  const show = opts.showPublished || (() => { try { return git(repoRoot, ['show', `${PUBLISHED_REF}:${PRIVACY_FILE}`]); } catch { return null; } });
+  const html = show();
+  const marker = `<!-- nearby-processing: ${Number(version)} -->`;
+  if (html && html.includes(marker)) return [];
+  return [`release gate: ${version} starts new processing (${what}); publish its Privacy Policy sentence first (${PRIVACY_FILE} on main, marked "${marker}"; git fetch so ${PUBLISHED_REF} is current)`];
 }
 
 // "<kind>: PASS build <N> @<commit> through <version> ..." (one line per kind; anything else refuses).
@@ -158,11 +204,12 @@ function backupFailures(dir, now = Date.now()) {
 async function releaseGateFailures({ facts, run, repoRoot, backupDir = process.env.NEARBY_BACKUP_DIR || '/workspaces/.nearby-verify/backups', now, evidenceOpts }) {
   if (!facts.version) return [];
   const floor = effectiveFloor(facts.version, repoRoot);
-  const r = [...evidenceFailures(facts.version, repoRoot, floor, evidenceOpts), ...backupFailures(backupDir, now)];
+  const r = [...evidenceFailures(facts.version, repoRoot, floor, evidenceOpts), ...backupFailures(backupDir, now),
+    ...privacyFailures(facts.version, repoRoot, evidenceOpts)];
   if (floor.build) {
     try { r.push(...sessionFailures(await run(SESSIONS_SQL), floor)); } catch (e) { r.push(`release gate: could not read live sessions (${e.message.slice(0, 120)}): refused`); }
   }
   return r;
 }
 
-module.exports = { appSourceChanged, CLIENT_FLOOR, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
+module.exports = { appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };

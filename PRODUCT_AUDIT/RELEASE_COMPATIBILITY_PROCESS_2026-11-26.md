@@ -56,7 +56,13 @@ oldest checkpoint = no migration it depends on.
 migrations on main without a production ledger row, the oldest one's age, and branches older than 14 days.
 
 ## Status of this process
-- Tools built and run for build 88 and build 87 (2026-11-26/27): `PRODUCT_AUDIT/BUILD88_COMPATIBILITY_2026-11-26.md`.
-- Rules 1-8: PROPOSED, need the owner's approval to become standing conventions (then one line each in CLAUDE.md).
-- Not automated: there is no CI (GitHub Actions) in this repo; the checks run in a session. Running them in CI would need
-  Docker-capable runners and is a separate decision.
+- APPROVED as standing requirements (owner, 2026-11-27): rules 1-8 and the six release rules. Recorded in CLAUDE.md
+  ("Release process" under Standing conventions).
+- Enforced by code (production `deploy.js` refuses; `scripts/migrations/releaseGates.js`, tests `releaseGates.test.js`):
+  rule 1 + 3 (committed compat evidence for the next AND released build through the version, app source unchanged since;
+  client floor "needs build N" from 0373: live session read + distribution + website lines), rule 7 (verified + encrypted
+  backup < 24 h), rule 8 (Privacy sentence on published main, marker `<!-- nearby-processing: <version> -->`).
+  Rule 6: every pending migration has a rollback + packet row (test), every edge function an inventory row
+  (`releaseInventory.test.js`, `RELEASE_INVENTORY_2026-11-27.md`). Rules 5 + 6 reported by `npm run release:status`.
+- Enforced by process only: rule 2 (proved per release by the compat run at production's current version), rule 4
+  (feature switches), rule 5's merging itself. No CI exists; the checks run in a session.

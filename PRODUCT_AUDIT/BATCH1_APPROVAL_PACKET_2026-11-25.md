@@ -14,7 +14,7 @@ photo" fails (fixed by 0349). Both proven by the release compatibility run (`BUI
 | Build 87 through Batch 1 (15 runtime steps) | PASS at 0354 on a replay; production-copy run: see the compat report |
 | Build 88 through Batch 1 | PASS at 0354 |
 | Rollbacks 0354 -> 0348 | proven in isolation (2026-11-26) |
-| `deploy.js` release gates (enforced) | compat evidence: PASS (committed). Backup: NEEDS a verified + encrypted backup < 24 h before the first deploy (passphrase first). Client floor: none for Batch 1 |
+| `deploy.js` release gates (enforced) | compat evidence: PASS (committed). Backup: NEEDS a verified + encrypted backup < 24 h before the first deploy (passphrase first). Client floor: none for Batch 1. Privacy: 0351 refused until packet item 4 is published on main with `<!-- nearby-processing: 20270351 -->` |
 | R2 App Store Connect: no public build <= 86 | OWNER |
 | R3 Tier 1 on build 87 | OWNER (two expected defects, below: never a FAIL) |
 | R8 website five-tab pass before 0348 | OWNER |

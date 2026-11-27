@@ -120,3 +120,32 @@ describe('app source = code + config + shipped dependencies (not tests, not npm 
     expect(G.appSourceChanged(REPO, '2a28c8e85')).toBe(true);
   });
 });
+
+describe('policy with the change (rule 8)', () => {
+  const pub = (html) => ({ showPublished: () => html });
+  test('a migration with no new processing needs nothing', () => {
+    expect(G.privacyFailures('20270348', REPO, pub(null))).toEqual([]);
+  });
+  test('0351 is refused until its marked sentence is on published main', () => {
+    expect(G.privacyFailures('20270351', REPO, pub('<p>old policy</p>'))[0]).toMatch(/publish its Privacy Policy sentence first/);
+    expect(G.privacyFailures('20270351', REPO, pub(null))).toHaveLength(1);
+    expect(G.privacyFailures('20270351', REPO, pub('<p>If suspended... <!-- nearby-processing: 20270351 --></p>'))).toEqual([]);
+  });
+  test('another version\'s marker does not count', () => {
+    expect(G.privacyFailures('20270355', REPO, pub('<!-- nearby-processing: 20270351 -->'))).toHaveLength(1);
+  });
+  test('the published policy today carries no marker, so every listed migration would be refused', () => {
+    const live = fs.readFileSync(path.join(REPO, 'docs/privacy.html'), 'utf8');
+    for (const v of Object.keys(G.PRIVACY_REQUIRED)) expect(G.privacyFailures(v, REPO, pub(live))).toHaveLength(1);
+  });
+  test('every listed version is a migration on this branch', () => {
+    const files = fs.readdirSync(path.join(REPO, 'supabase/migrations'));
+    for (const v of Object.keys(G.PRIVACY_REQUIRED)) expect(files.some((f) => f.startsWith(`${v}_`))).toBe(true);
+  });
+  test('a header can declare it', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rg-'));
+    fs.mkdirSync(path.join(dir, 'supabase/migrations'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'supabase/migrations/20279999_x.sql'), '-- release-gate: privacy\nselect 1;');
+    expect(G.privacyRequired('20279999', dir)).toBe('declared in the migration header');
+  });
+});
