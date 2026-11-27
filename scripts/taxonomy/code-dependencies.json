@@ -8059,6 +8059,13 @@
    "group": null
   },
   {
+   "tag": "Concerts",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Dogs",
    "file": "src/constants/onboardingInterests.js",
    "consumer": "quick_picks",
@@ -8070,6 +8077,13 @@
    "file": "src/constants/onboardingInterests.js",
    "consumer": "quick_picks",
    "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
    "group": null
   },
   {
@@ -8097,7 +8111,7 @@
    "tag": "Nightlife",
    "file": "src/constants/onboardingInterests.js",
    "consumer": "quick_picks",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": null
   },
   {
