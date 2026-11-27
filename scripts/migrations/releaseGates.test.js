@@ -113,3 +113,10 @@ describe('every migration after production has a deployment + recovery path', ()
     expect(packets.includes(`| ${v} |`)).toBe(true);
   });
 });
+
+describe('app source = code + config + shipped dependencies (not tests, not npm scripts)', () => {
+  test('build 88 evidence commit still matches; build 87 source does not', () => {
+    expect(G.appSourceChanged(REPO, '635b5e951')).toBe(false);
+    expect(G.appSourceChanged(REPO, '2a28c8e85')).toBe(true);
+  });
+});

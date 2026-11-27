@@ -12,7 +12,8 @@
     "lifecycle-matrix": "LIFECYCLE_MATRIX_WRITE=1 jest src/qa/lifecycleMatrix.test.js",
     "migration:status": "node scripts/migrations/status.js",
     "migration:deploy": "node scripts/migrations/deploy.js",
-    "postinstall": "patch-package --error-on-fail"
+    "postinstall": "patch-package --error-on-fail",
+    "release:status": "node scripts/migrations/release-status.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

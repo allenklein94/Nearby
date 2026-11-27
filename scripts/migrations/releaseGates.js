@@ -79,12 +79,24 @@ function parseEvidence(text) {
   return out;
 }
 
+// The app a build is made from: its code + config + the dependencies it ships (package.json "dependencies"; scripts and
+// devDependencies don't reach the app). Tests, journeys and live checks are excluded.
+const APP_PATHS = ['src', 'App.js', 'App.web.js', 'index.js', 'app.config.js', 'app.json', 'eas.json', 'patches',
+  ':(exclude)*.test.js', ':(exclude)*.journey.js', ':(exclude)*.live.js'];
+function appSourceChanged(repoRoot, commit) {
+  try { git(repoRoot, ['diff', '--quiet', commit, 'HEAD', '--', ...APP_PATHS]); } catch { return true; }
+  try {
+    const deps = (ref) => JSON.stringify(JSON.parse(git(repoRoot, ['show', `${ref}:package.json`])).dependencies || {});
+    return deps(commit) !== deps('HEAD');
+  } catch { return true; }
+}
+
 function evidenceFailures(version, repoRoot, floor, opts = {}) {
   const r = [];
   const v = Number(version);
   const show = opts.show || ((f) => { try { return git(repoRoot, ['show', `HEAD:${f}`]); } catch { return null; } });
   const dirty = opts.dirty || ((f) => { try { return git(repoRoot, ['status', '--porcelain', '--', f]).trim() !== ''; } catch { return true; } });
-  const srcChanged = opts.srcChanged || ((c) => { try { git(repoRoot, ['diff', '--quiet', c, 'HEAD', '--', 'src', 'App.js', 'app.config.js', 'app.json', 'package.json', ':(exclude)*.test.js', ':(exclude)*.journey.js', ':(exclude)*.live.js']); return false; } catch { return true; } });
+  const srcChanged = opts.srcChanged || ((c) => appSourceChanged(repoRoot, c));
   if (dirty(EVIDENCE_FILE)) r.push(`release gate: ${EVIDENCE_FILE} has uncommitted changes; only the committed copy counts`);
   const text = show(EVIDENCE_FILE);
   if (!text) return [...r, `release gate: no ${EVIDENCE_FILE} (a passing release-compat run is required before any production migration)`];
@@ -153,4 +165,4 @@ async function releaseGateFailures({ facts, run, repoRoot, backupDir = process.e
   return r;
 }
 
-module.exports = { CLIENT_FLOOR, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
+module.exports = { appSourceChanged, CLIENT_FLOOR, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
