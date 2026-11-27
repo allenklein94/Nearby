@@ -133,6 +133,9 @@ describe('src/services/supabase.js creates a client only for a valid environment
       jest.doMock('@react-native-async-storage/async-storage', () => ({}));
       jest.doMock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: { nearbyEnv } } } }));
       jest.doMock('@supabase/supabase-js', () => ({ createClient }));
+      // 20270434: supabase.js now reads the build number (services/appVersion.js)
+      jest.doMock('react-native', () => ({ Platform: { OS: 'ios' } }));
+      jest.doMock('expo-application', () => ({ nativeBuildVersion: '88' }));
       mod = require('../services/supabase');
     });
     return { mod, createClient };

@@ -530,6 +530,12 @@ const STEPS = {
   20270433: { journeys: ['ownFriendSwipes', 'friendDiscoveryChoice', 'peopleMatchJourney'],
     manual: ['read-only right after: friend_discovery_swipes grants = select (from_user, to_user) to authenticated only, one select policy "Read your own friend swipes"; anon none; row count unchanged',
       'phone (build 87, two accounts that crossed paths): A passes on B in Friends > Crossed Paths, leaves and reopens Friends: B is gone (before 0433 B came back); B sees nothing about A\'s swipe'] },
+  20270434: { journeys: ['appVersionPolicy'],
+    manual: ['read-only right after: authenticator pgrst.db_pre_request = public.nearby_pre_request; private.app_version_policy has 3 rows, all enforced = false; no client grant on the 3 private tables',
+      'status: node scripts/release/app-version-policy.js status --target=prod (installed, nothing enforced)',
+      'phone (installed build): the app still opens and loads Home (a REST call through the new hook)',
+      'enforcing a minimum = a SEPARATE owner approval (record-available, plan, set); emergency: NEARBY_VERSION_APPROVAL=version-off ... off --platform=all',
+      'rollback: scripts/rollback/20270434 (with enforcement on, rolling back removes the version check entirely)'] },
   20270432: { journeys: ['requestFunnel', 'intentFunnel'],
     manual: ['order: right after 20270431', 'read-only: request_journey / routing_candidate_outcomes / intent_funnel still have no anon/authenticated grant; completed outcomes only where visit_confirmed_at is set', 'rollback: scripts/rollback/20270432 (first of the three)'] },
 };
