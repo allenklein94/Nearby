@@ -7,6 +7,7 @@ import { spacing, radius, typography } from '../theme';
 import { getBusinessContactDetails, setBusinessContactDetails } from '../services/brandOffers';
 import { contactDetailsProblem, contactDetailsRefusal } from '../utils/businessContactDetails';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { isMissingFunction } from '../services/crossedPathsSharing';
 
 // Business phone + website (owner, 2026-11-15; migration 20270423): ONE optional row in Profile > Business Profile, opens
 // in place like Hours (no new screen). Private: read and saved only through the business's own functions; customers,
@@ -16,7 +17,7 @@ export default function BusinessContactDetails({ partnerId }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [saved, setSaved] = useState(null); // { phone, website } | null
-  const [loadState, setLoadState] = useState('loading'); // loading | ready | failed
+  const [loadState, setLoadState] = useState('loading'); // loading | ready | failed | absent
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState('');
   const [website, setWebsite] = useState('');
@@ -30,7 +31,8 @@ export default function BusinessContactDetails({ partnerId }) {
       setSaved(await getBusinessContactDetails(partnerId));
       setLoadState('ready');
     } catch (e) {
-      setLoadState('failed');
+      // A database without 20270423 (the function doesn't exist yet): no row at all, like the Crossed Paths switch.
+      setLoadState(isMissingFunction(e) ? 'absent' : 'failed');
     }
   }, [partnerId]);
 
@@ -60,7 +62,7 @@ export default function BusinessContactDetails({ partnerId }) {
     }
   }
 
-  if (!partnerId) return null;
+  if (!partnerId || loadState === 'absent') return null;
   const has = !!(saved?.phone || saved?.website);
 
   return (

@@ -344,6 +344,20 @@ d(`app build x database ${VERSION}: real service code through PostgREST`, () => 
     return { community: true };
   });
 
+  run('fallbacks: host memory removal + business contact row follow the database (0391, 0423)', async () => {
+    const { hostMemoryRemovalAvailable } = require('../../services/stories');
+    const { getBusinessContactDetails } = require('../../services/brandOffers');
+    const { isMissingFunction } = require('../../services/crossedPathsSharing');
+    as('A');
+    const removal = await hostMemoryRemovalAvailable();
+    if (removal !== has(20270391)) throw new Error(`host removal available=${removal} at ${VERSION}`);
+    as('O');
+    let contact;
+    try { await getBusinessContactDetails(ids.P); contact = 'shown'; } catch (e) { contact = isMissingFunction(e) ? 'hidden' : `failed: ${e.message}`; }
+    if (contact !== (has(20270423) ? 'shown' : 'hidden')) throw new Error(`contact row ${contact} at ${VERSION}`);
+    return { removal, contact };
+  });
+
   // ---- Business: request -> opportunity -> offer -> accept (booking) -> visit confirmation ----
   run('business request: sent, reaches the business', async () => {
     const bf = require('../../services/businessFulfillment');

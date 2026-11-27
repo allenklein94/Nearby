@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { modalAnimation } from '../motion';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { getGatheringMemories, addGatheringMemory, deleteStory, removeGatheringMemoryAsHost, getSignedStoryUrl } from '../services/stories';
+import { getGatheringMemories, addGatheringMemory, deleteStory, removeGatheringMemoryAsHost, hostMemoryRemovalAvailable, getSignedStoryUrl } from '../services/stories';
 import ReportBlockModal from './ReportBlockModal';
 import { memoryActions } from '../utils/memoryActions';
 import { supabase } from '../services/supabase';
@@ -32,6 +32,14 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false, isH
   const [myUserId, setMyUserId] = useState(null);
   const [reporting, setReporting] = useState(null);
   const openedOnLoad = useRef(false);
+  // The host's Remove on someone else's memory only where the server has it (20270391); before that, no button (it can't work).
+  const [hostCanRemove, setHostCanRemove] = useState(false);
+  useEffect(() => {
+    if (!isHost) { setHostCanRemove(false); return undefined; }
+    let live = true;
+    hostMemoryRemovalAvailable().then((ok) => { if (live) setHostCanRemove(ok); }).catch(() => null);
+    return () => { live = false; };
+  }, [isHost]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));
@@ -88,7 +96,7 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false, isH
         style: 'destructive',
         onPress: async () => {
           try {
-            if (memoryActions(memory, myUserId, isHost).remove === 'host') await removeGatheringMemoryAsHost(memory.id);
+            if (memoryActions(memory, myUserId, hostCanRemove).remove === 'host') await removeGatheringMemoryAsHost(memory.id);
             else await deleteStory(memory.id);
             setMemories((prev) => (prev ?? []).filter((r) => r.id !== memory.id));
           } catch (e) {
@@ -140,12 +148,12 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false, isH
                 <View style={styles.viewerItemHeader}>
                   <Text style={styles.poster}>{nameOf(r)}</Text>
                   <View style={styles.itemActions}>
-                    {memoryActions(r, myUserId, isHost).report && (
+                    {memoryActions(r, myUserId, hostCanRemove).report && (
                       <TouchableOpacity onPress={() => setReporting(r)} accessibilityRole="button" accessibilityLabel={`${m('report')}, ${labelOf(r)}`}>
                         <Text style={styles.report}>{m('report')}</Text>
                       </TouchableOpacity>
                     )}
-                    {memoryActions(r, myUserId, isHost).remove && (
+                    {memoryActions(r, myUserId, hostCanRemove).remove && (
                       <TouchableOpacity onPress={() => handleRemove(r)} accessibilityRole="button" accessibilityLabel={`${m('remove')}, ${labelOf(r)}`}>
                         <Text style={styles.remove}>{m('remove')}</Text>
                       </TouchableOpacity>

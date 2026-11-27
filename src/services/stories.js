@@ -316,6 +316,17 @@ export async function deleteStory(storyId) {
 
 // The host taking a memory down from their own gathering (20270391); the poster's own Remove stays deleteStory. A photo under
 // report stays with the report for review; everyone else stops seeing it at once.
+// Whether this database has the host removal at all (20270391). A blank id is refused by the function itself
+// (memory_not_removable) and changes nothing; only a missing function means "not yet". Asked once per app run.
+let hostMemoryRemoval = null;
+export async function hostMemoryRemovalAvailable() {
+  if (hostMemoryRemoval !== null) return hostMemoryRemoval;
+  const { error } = await supabase.rpc('remove_gathering_memory', { story_id_param: null });
+  const missing = !!error && (['PGRST202', '42883'].includes(error.code) || /could not find the function/i.test(error.message ?? ''));
+  if (!error || missing || error.hint === 'memory_not_removable') hostMemoryRemoval = !missing;
+  return !missing;
+}
+
 export async function removeGatheringMemoryAsHost(storyId) {
   const { error } = await supabase.rpc('remove_gathering_memory', { story_id_param: storyId });
   if (error) throw error;
