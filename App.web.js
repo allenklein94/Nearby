@@ -10,6 +10,7 @@ import { installWebAlert } from './src/utils/webAlert';
 import BusinessWebNavigator from './src/navigation/BusinessWebNavigator';
 import { ENVIRONMENT_ERROR } from './src/services/supabase';
 import ConfigErrorScreen from './src/components/ConfigErrorScreen';
+import AppUpdateGate from './src/components/AppUpdateGate';
 import { SuccessToastHost } from './src/motion';
 
 // Item 127: enforce OS Reduce Motion for every Animated.spring/loop, once, at startup.
@@ -40,12 +41,15 @@ export default function App() {
     <PostHogProvider apiKey="disabled" options={{ disabled: true }} autocapture={false}>
     <ThemeProvider>
       <LanguageProvider>
-        <AuthProvider>
-          <StatusBarWithTheme />
-          <BusinessWebNavigator />
-          {/* D1 (staging run 2026-11-21): without the host every showSuccessToast on the website was dropped silently. */}
-          <SuccessToastHost />
-        </AuthProvider>
+        {/* 20270434: a website older than the server's enforced 'web' minimum shows "Reload" instead of the dashboard. */}
+        <AppUpdateGate>
+          <AuthProvider>
+            <StatusBarWithTheme />
+            <BusinessWebNavigator />
+            {/* D1 (staging run 2026-11-21): without the host every showSuccessToast on the website was dropped silently. */}
+            <SuccessToastHost />
+          </AuthProvider>
+        </AppUpdateGate>
       </LanguageProvider>
     </ThemeProvider>
     </PostHogProvider>

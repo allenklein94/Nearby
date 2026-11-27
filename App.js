@@ -15,6 +15,7 @@ import OfferTravelOverlay from './src/motion/OfferTravelOverlay';
 import { setupNotificationTapHandling } from './src/services/notifications';
 import { ENVIRONMENT_ERROR, SERVICES } from './src/services/supabase';
 import ConfigErrorScreen from './src/components/ConfigErrorScreen';
+import AppUpdateGate from './src/components/AppUpdateGate';
 import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from './src/services/stripeConnect';
 import { BACKEND_VARIANT } from './src/services/supabase';
 
@@ -79,15 +80,18 @@ function ConfiguredApp() {
     >
       <ThemeProvider>
         <LanguageProvider>
-          <AuthProvider>
-            <MaybeStripeProvider>
-              <StatusBarWithTheme />
-              <RootNavigator />
-              <SuccessToastHost />
-              <OfferTravelOverlay />
-              <OfferArrivalHost />
-            </MaybeStripeProvider>
-          </AuthProvider>
+          {/* 20270434: a build below the server's enforced minimum sees only the update screen (nothing below renders). */}
+          <AppUpdateGate>
+            <AuthProvider>
+              <MaybeStripeProvider>
+                <StatusBarWithTheme />
+                <RootNavigator />
+                <SuccessToastHost />
+                <OfferTravelOverlay />
+                <OfferArrivalHost />
+              </MaybeStripeProvider>
+            </AuthProvider>
+          </AppUpdateGate>
         </LanguageProvider>
       </ThemeProvider>
     </PostHogProvider>

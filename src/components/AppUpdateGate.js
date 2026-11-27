@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { AppState, Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// React Native's own SafeAreaView: the gate sits OUTSIDE the app's SafeAreaProvider, so it must not depend on one.
+import { AppState, Image, Linking, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { supabase, ENVIRONMENT, readAppVersionPolicy } from '../services/supabase';
@@ -96,7 +96,7 @@ function OptionalUpdateNotice({ url }) {
   const { t } = useLanguage();
   const web = Platform.OS === 'web';
   return (
-    <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.noticeWrap}>
+    <SafeAreaView pointerEvents="box-none" style={styles.noticeWrap}>
       <View style={[styles.notice, { backgroundColor: colors.surface, borderColor: colors.primaryMuted }]}
         accessibilityLiveRegion="polite">
         <Text style={[styles.noticeText, { color: colors.text }]}>{t('ui.appUpdate.optionalTitle')}</Text>

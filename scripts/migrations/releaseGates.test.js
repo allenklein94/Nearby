@@ -166,3 +166,39 @@ describe('returning older installs (signed out, dormant, expired session)', () =
     expect(f.some((x) => /testflight-older: expired/.test(x))).toBe(true);
   });
 });
+
+describe('server-side minimum version (20270434) in place of "older builds can\'t launch"', () => {
+  const f = { build: 88, from: [20270373] };
+  const row = (platform, min, enforced, newest) => ({ platform, min_supported_build: min, enforced, newest_available: newest });
+  const ANDROID_NONE = 'distribution: PASS build 88 2026-12-01 android: never-released';
+  test('covered only when iOS is enforced at >= the floor with that build available, and Android enforced or never released', () => {
+    expect(G.serverFloorCovers([row('ios', 88, true, 88), row('android', null, false, null)], f, ANDROID_NONE)).toBe(true);
+    expect(G.serverFloorCovers([row('ios', 88, true, 88), row('android', 88, true, 88)], f, '')).toBe(true);
+    expect(G.serverFloorCovers([row('ios', 88, true, 88), row('android', null, false, null)], f, '')).toBe(false);
+    expect(G.serverFloorCovers([row('ios', 88, false, 88)], f, ANDROID_NONE)).toBe(false);
+    expect(G.serverFloorCovers([row('ios', 87, true, 88)], f, ANDROID_NONE)).toBe(false);
+    expect(G.serverFloorCovers([row('ios', 88, true, 87)], f, ANDROID_NONE)).toBe(false);
+    expect(G.serverFloorCovers([], f, ANDROID_NONE)).toBe(false);
+    expect(G.serverFloorCovers(null, f, ANDROID_NONE)).toBe(false);
+    expect(G.serverFloorCovers([row('ios', 88, true, 88)], { build: null }, ANDROID_NONE)).toBe(false);
+  });
+  test('covered: older live sessions and a not-yet-expired TestFlight build no longer block; availability + website still do', () => {
+    expect(G.sessionFailures([{ kind: 'app', build: 87, n: 1 }], f, { serverFloor: true })).toEqual([]);
+    expect(G.sessionFailures([{ kind: 'other', build: -1, n: 1 }], f, { serverFloor: true })[0]).toMatch(/unrecognised/);
+    const weak = 'distribution: PASS build 88 2026-12-01 android: never-released';
+    const NEXT434 = 'next: PASS build 88 @abc1234 through 20270434 (run)';
+    expect(G.evidenceFailures('20270373', REPO, f, { ...ev([NEXT434, REL, weak, WEB]), serverFloor: true })).toEqual([]);
+    expect(G.evidenceFailures('20270373', REPO, f, ev([NEXT434, REL, weak, WEB])).join()).toMatch(/testflight-older: expired/);
+    expect(G.evidenceFailures('20270373', REPO, f, { ...ev([NEXT434, REL, WEB]), serverFloor: true }).join()).toMatch(/distribution: PASS build 88/);
+    expect(G.evidenceFailures('20270373', REPO, f, { ...ev([NEXT434, REL, weak]), serverFloor: true }).join()).toMatch(/website/);
+  });
+  test('the live read: no policy table (before 0434) or a failed read = not covered (the stricter rule applies)', async () => {
+    expect(await G.readServerFloor(async () => [{ present: false }], f, REPO)).toEqual({ covered: false });
+    expect(await G.readServerFloor(async () => { throw new Error('x'); }, f, REPO)).toEqual({ covered: false });
+    const run = async (sql) => (sql === G.POLICY_PRESENT_SQL ? [{ present: true }]
+      : [row('ios', 90, true, 90), row('android', null, false, null)]);
+    expect((await G.readServerFloor(run, f, REPO, { show: () => ANDROID_NONE })).covered).toBe(true);
+    expect((await G.readServerFloor(run, f, REPO, { show: () => '' })).covered).toBe(false);
+    expect(await G.readServerFloor(run, { build: null }, REPO)).toEqual({ covered: false });
+  });
+});
