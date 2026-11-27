@@ -12,7 +12,7 @@
 #
 # Everything this script does besides running the migration files is listed here, so nothing is silently skipped:
 #  ENVIRONMENT (the image, not the migrations): the hosted auth/storage services add these columns through their own
-#   migrations, which this image predates: auth.users.phone + phone_confirmed_at + banned_until, auth.sessions (minimal: id, user_id, created_at, updated_at), storage.buckets.public / file_size_limit / allowed_mime_types,
+#   migrations, which this image predates: auth.users.phone + phone_confirmed_at + banned_until, auth.sessions (minimal: id, user_id, created_at, updated_at + Auth's not_after, user_agent, ip, refreshed_at, aal, factor_id, which 0375 and the release gates read), storage.buckets.public / file_size_limit / allowed_mime_types,
 #   and auth.uid()/role()/email()/jwt() reading request.jwt.claims (the image's read only the legacy per-claim settings).
 #   Extensions are created as supabase_admin (pg_cron, pg_net, pg_trgm, btree_gist), as on a hosted project. The image is
 #   PG 15; production is PG 17.6 (MAINTAIN revokes are version-guarded no-ops here).
@@ -59,6 +59,7 @@ alter table auth.users add column if not exists phone text unique default null;
 alter table auth.users add column if not exists phone_confirmed_at timestamptz;
 alter table auth.users add column if not exists banned_until timestamptz;
 create table if not exists auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid references auth.users (id) on delete cascade, created_at timestamptz default now(), updated_at timestamptz);
+alter table auth.sessions add column if not exists not_after timestamptz, add column if not exists user_agent text, add column if not exists ip inet, add column if not exists refreshed_at timestamp, add column if not exists aal text, add column if not exists factor_id uuid;
 grant all on auth.sessions to postgres, service_role;
 alter table storage.buckets add column if not exists public boolean default false;
 alter table storage.buckets add column if not exists file_size_limit bigint;
