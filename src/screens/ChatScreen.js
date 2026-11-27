@@ -34,6 +34,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { categoryName } from '../i18n/categoryNames';
 import { localClockOfDate } from '../i18n/format';
 import { typography, spacing, radius } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE } from '../constants/functionalIcons';
 
 const MAX_RECORDING_SECONDS = 60;
 const TYPING_IDLE_MS = 3000;
@@ -1440,7 +1442,7 @@ export default function ChatScreen({ route, navigation }) {
               accessibilityLabel={uploadingPhoto ? t('ui.chat.checkingPhotoA11y') : t('ui.chat.sendAPhotoA11y')}
               accessibilityRole="button"
             >
-              {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Text style={styles.gifButtonText}>📷</Text>}
+              {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Ionicons name={FUNCTIONAL_ICONS.camera} size={FUNCTIONAL_ICON_SIZE} color={colors.textSecondary} />}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.gifButton}

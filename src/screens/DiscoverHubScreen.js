@@ -148,7 +148,7 @@ import { placesNeedFetch } from '../utils/placesFetchPlan';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
 import { disabledButtonStyle } from '../constants/buttonStates';
 import { Ionicons } from '@expo/vector-icons';
-import { FUNCTIONAL_ICON_SIZE, switchToIcon } from '../constants/functionalIcons';
+import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE, switchToIcon } from '../constants/functionalIcons';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -2724,7 +2724,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <>
             {/* Device test (owner, 2026-11-27): "What are you looking for?" is the header's subtitle; it is not repeated here. */}
             <View style={styles.searchBarWrap}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <Ionicons name={FUNCTIONAL_ICONS.search} size={16} color={colors.textTertiary} style={{ marginRight: 6 }} />
               <TextInput
                 style={styles.searchInput}
                 placeholder={t('ui.discover.searchPlaceholder')}
@@ -2893,7 +2893,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 accessibilityLabel={t('ui.discover.postStory')}
                 accessibilityRole="button"
               >
-                {postingStory ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.postStoryButtonIcon}>📷</Text>}
+                {postingStory ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name={FUNCTIONAL_ICONS.camera} size={FUNCTIONAL_ICON_SIZE} color={colors.primary} />}
               </TouchableOpacity>
             </View>
           </View>

@@ -87,3 +87,11 @@ describe('item 16: Dating and Friends headers share one layout', () => {
     expect(src).not.toMatch(/: 'All';/);
   });
 });
+
+describe('item 34: functional controls use the one outline icon set, never emoji', () => {
+  const rd = (f) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8');
+  test.each([
+    ['screens/ProfileScreen.js', '⚙️'], ['screens/FriendsScreen.js', '🔍'], ['screens/ChatScreen.js', '<Text style={styles.gifButtonText}>📷'],
+    ['screens/DiscoverHubScreen.js', '<Text style={styles.searchIcon}>🔍'], ['screens/DiscoverHubScreen.js', '<Text style={styles.postStoryButtonIcon}>📷'],
+  ])('%s has no %s control', (f, glyph) => expect(rd(f)).not.toContain(glyph));
+});

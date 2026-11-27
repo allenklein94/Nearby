@@ -17,6 +17,8 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { disabledButtonStyle } from '../constants/buttonStates';
 import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE } from '../constants/functionalIcons';
 
 export default function FriendsScreen({ navigation }) {
   const { t, language } = useLanguage();
@@ -195,7 +197,7 @@ export default function FriendsScreen({ navigation }) {
         ListHeaderComponent={
           <>
             <View style={styles.searchBarWrap}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <Ionicons name={FUNCTIONAL_ICONS.search} size={16} color={colors.textTertiary} style={{ marginRight: 6 }} />
               <TextInput
                 style={styles.searchInput}
                 placeholder={t('ui.friends.searchYourFriends')}

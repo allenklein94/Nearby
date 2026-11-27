@@ -41,6 +41,8 @@ import useCategoryNames from '../hooks/useCategoryNames';
 import { profileFormSnapshot, isProfileFormDirty } from '../utils/profileEditDirty';
 import useLeaveGuard from '../hooks/useLeaveGuard';
 import ToggleRow from '../components/ToggleRow';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE } from '../constants/functionalIcons';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -745,7 +747,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
             accessibilityLabel={t('ui.profile.settingsA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.settingsGearText}>⚙️</Text>
+            <Ionicons name={FUNCTIONAL_ICONS.settings} size={FUNCTIONAL_ICON_SIZE + 3} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>{t('ui.profile.yourStoryYourStatsYour')}</Text>

@@ -8,6 +8,10 @@ export const FUNCTIONAL_ICONS = Object.freeze({
   cards: 'albums-outline',
   map: 'map-outline',
   datingProfile: 'person-circle-outline',
+  // Item 34 (device test 2026-11-27): the remaining emoji controls (⚙️ 🔍 📷) use the same outline set.
+  settings: 'settings-outline',
+  search: 'search-outline',
+  camera: 'camera-outline',
 });
 
 export const FUNCTIONAL_ICON_SIZE = 21;
