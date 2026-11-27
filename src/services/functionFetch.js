@@ -7,9 +7,15 @@
 let wrapped = null;
 export function functionFetch(...args) {
   if (!wrapped) {
-    // eslint-disable-next-line global-require
-    const { withAppVersion } = require('./appVersion');
-    wrapped = withAppVersion((...a) => fetch(...a));
+    try {
+      // eslint-disable-next-line global-require
+      const { withAppVersion } = require('./appVersion');
+      wrapped = withAppVersion((...a) => fetch(...a));
+    } catch {
+      // Only in plain-Node unit tests that don't mock React Native (in the app this module always loads). Sending no
+      // version headers can only cause a refusal (strict mode), never pass something the server would refuse.
+      wrapped = (...a) => fetch(...a);
+    }
   }
   return wrapped(...args);
 }
