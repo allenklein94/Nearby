@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +10,7 @@ import { PIN_HEAD_LIFT } from '../motion/pinToSheet';
 import { isMapLiveNow } from '../utils/rightNowWindow';
 import { stackGatheringPins } from '../utils/mapPinStacks';
 import MapGlyphPin from './MapGlyphPin';
+import EmptyCopy from './EmptyCopy';
 
 // Pin colours (unchanged by idea "346"; each pin now also carries its type's glyph, components/MapGlyphPin.js).
 const LIVE_PIN_COLOR = '#e63946';
@@ -35,7 +36,7 @@ const CALLOUT_ANCHOR = { x: 0.5, y: 0 };
 // location of their own anywhere in the schema, so there's no real
 // coordinate to honestly show.
 
-export default function GatheringsMapView({ gatherings, deals = [], businesses = [], stories = [], storyPhotoUrls = {}, userLocation, onSelectGathering, onSelectDeal, onSelectBusiness, onSelectStory, areas = [], onSelectArea, restoreRegion = null, onRegionChangeComplete }) {
+export default function GatheringsMapView({ gatherings, deals = [], businesses = [], stories = [], storyPhotoUrls = {}, userLocation, onSelectGathering, onSelectDeal, onSelectBusiness, onSelectStory, areas = [], onSelectArea, restoreRegion = null, onRegionChangeComplete, emptyNotice = null }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -203,6 +204,18 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         <Text style={styles.approxCaptionText}>{t('ui.mapView.gatheringPinsApproximate')}</Text>
       </View>
     )}
+    {/* Device test 2026-11-27: no pins = the reason the screen gave (utils/discoverStatus.js: failed read, location off, filters,
+        or nothing nearby yet) with its one next step; the map stays usable underneath. Static, no motion. */}
+    {emptyNotice && (
+      <View style={styles.emptyNotice}>
+        <EmptyCopy id={emptyNotice.id} />
+        {emptyNotice.action && (
+          <TouchableOpacity onPress={emptyNotice.action.onPress} accessibilityRole="button" accessibilityLabel={emptyNotice.action.label} style={styles.emptyNoticeAction}>
+            <Text style={styles.emptyNoticeActionText}>{emptyNotice.action.label}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    )}
     </View>
   );
 }
@@ -231,4 +244,11 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.sm, paddingVertical: 4,
   },
   areaPillText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700' },
+  emptyNotice: {
+    position: 'absolute', left: spacing.md, right: spacing.md, bottom: spacing.lg,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.md, alignItems: 'center',
+  },
+  emptyNoticeAction: { marginTop: spacing.sm, paddingVertical: spacing.xs, paddingHorizontal: spacing.md, minHeight: 44, justifyContent: 'center' },
+  emptyNoticeActionText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
 });

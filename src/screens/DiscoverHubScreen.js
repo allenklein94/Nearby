@@ -38,7 +38,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSignedStoryUrl, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
-import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons, getMyInterestedGatheringIds } from '../services/gatherings';
+import { getNearbyGatheringsResult, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons, getMyInterestedGatheringIds } from '../services/gatherings';
 import useNotInterested from '../hooks/useNotInterested';
 import useCardInterested from '../hooks/useCardInterested';
 import CardInterestedStar from '../components/CardInterestedStar';
@@ -115,6 +115,8 @@ import { matchesDateFilter, DATE_OPTIONS } from '../utils/gatheringDateFilter';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { activitySuggestions } from '../utils/activitySuggestions';
 import { isFreshDiscoverEntry, sessionPredatesFreshEntry } from '../utils/discoverEntry';
+import { discoverLandingState, mapEmptyReason } from '../utils/discoverStatus';
+import LoadErrorState from '../components/LoadErrorState';
 import { filtersForNewAsk, applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, selectActivity, pickedActivity, clearPick, createParamsFromGatheringFilters, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
 import useMyInterests from '../hooks/useMyInterests';
 import { canonicalizeInterests } from '../constants/interestGraph';
@@ -944,6 +946,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // position instead of a loader pushing everything down.
   const [coreLoadedOnce, setCoreLoadedOnce] = useState(false);
   const showCoreLoader = loadingCore && !coreLoadedOnce;
+  // Device test 2026-11-27: the gatherings read failed (a network or server error), so the list is not "nothing nearby".
+  const [coreFailed, setCoreFailed] = useState(false);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const placesRequestId = useRef(0);
 
@@ -1038,7 +1042,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       // rather than waiting on the location permission check + GPS fix
       // below (which can itself take a couple of seconds) before even
       // kicking them off.
-      const gatheringsPromise = getNearbyGatherings('wide');
+      const gatheringsPromise = getNearbyGatheringsResult('wide');
       const publicCommunitiesPromise = getPublicCommunities();
       const myCommunitiesPromise = getMyCommunities();
 
@@ -1051,7 +1055,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         setUserLocation(loc);
       }
 
-      const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData, redemptionRows] = await Promise.all([
+      const [gatheringsResult, publicCommunities, myCommunities, offersData, businessesData, redemptionRows] = await Promise.all([
         gatheringsPromise,
         publicCommunitiesPromise,
         myCommunitiesPromise,
@@ -1060,6 +1064,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
         getMyRedemptionRows().catch(() => []),
       ]);
 
+      const gatheringsData = gatheringsResult.data;
+      setCoreFailed(!!gatheringsResult.error);
       const joinedCommunityIds = new Set(myCommunities.map((c) => c.id));
       joinedCommunityIdsRef.current = joinedCommunityIds;
       setGatherings(gatheringsData);
@@ -1086,6 +1092,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       }
     } catch (e) {
       console.error('Discover loadCore failed', e);
+      setCoreFailed(true);
     }
     setLoadingCore(false);
   }
@@ -1651,6 +1658,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const communitiesToShow = capList(filteredCommunities, 'activities');
   const offersToShow = capList(withoutFoundBlock(filteredOffers, 'offers', topShown), 'offers');
   const placesToShow = capList(visiblePlaces, 'places');
+  // Device test 2026-11-27: what the plain All view really lays out, so a blank screen says why (utils/discoverStatus.js).
+  const allViewShownCount = discoverSections.reduce((n, sec) => n + (sec.items?.length ?? 0), 0)
+    + topCategoryGatherings.length + notableGatherings.length + communitiesToShow.length + offersToShow.length
+    + happeningNearby.length + (showPlaces ? placesToShow.length : 0);
+  const landingState = discoverLandingState({
+    loadedOnce: coreLoadedOnce, loading: loadingCore, failed: coreFailed, hasLocation: !!userLocation, shownCount: allViewShownCount,
+  });
   const onTopOrNotTabbed = !resultTabsActive || resultTab === 'top';
   // "See all" inside a preview: switches to that result tab during a search, else to the type tab as before.
   const seeAllVisible = (kind) => (resultTabsActive ? resultTab === 'top' : isAll);
@@ -2133,6 +2147,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
   // A business that goes to its customers has no pin (only a rounded area is stored; utils/businessLocationMode.js); it stays in the list.
   const mapBusinesses = showPerks ? shownBusinesses.filter(hasMapPin) : [];
+  // The map's own reason for showing no pins (same rule; `narrowed` = anything limiting what can be pinned).
+  const mapPinCount = (showGatherings ? filteredGatherings.length : 0) + (mapDeals?.length ?? 0) + (mapBusinesses?.length ?? 0);
+  const mapReason = viewStyle === 'map' ? mapEmptyReason({
+    pinCount: mapPinCount, loadedOnce: coreLoadedOnce, loading: loadingCore, failed: coreFailed, hasLocation: !!userLocation,
+    narrowed: isSearching || !isAll || gatheringFiltersOn || !!environmentFilter || openNowActive,
+  }) : null;
+  const mapNotice = mapReason ? {
+    id: mapReason,
+    action: mapReason === 'map_load_failed' ? { label: t('ui.shared.loadError.retry'), onPress: loadCore }
+      : mapReason === 'map_location_off' ? { label: t('ui.home.locationCta'), onPress: enableLocation }
+      : { label: t('ui.discover.toList'), onPress: () => setViewStyle('list') },
+  } : null;
 
   const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
 
@@ -3100,6 +3126,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             onSelectArea={mapAreasShown ? openMapArea : undefined}
             restoreRegion={restoreMapRegion}
             onRegionChangeComplete={(r) => { mapRegionRef.current = rememberMapRegion(r, mapContext); }}
+            emptyNotice={mapNotice}
           />
         </View>
       ) : (
@@ -3170,7 +3197,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
               logic the dedicated Gatherings screen's own "When" filter
               uses) and hides itself when genuinely empty, same as every
               other section on this screen -- no fabricated placeholder. */}
-          {!loadingCore && !userLocation && isAll && !isSearching && (
+          {/* Device test 2026-11-27: a failed read says so with Try Again (any type tab), never "nothing nearby". */}
+          {!isSearching && landingState === 'error' && <LoadErrorState onRetry={loadCore} />}
+          {isAll && !isSearching && landingState === 'location_off' && (
             <View style={{ marginBottom: spacing.md }}>
               <Text style={styles.emptyTextTight}>{t('ui.discover.locationBody')}</Text>
               <TouchableOpacity onPress={enableLocation} accessibilityLabel={t('ui.home.locationA11y')} accessibilityRole="button">
@@ -3215,6 +3244,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
               )}
             </React.Fragment>
           ))}
+          {/* Device test 2026-11-27: the All view's reads answered and nothing is here: say so, with a real next step (start
+              one; the Browse rail above stays for other activities). Never shown while loading or after a failed read. */}
+          {isAll && !isSearching && !dateView && !expandedContext && landingState === 'empty' && (
+            <View style={{ paddingVertical: spacing.lg }}>
+              <EmptyCopy id="discover_nothing_nearby" />
+              <TouchableOpacity
+                onPress={() => navigation.navigate('CreateGathering')}
+                accessibilityLabel={t('ui.gatherings.startA11y')}
+                accessibilityRole="button"
+                style={{ alignSelf: 'center', marginTop: spacing.sm }}
+              >
+                <Text style={styles.emptyActionText}>{t('ui.gatherings.start')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Item 39 ("search should understand the same language as the
               intent box"): a real natural-language understanding of the
@@ -3430,7 +3474,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               (unaffected by the P1 item 14 redesign above, which only
               replaces the default "All" landing view). */}
           {/* B3: the Gatherings tab with nothing to show says why, with the old feed's next steps (never a dead end). */}
-          {gatheringTabActive && !isSearching && coreLoadedOnce && !showCoreLoader && filteredGatherings.length === 0 && (() => {
+          {gatheringTabActive && !isSearching && coreLoadedOnce && !showCoreLoader && !coreFailed && filteredGatherings.length === 0 && (() => {
             const f = gatheringFilters;
             const filtered = gatheringFiltersOn || !!environmentFilter || openNowActive;
             const label = pickedActivity(f) ? quickOptionLabel({ label: f.pick }, language) : (f.category ? names.tag(f.category) : '');

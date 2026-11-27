@@ -48,6 +48,11 @@ const en = {
   gatherings_filtered: { title: 'No gatherings match these filters', body: 'Try widening the date or category.' },
   discover_date_none: { title: 'Nothing here with these filters', body: 'Turn off a filter, or go back to see everything else nearby.' },
   discover_date_empty: { title: 'Nothing nearby for this time yet', body: 'New gatherings appear here as people create them. Go back to see everything else nearby.' },
+  discover_nothing_nearby: { title: 'Nothing nearby yet', body: 'Gatherings, communities and perks show up here as people and businesses near you add them.' },
+  map_none: { title: 'Nothing on the map nearby yet', body: 'Gatherings, perks and businesses with a location show up here as pins.' },
+  map_filtered: { title: 'Nothing on the map matches', body: 'Clear a filter or the search to see more pins.' },
+  map_location_off: { title: 'Location is off', body: 'Turn on location to see what\'s around you on the map.' },
+  map_load_failed: { title: 'Couldn\'t load what\'s nearby', body: 'Check your connection and try again.' },
 };
 
 const es = {
@@ -97,6 +102,11 @@ const es = {
   gatherings_filtered: { title: 'Ninguna reunión coincide con estos filtros', body: 'Prueba a ampliar la fecha o la categoría.' },
   discover_date_none: { title: 'No hay nada con estos filtros', body: 'Quita un filtro o vuelve atrás para ver todo lo demás cerca.' },
   discover_date_empty: { title: 'Todavía no hay nada cerca para este momento', body: 'Las nuevas reuniones aparecen aquí cuando alguien las crea. Vuelve atrás para ver todo lo demás cerca.' },
+  discover_nothing_nearby: { title: 'Todavía no hay nada cerca', body: 'Las reuniones, comunidades y beneficios aparecen aquí cuando personas y negocios cerca de ti los añaden.' },
+  map_none: { title: 'Todavía no hay nada en el mapa cerca', body: 'Las reuniones, beneficios y negocios con ubicación aparecen aquí como marcadores.' },
+  map_filtered: { title: 'Nada en el mapa coincide', body: 'Quita un filtro o la búsqueda para ver más marcadores.' },
+  map_location_off: { title: 'La ubicación está desactivada', body: 'Activa la ubicación para ver lo que hay a tu alrededor en el mapa.' },
+  map_load_failed: { title: 'No se pudo cargar lo que hay cerca', body: 'Revisa tu conexión e inténtalo de nuevo.' },
 };
 
 const de = {
@@ -146,6 +156,11 @@ const de = {
   gatherings_filtered: { title: 'Keine Treffen passen zu diesen Filtern', body: 'Probiere einen größeren Zeitraum oder eine andere Kategorie.' },
   discover_date_none: { title: 'Mit diesen Filtern gibt es hier nichts', body: 'Schalte einen Filter aus oder geh zurück, um alles andere in der Nähe zu sehen.' },
   discover_date_empty: { title: 'Für diese Zeit gibt es in der Nähe noch nichts', body: 'Neue Treffen erscheinen hier, sobald jemand sie erstellt. Geh zurück, um alles andere in der Nähe zu sehen.' },
+  discover_nothing_nearby: { title: 'In der Nähe ist noch nichts', body: 'Treffen, Communitys und Vorteile erscheinen hier, sobald Leute und Unternehmen in deiner Nähe sie hinzufügen.' },
+  map_none: { title: 'Auf der Karte ist in der Nähe noch nichts', body: 'Treffen, Vorteile und Unternehmen mit Standort erscheinen hier als Pins.' },
+  map_filtered: { title: 'Nichts auf der Karte passt', body: 'Entferne einen Filter oder die Suche, um mehr Pins zu sehen.' },
+  map_location_off: { title: 'Standort ist aus', body: 'Schalte den Standort ein, um zu sehen, was um dich herum auf der Karte ist.' },
+  map_load_failed: { title: 'Konnte nicht laden, was in der Nähe ist', body: 'Prüfe deine Verbindung und versuche es erneut.' },
 };
 
 const fr = {
@@ -195,6 +210,11 @@ const fr = {
   gatherings_filtered: { title: 'Aucune rencontre ne correspond à ces filtres', body: 'Essayez d’élargir la date ou la catégorie.' },
   discover_date_none: { title: 'Rien ici avec ces filtres', body: 'Désactivez un filtre ou revenez en arrière pour voir tout le reste à proximité.' },
   discover_date_empty: { title: 'Rien à proximité pour ce moment pour l\'instant', body: 'Les nouveaux rassemblements apparaissent ici dès qu\'ils sont créés. Revenez en arrière pour voir tout le reste à proximité.' },
+  discover_nothing_nearby: { title: 'Rien à proximité pour l\'instant', body: 'Les rassemblements, communautés et avantages apparaissent ici quand des personnes et des commerces près de vous les ajoutent.' },
+  map_none: { title: 'Rien sur la carte à proximité pour l\'instant', body: 'Les rassemblements, avantages et commerces avec un emplacement apparaissent ici sous forme de repères.' },
+  map_filtered: { title: 'Rien sur la carte ne correspond', body: 'Retirez un filtre ou la recherche pour voir plus de repères.' },
+  map_location_off: { title: 'La localisation est désactivée', body: 'Activez la localisation pour voir ce qui vous entoure sur la carte.' },
+  map_load_failed: { title: 'Impossible de charger ce qui est à proximité', body: 'Vérifiez votre connexion et réessayez.' },
 };
 
 const pt = {
@@ -244,6 +264,11 @@ const pt = {
   gatherings_filtered: { title: 'Nenhum encontro corresponde a estes filtros', body: 'Tente ampliar a data ou a categoria.' },
   discover_date_none: { title: 'Nada aqui com estes filtros', body: 'Desative um filtro ou volte para ver tudo o mais por perto.' },
   discover_date_empty: { title: 'Ainda não há nada por perto para este horário', body: 'Novos encontros aparecem aqui quando alguém os cria. Volte para ver tudo o mais por perto.' },
+  discover_nothing_nearby: { title: 'Ainda não há nada por perto', body: 'Encontros, comunidades e vantagens aparecem aqui quando pessoas e negócios perto de você os adicionam.' },
+  map_none: { title: 'Ainda não há nada no mapa por perto', body: 'Encontros, vantagens e negócios com localização aparecem aqui como marcadores.' },
+  map_filtered: { title: 'Nada no mapa corresponde', body: 'Remova um filtro ou a busca para ver mais marcadores.' },
+  map_location_off: { title: 'A localização está desativada', body: 'Ative a localização para ver o que há ao seu redor no mapa.' },
+  map_load_failed: { title: 'Não foi possível carregar o que há por perto', body: 'Verifique sua conexão e tente novamente.' },
 };
 
 const ht = {
@@ -293,6 +318,11 @@ const ht = {
   gatherings_filtered: { title: 'Pa gen rasanbleman ki koresponn ak filt sa yo', body: 'Eseye elaji dat la oswa kategori a.' },
   discover_date_none: { title: 'Pa gen anyen la ak filt sa yo', body: 'Retire yon filt, oswa tounen pou wè tout lòt bagay ki toupre.' },
   discover_date_empty: { title: 'Pa gen anyen toupre pou lè sa a ankò', body: 'Nouvo rasanbleman parèt isit la lè moun kreye yo. Tounen pou wè tout lòt bagay ki toupre.' },
+  discover_nothing_nearby: { title: 'Poko gen anyen toupre', body: 'Rasanbleman, kominote ak avantaj parèt isit la lè moun ak biznis toupre w ajoute yo.' },
+  map_none: { title: 'Poko gen anyen sou kat la toupre', body: 'Rasanbleman, avantaj ak biznis ki gen yon kote parèt isit la kòm pin.' },
+  map_filtered: { title: 'Anyen sou kat la pa koresponn', body: 'Retire yon filtè oswa rechèch la pou wè plis pin.' },
+  map_location_off: { title: 'Lokalizasyon fèmen', body: 'Limen lokalizasyon pou wè sa ki bò kote w sou kat la.' },
+  map_load_failed: { title: 'Nou pa t ka chaje sa ki toupre', body: 'Tcheke koneksyon w epi eseye ankò.' },
 };
 
 const zh = {
@@ -342,6 +372,11 @@ const zh = {
   gatherings_filtered: { title: '没有符合这些筛选条件的聚会', body: '试试放宽日期或类别。' },
   discover_date_none: { title: '在这些筛选条件下没有内容', body: '关闭一个筛选条件，或返回查看附近的其他内容。' },
   discover_date_empty: { title: '这个时间附近暂时还没有活动', body: '有人创建新聚会后会显示在这里。返回查看附近的其他内容。' },
+  discover_nothing_nearby: { title: '附近还没有内容', body: '附近的人和商家添加聚会、社群和优惠后，会显示在这里。' },
+  map_none: { title: '地图上附近还没有内容', body: '有位置的聚会、优惠和商家会以图钉显示在这里。' },
+  map_filtered: { title: '地图上没有符合的内容', body: '清除筛选或搜索以查看更多图钉。' },
+  map_location_off: { title: '位置已关闭', body: '开启位置以在地图上查看你周围的内容。' },
+  map_load_failed: { title: '无法加载附近的内容', body: '请检查网络连接后重试。' },
 };
 
 const vi = {
@@ -391,6 +426,11 @@ const vi = {
   gatherings_filtered: { title: 'Không có buổi gặp mặt nào khớp với bộ lọc này', body: 'Thử mở rộng ngày hoặc danh mục.' },
   discover_date_none: { title: 'Không có gì với các bộ lọc này', body: 'Tắt một bộ lọc, hoặc quay lại để xem mọi thứ khác ở gần.' },
   discover_date_empty: { title: 'Chưa có gì gần bạn cho khung giờ này', body: 'Các buổi tụ họp mới sẽ xuất hiện ở đây khi có người tạo. Quay lại để xem mọi thứ khác ở gần.' },
+  discover_nothing_nearby: { title: 'Chưa có gì gần bạn', body: 'Các buổi tụ họp, cộng đồng và ưu đãi sẽ xuất hiện ở đây khi mọi người và doanh nghiệp gần bạn thêm vào.' },
+  map_none: { title: 'Chưa có gì trên bản đồ gần bạn', body: 'Các buổi tụ họp, ưu đãi và doanh nghiệp có vị trí sẽ hiện ở đây dưới dạng ghim.' },
+  map_filtered: { title: 'Không có gì trên bản đồ phù hợp', body: 'Bỏ một bộ lọc hoặc tìm kiếm để xem thêm ghim.' },
+  map_location_off: { title: 'Vị trí đang tắt', body: 'Bật vị trí để xem những gì quanh bạn trên bản đồ.' },
+  map_load_failed: { title: 'Không tải được những gì gần bạn', body: 'Kiểm tra kết nối và thử lại.' },
 };
 
 const tl = {
@@ -440,6 +480,11 @@ const tl = {
   gatherings_filtered: { title: 'Walang pagtitipong tugma sa mga filter na ito', body: 'Subukang palawakin ang petsa o kategorya.' },
   discover_date_none: { title: 'Walang laman dito sa mga filter na ito', body: 'Patayin ang isang filter, o bumalik para makita ang lahat ng iba pa sa malapit.' },
   discover_date_empty: { title: 'Wala pang malapit para sa oras na ito', body: 'Lalabas dito ang mga bagong pagtitipon kapag may gumawa. Bumalik para makita ang lahat ng iba pa sa malapit.' },
+  discover_nothing_nearby: { title: 'Wala pang malapit', body: 'Lalabas dito ang mga pagtitipon, komunidad at perk kapag idinagdag ng mga tao at negosyo malapit sa iyo.' },
+  map_none: { title: 'Wala pang malapit sa mapa', body: 'Lalabas dito bilang mga pin ang mga pagtitipon, perk at negosyo na may lokasyon.' },
+  map_filtered: { title: 'Walang tumutugma sa mapa', body: 'Alisin ang isang filter o ang paghahanap para makakita ng mas maraming pin.' },
+  map_location_off: { title: 'Naka-off ang lokasyon', body: 'I-on ang lokasyon para makita sa mapa kung ano ang nasa paligid mo.' },
+  map_load_failed: { title: 'Hindi ma-load kung ano ang malapit', body: 'Tingnan ang iyong koneksyon at subukang muli.' },
 };
 
 const ru = {
@@ -489,6 +534,11 @@ const ru = {
   gatherings_filtered: { title: 'Нет встреч по этим фильтрам', body: 'Попробуйте расширить даты или категорию.' },
   discover_date_none: { title: 'С этими фильтрами здесь ничего нет', body: 'Отключите фильтр или вернитесь назад, чтобы увидеть всё остальное рядом.' },
   discover_date_empty: { title: 'Рядом на это время пока ничего нет', body: 'Новые встречи появятся здесь, когда их создадут. Вернитесь назад, чтобы увидеть всё остальное рядом.' },
+  discover_nothing_nearby: { title: 'Рядом пока ничего нет', body: 'Встречи, сообщества и бонусы появятся здесь, когда люди и компании рядом с вами их добавят.' },
+  map_none: { title: 'На карте рядом пока ничего нет', body: 'Встречи, бонусы и компании с указанным местом появляются здесь в виде меток.' },
+  map_filtered: { title: 'На карте ничего не подходит', body: 'Уберите фильтр или поиск, чтобы увидеть больше меток.' },
+  map_location_off: { title: 'Геолокация выключена', body: 'Включите геолокацию, чтобы увидеть на карте, что рядом с вами.' },
+  map_load_failed: { title: 'Не удалось загрузить то, что рядом', body: 'Проверьте подключение и попробуйте снова.' },
 };
 
 const ko = {
@@ -538,6 +588,11 @@ const ko = {
   gatherings_filtered: { title: '이 필터와 일치하는 모임이 없어요', body: '날짜나 카테고리를 넓혀 보세요.' },
   discover_date_none: { title: '이 필터로는 표시할 항목이 없어요', body: '필터를 끄거나 뒤로 가서 근처의 다른 항목을 확인해 보세요.' },
   discover_date_empty: { title: '이 시간대에는 아직 근처에 아무것도 없어요', body: '누군가 새 모임을 만들면 여기에 표시돼요. 뒤로 가서 근처의 다른 항목을 확인해 보세요.' },
+  discover_nothing_nearby: { title: '아직 근처에 아무것도 없어요', body: '근처의 사람들과 비즈니스가 모임, 커뮤니티, 혜택을 추가하면 여기에 표시돼요.' },
+  map_none: { title: '아직 지도 근처에 아무것도 없어요', body: '위치가 있는 모임, 혜택, 비즈니스가 여기에 핀으로 표시돼요.' },
+  map_filtered: { title: '지도에 맞는 항목이 없어요', body: '필터나 검색을 지우면 더 많은 핀을 볼 수 있어요.' },
+  map_location_off: { title: '위치가 꺼져 있어요', body: '위치를 켜면 지도에서 주변을 볼 수 있어요.' },
+  map_load_failed: { title: '근처 항목을 불러오지 못했어요', body: '연결을 확인하고 다시 시도해 주세요.' },
 };
 
 export default { en, es, de, fr, pt, ht, zh, vi, tl, ru, ko };

@@ -264,12 +264,14 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
 // the candidate-id fetch can never grow unbounded with the table. The
 // second query below then only ever selects full row data (with joins) for
 // those bounded candidate ids, not the entire table.
-export async function getNearbyGatherings(tier = 'local') {
+// Device test 2026-11-27: the same read, reporting a failure instead of an empty list, so Discover can show Try Again
+// rather than "nothing nearby" (the UX audit's sibling-read pattern; getNearbyGatherings keeps its [] contract).
+export async function getNearbyGatheringsResult(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
   const location = await getUserLocation();
-  if (!location) return [];
+  if (!location) return { data: [], error: null };
   const myLat = location.coords.latitude;
   const myLng = location.coords.longitude;
 
@@ -283,10 +285,10 @@ export async function getNearbyGatherings(tier = 'local') {
   });
   if (candidateError) {
     console.error('get_bounded_nearby_gathering_ids error', candidateError);
-    return [];
+    return { data: [], error: candidateError };
   }
   const candidateIds = (candidateRows ?? []).map((r) => r.id);
-  if (candidateIds.length === 0) return [];
+  if (candidateIds.length === 0) return { data: [], error: null };
 
   const { data, error } = await supabase
     .from('gatherings')
@@ -296,11 +298,15 @@ export async function getNearbyGatherings(tier = 'local') {
 
   if (error) {
     console.error('getNearbyGatherings error', error);
-    return [];
+    return { data: [], error };
   }
 
   const filtered = applyGatheringVisibilityFilters(data ?? [], context);
-  return enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier);
+  return { data: enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier), error: null };
+}
+
+export async function getNearbyGatherings(tier = 'local') {
+  return (await getNearbyGatheringsResult(tier)).data;
 }
 
 // Real, indexed, server-side search — used by DiscoverHubScreen's search box

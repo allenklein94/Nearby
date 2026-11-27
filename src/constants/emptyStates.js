@@ -82,6 +82,12 @@ export const EMPTY_STATES = {
   gatherings_filtered: { title: "No gatherings match these filters", body: "Try widening the date or category." },
   discover_date_none: { title: "Nothing here with these filters", body: "Turn off a filter, or go back to see everything else nearby." },
   discover_date_empty: { title: "Nothing nearby for this time yet", body: "New gatherings appear here as people create them. Go back to see everything else nearby." },
+  // Device test 2026-11-27: Discover's All view with nothing to show, and the map's empty reasons (utils/discoverStatus.js).
+  discover_nothing_nearby: { title: 'Nothing nearby yet', body: "Gatherings, communities and perks show up here as people and businesses near you add them." },
+  map_none: { title: 'Nothing on the map nearby yet', body: "Gatherings, perks and businesses with a location show up here as pins." },
+  map_filtered: { title: 'Nothing on the map matches', body: "Clear a filter or the search to see more pins." },
+  map_location_off: { title: 'Location is off', body: "Turn on location to see what's around you on the map." },
+  map_load_failed: { title: "Couldn't load what's nearby", body: "Check your connection and try again." },
 };
 
 export function emptyCopy(id, vars = {}) {
