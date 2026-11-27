@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { spacing, radius, typography } from '../theme';
 import { getQuickPrompts } from '../utils/timeContext';
+import { quickPickActivityFor } from '../utils/createActivityPicker';
 import { iconNameForOption } from '../constants/quickPickIcons';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
@@ -74,6 +75,8 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
     navigation.navigate('CreateGathering', {
       quickStartTitle: quickOptionLabel(item, language),
       quickStartCategory: item.category,
+      // the pick's own word is the activity only when it is a real Quick Pick label for that category (DB guard pairs)
+      ...(quickPickActivityFor(item) ? { quickStartActivity: quickPickActivityFor(item) } : {}),
     });
   }
 
@@ -82,6 +85,9 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
     navigation.navigate('CreateGathering', {
       quickStartTitle: quickOptionLabel(subLabel === "Doesn't matter" || subLabel === 'Other' ? activeCategory : { label: subLabel }, language),
       quickStartCategory: activeCategory.category,
+      // Device test 2026-11-27 (item 5): the cuisine only names the title; the activity stays "Dinner" (gatherings.activity),
+      // so editing the title never loses it.
+      quickStartActivity: activeCategory.label,
     });
   }
 

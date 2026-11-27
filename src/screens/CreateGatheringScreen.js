@@ -37,6 +37,8 @@ import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayForPreset } from '../utils/whenPresets';
+import { compactActivityPicker } from '../utils/createActivityPicker';
+import { quickOptionLabel } from '../i18n/optionLabels';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -168,6 +170,11 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [interestTag, setInterestTag] = useState(null);
   // Owner 2026-10-27: the Quick Pick Create was opened from ("Dinner"); stored as the gathering's activity at publish.
   const carriedActivity = route.params?.quickStartActivity ?? null;
+  // Device test 2026-11-27 (item 7): when the activity arrived with the person (a quick pick, an ask, Start Something),
+  // the What step shows it compactly instead of the full category list; "Adjust" opens the full list. Picking from the
+  // full list keeps it open (the person is choosing).
+  const activityFromContext = !!(carriedActivity || route.params?.quickStartCategory);
+  const [activityListOpen, setActivityListOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [visibility, setVisibility] = useState('everyone');
@@ -785,7 +792,16 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
             <Text style={styles.label}>{t('ui.gatheringForm.activityLabel')}</Text>
             {fieldError('activity')}
-            {orderGroupsByInterests(CATEGORY_GROUPS, myInterests).map((group) => (
+            {compactActivityPicker(activityFromContext, interestTag, activityListOpen) ? (
+              <View style={styles.whenResultRow}>
+                <Text style={styles.whenResultText}>
+                  {`${categoryStyleFor(interestTag).icon} ${carriedActivity ? quickOptionLabel({ label: carriedActivity }, language) : names.tag(interestTag)}`}
+                </Text>
+                <TouchableOpacity onPress={() => setActivityListOpen(true)} accessibilityRole="button" accessibilityLabel={t('ui.gatheringForm.adjust')}>
+                  <Text style={styles.whenAdjustLink}>{t('ui.gatheringForm.adjust')}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : orderGroupsByInterests(CATEGORY_GROUPS, myInterests).map((group) => (
               <View key={group.key} style={{ marginBottom: spacing.sm }}>
                 <Text style={styles.subLabel}>{group.icon} {names.group(group.key, group.label)}</Text>
                 <View style={styles.chipsWrap}>
