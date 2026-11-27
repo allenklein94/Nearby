@@ -35,7 +35,9 @@
   "quick.meetNewPeople": "Meet New People",
   "quick.askNearbyBusinesses": "Ask Nearby Businesses",
   "quick.weeklyMeetup": "Start a Weekly Meetup",
-  "quick.letNearbyPlanIt": "Let Nearby Plan It"
+  "quick.letNearbyPlanIt": "Let Nearby Plan It",
+  "quickHint.letNearbyPlanIt": "Nearby suggests a plan for an occasion",
+  "quickHint.somethingElse": "Describe it in your own words"
  },
  "es": {
   "create": "Crear",
@@ -73,7 +75,9 @@
   "quick.meetNewPeople": "Conocer gente nueva",
   "quick.askNearbyBusinesses": "Preguntar a negocios cercanos",
   "quick.weeklyMeetup": "Crear una quedada semanal",
-  "quick.letNearbyPlanIt": "Deja que Nearby lo planee"
+  "quick.letNearbyPlanIt": "Deja que Nearby lo planee",
+  "quickHint.letNearbyPlanIt": "Nearby te sugiere un plan para una ocasión",
+  "quickHint.somethingElse": "Descríbelo con tus propias palabras"
  },
  "de": {
   "create": "Erstellen",
@@ -111,7 +115,9 @@
   "quick.meetNewPeople": "Neue Leute kennenlernen",
   "quick.askNearbyBusinesses": "Lokale Geschäfte fragen",
   "quick.weeklyMeetup": "Ein wöchentliches Treffen starten",
-  "quick.letNearbyPlanIt": "Lass Nearby planen"
+  "quick.letNearbyPlanIt": "Lass Nearby planen",
+  "quickHint.letNearbyPlanIt": "Nearby schlägt einen Plan für einen Anlass vor",
+  "quickHint.somethingElse": "Beschreib es mit deinen eigenen Worten"
  },
  "fr": {
   "create": "Créer",
@@ -149,7 +155,9 @@
   "quick.meetNewPeople": "Rencontrer de nouvelles personnes",
   "quick.askNearbyBusinesses": "Demander aux commerces proches",
   "quick.weeklyMeetup": "Lancer un rendez-vous hebdo",
-  "quick.letNearbyPlanIt": "Laisse Nearby s'en occuper"
+  "quick.letNearbyPlanIt": "Laisse Nearby s'en occuper",
+  "quickHint.letNearbyPlanIt": "Nearby te propose un plan pour une occasion",
+  "quickHint.somethingElse": "Décris-le avec tes propres mots"
  },
  "pt": {
   "create": "Criar",
@@ -187,7 +195,9 @@
   "quick.meetNewPeople": "Conhecer pessoas novas",
   "quick.askNearbyBusinesses": "Perguntar a negócios próximos",
   "quick.weeklyMeetup": "Começar um encontro semanal",
-  "quick.letNearbyPlanIt": "Deixe o Nearby planejar"
+  "quick.letNearbyPlanIt": "Deixe o Nearby planejar",
+  "quickHint.letNearbyPlanIt": "O Nearby sugere um plano para uma ocasião",
+  "quickHint.somethingElse": "Descreva com suas próprias palavras"
  },
  "ht": {
   "create": "Kreye",
@@ -225,7 +235,9 @@
   "quick.meetNewPeople": "Rankontre nouvo moun",
   "quick.askNearbyBusinesses": "Mande biznis ki toupre yo",
   "quick.weeklyMeetup": "Kòmanse yon rankont chak semèn",
-  "quick.letNearbyPlanIt": "Kite Nearby planifye l"
+  "quick.letNearbyPlanIt": "Kite Nearby planifye l",
+  "quickHint.letNearbyPlanIt": "Nearby pwopoze yon plan pou yon okazyon",
+  "quickHint.somethingElse": "Dekri l ak pwòp mo pa w"
  },
  "zh": {
   "create": "创建",
@@ -263,7 +275,9 @@
   "quick.meetNewPeople": "结识新朋友",
   "quick.askNearbyBusinesses": "询问附近商家",
   "quick.weeklyMeetup": "发起每周聚会",
-  "quick.letNearbyPlanIt": "让 Nearby 来安排"
+  "quick.letNearbyPlanIt": "让 Nearby 来安排",
+  "quickHint.letNearbyPlanIt": "Nearby 为某个场合建议一个计划",
+  "quickHint.somethingElse": "用你自己的话描述"
  },
  "vi": {
   "create": "Tạo",
@@ -301,7 +315,9 @@
   "quick.meetNewPeople": "Gặp gỡ người mới",
   "quick.askNearbyBusinesses": "Hỏi doanh nghiệp gần đây",
   "quick.weeklyMeetup": "Bắt đầu buổi gặp hàng tuần",
-  "quick.letNearbyPlanIt": "Để Nearby lên kế hoạch"
+  "quick.letNearbyPlanIt": "Để Nearby lên kế hoạch",
+  "quickHint.letNearbyPlanIt": "Nearby gợi ý kế hoạch cho một dịp",
+  "quickHint.somethingElse": "Mô tả bằng lời của bạn"
  },
  "tl": {
   "create": "Gumawa",
@@ -339,7 +355,9 @@
   "quick.meetNewPeople": "Makakilala ng Bagong Tao",
   "quick.askNearbyBusinesses": "Magtanong sa Kalapit na Negosyo",
   "quick.weeklyMeetup": "Magsimula ng Lingguhang Meetup",
-  "quick.letNearbyPlanIt": "Hayaang Magplano ang Nearby"
+  "quick.letNearbyPlanIt": "Hayaang Magplano ang Nearby",
+  "quickHint.letNearbyPlanIt": "Nagmumungkahi ang Nearby ng plano para sa isang okasyon",
+  "quickHint.somethingElse": "Ilarawan ito sa sarili mong salita"
  },
  "ru": {
   "create": "Создать",
@@ -377,7 +395,9 @@
   "quick.meetNewPeople": "Познакомиться с новыми людьми",
   "quick.askNearbyBusinesses": "Спросить местные заведения",
   "quick.weeklyMeetup": "Начать еженедельные встречи",
-  "quick.letNearbyPlanIt": "Пусть Nearby всё спланирует"
+  "quick.letNearbyPlanIt": "Пусть Nearby всё спланирует",
+  "quickHint.letNearbyPlanIt": "Nearby предложит план для повода",
+  "quickHint.somethingElse": "Опишите своими словами"
  },
  "ko": {
   "create": "만들기",
@@ -415,6 +435,8 @@
   "quick.meetNewPeople": "새로운 사람 만나기",
   "quick.askNearbyBusinesses": "근처 업체에 물어보기",
   "quick.weeklyMeetup": "주간 모임 시작하기",
-  "quick.letNearbyPlanIt": "Nearby에게 계획 맡기기"
+  "quick.letNearbyPlanIt": "Nearby에게 계획 맡기기",
+  "quickHint.letNearbyPlanIt": "Nearby가 특별한 날을 위한 계획을 제안해요",
+  "quickHint.somethingElse": "직접 설명해 주세요"
  }
 }

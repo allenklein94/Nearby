@@ -404,7 +404,11 @@ export default function CreateHubScreen({ navigation, route }) {
                     accessibilityRole="button"
                   >
                     <Ionicons name={action.icon} size={18} color={colors.textSecondary} />
-                    <Text style={styles.quickActionLabel}>{t(`ui.createHub.quick.${action.key}`)}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.quickActionLabel}>{t(`ui.createHub.quick.${action.key}`)}</Text>
+                      {/* Device test 2026-11-27 (item 29): the two look-alike actions say how they differ */}
+                      {action.key === 'letNearbyPlanIt' && <Text style={styles.quickActionHint}>{t('ui.createHub.quickHint.letNearbyPlanIt')}</Text>}
+                    </View>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
@@ -413,8 +417,11 @@ export default function CreateHubScreen({ navigation, route }) {
                   accessibilityLabel={t('ui.createHub.somethingElseA11y')}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="bulb-outline" size={18} color={colors.textSecondary} />
-                  <Text style={styles.quickActionLabel}>{t('ui.createHub.somethingElse')}</Text>
+                  <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.quickActionLabel}>{t('ui.createHub.somethingElse')}</Text>
+                    <Text style={styles.quickActionHint}>{t('ui.createHub.quickHint.somethingElse')}</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </>
@@ -468,6 +475,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   quickActionsList: { gap: 2 },
   quickActionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   quickActionLabel: { ...typography.body, color: colors.textSecondary, fontWeight: '600', fontSize: 14 },
+  quickActionHint: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   somethingElseBox: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg,

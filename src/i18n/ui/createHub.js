@@ -50,6 +50,10 @@ export default {
       weeklyMeetup: "Start a Weekly Meetup",
       letNearbyPlanIt: "Let Nearby Plan It",
     },
+    quickHint: {
+      letNearbyPlanIt: "Nearby suggests a plan for an occasion",
+      somethingElse: "Describe it in your own words",
+    },
   },
   es: {
     create: "Crear",
@@ -99,6 +103,10 @@ export default {
       askNearbyBusinesses: "Preguntar a negocios cercanos",
       weeklyMeetup: "Crear una quedada semanal",
       letNearbyPlanIt: "Deja que Nearby lo planee",
+    },
+    quickHint: {
+      letNearbyPlanIt: "Nearby te sugiere un plan para una ocasión",
+      somethingElse: "Descríbelo con tus propias palabras",
     },
   },
   de: {
@@ -150,6 +158,10 @@ export default {
       weeklyMeetup: "Ein wöchentliches Treffen starten",
       letNearbyPlanIt: "Lass Nearby planen",
     },
+    quickHint: {
+      letNearbyPlanIt: "Nearby schlägt einen Plan für einen Anlass vor",
+      somethingElse: "Beschreib es mit deinen eigenen Worten",
+    },
   },
   fr: {
     create: "Créer",
@@ -199,6 +211,10 @@ export default {
       askNearbyBusinesses: "Demander aux commerces proches",
       weeklyMeetup: "Lancer un rendez-vous hebdo",
       letNearbyPlanIt: "Laisse Nearby s'en occuper",
+    },
+    quickHint: {
+      letNearbyPlanIt: "Nearby te propose un plan pour une occasion",
+      somethingElse: "Décris-le avec tes propres mots",
     },
   },
   pt: {
@@ -250,6 +266,10 @@ export default {
       weeklyMeetup: "Começar um encontro semanal",
       letNearbyPlanIt: "Deixe o Nearby planejar",
     },
+    quickHint: {
+      letNearbyPlanIt: "O Nearby sugere um plano para uma ocasião",
+      somethingElse: "Descreva com suas próprias palavras",
+    },
   },
   ht: {
     create: "Kreye",
@@ -299,6 +319,10 @@ export default {
       askNearbyBusinesses: "Mande biznis ki toupre yo",
       weeklyMeetup: "Kòmanse yon rankont chak semèn",
       letNearbyPlanIt: "Kite Nearby planifye l",
+    },
+    quickHint: {
+      letNearbyPlanIt: "Nearby pwopoze yon plan pou yon okazyon",
+      somethingElse: "Dekri l ak pwòp mo pa w",
     },
   },
   zh: {
@@ -350,6 +374,10 @@ export default {
       weeklyMeetup: "发起每周聚会",
       letNearbyPlanIt: "让 Nearby 来安排",
     },
+    quickHint: {
+      letNearbyPlanIt: "Nearby 为某个场合建议一个计划",
+      somethingElse: "用你自己的话描述",
+    },
   },
   vi: {
     create: "Tạo",
@@ -399,6 +427,10 @@ export default {
       askNearbyBusinesses: "Hỏi doanh nghiệp gần đây",
       weeklyMeetup: "Bắt đầu buổi gặp hàng tuần",
       letNearbyPlanIt: "Để Nearby lên kế hoạch",
+    },
+    quickHint: {
+      letNearbyPlanIt: "Nearby gợi ý kế hoạch cho một dịp",
+      somethingElse: "Mô tả bằng lời của bạn",
     },
   },
   tl: {
@@ -450,6 +482,10 @@ export default {
       weeklyMeetup: "Magsimula ng Lingguhang Meetup",
       letNearbyPlanIt: "Hayaang Magplano ang Nearby",
     },
+    quickHint: {
+      letNearbyPlanIt: "Nagmumungkahi ang Nearby ng plano para sa isang okasyon",
+      somethingElse: "Ilarawan ito sa sarili mong salita",
+    },
   },
   ru: {
     create: "Создать",
@@ -500,6 +536,10 @@ export default {
       weeklyMeetup: "Начать еженедельные встречи",
       letNearbyPlanIt: "Пусть Nearby всё спланирует",
     },
+    quickHint: {
+      letNearbyPlanIt: "Nearby предложит план для повода",
+      somethingElse: "Опишите своими словами",
+    },
   },
   ko: {
     create: "만들기",
@@ -549,6 +589,10 @@ export default {
       askNearbyBusinesses: "근처 업체에 물어보기",
       weeklyMeetup: "주간 모임 시작하기",
       letNearbyPlanIt: "Nearby에게 계획 맡기기",
+    },
+    quickHint: {
+      letNearbyPlanIt: "Nearby가 특별한 날을 위한 계획을 제안해요",
+      somethingElse: "직접 설명해 주세요",
     },
   },
 };
