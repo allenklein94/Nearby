@@ -1,4 +1,8 @@
 # 2026-11-12: 20270413 shared website across accounts, staged, verified locally
+
+## 2026-11-27: Build 87 device findings pass (`fix/device-findings-nov27`)
+See `PRODUCT_AUDIT/BUILD87_DEVICE_FINDINGS_2026-11-27.md` for every finding, root cause, change, guard and what remains.
+
 ## 2026-11-16 (later): 0426 fail-closed + server-enforced rollout gate (owner review)
 
 Owner: option (a), but enforced by the server if feasible; no fail-open for location-specific writes; hosted staging
