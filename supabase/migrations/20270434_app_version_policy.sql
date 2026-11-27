@@ -22,12 +22,22 @@
 --     the server once enforced, so an old install that comes back can't reach an incompatible database). Anything else
 --     (browsers without the header, scripts, edge functions' service-role calls, Android builds before this mechanism) is
 --     unidentified and passes.
+--   * Strict mode (private.app_version_settings.refuse_unidentified, default OFF, its own owner step): while on, a
+--     request whose build can't be identified (no header and no Nearby user agent, or a malformed header with no usable
+--     user agent) is refused like a too-old build. Server-side callers (service_role: edge functions' own service calls,
+--     scripts, cron) and the policy read always pass. Off = unidentified clients pass, as before.
+--   * public.app_version_ok(): a probe edge functions call with the client's forwarded version headers, so the SAME hook
+--     decides for edge-function calls (supabase/functions/_shared/appVersion.ts).
 --   * This is a compatibility guard, NOT a security boundary: a client can claim any build. The header can only REFUSE a
 --     request, never grant anything; permissions stay with RLS and the server functions, exactly as before.
---   * Fail open: if the version check itself can't complete (bad config row, unreadable headers), the request passes, so
---     a fault here never locks out supported users. The business-location check keeps its own fail-closed rule.
---   * Not covered (documented): Auth (sign-in still works, every REST call after it is refused), Storage, Realtime and
---     edge functions (they don't pass through the PostgREST hook).
+--   * Fail open while strict mode is off: if the version check itself can't complete (bad config row, unreadable
+--     headers), the request passes, so a fault here never locks out supported users. With strict mode on, a check that
+--     can't complete refuses (the policy read + service role still pass, so `off` always works). The business-location
+--     check keeps its own fail-closed rule.
+--   * Not covered, by design (documented in RELEASE_COMPATIBILITY_PROCESS): Auth (sign-in, recovery, sign-out keep
+--     working; every REST / edge-function call after it is refused), Storage uploads (an old build's upload can't be
+--     attached: the REST / moderate-photo call that registers it is refused), Realtime (read-only, RLS-filtered).
+--     deploy.js accepts enforcement in place of retiring old builds only for migrations that touch none of those.
 -- Additive: no existing row, policy or function body changes. Builds <= 88 work unchanged with enforcement off.
 
 do $$
@@ -76,8 +86,50 @@ create table private.app_version_policy_log (
   new_row jsonb not null,
   changed_at timestamptz not null default now()
 );
-revoke all on private.app_version_policy, private.app_build_availability, private.app_version_policy_log
-  from public, anon, authenticated;
+create table private.app_version_settings (
+  id boolean primary key default true check (id),
+  refuse_unidentified boolean not null default false,
+  updated_at timestamptz not null default now(),
+  updated_by text not null default 'migration 20270434',
+  reason text
+);
+insert into private.app_version_settings default values;
+revoke all on private.app_version_policy, private.app_build_availability, private.app_version_policy_log,
+  private.app_version_settings from public, anon, authenticated;
+
+create or replace function private._app_version_settings_log()
+returns trigger
+language plpgsql
+set search_path = private, public, pg_temp
+as $$
+begin
+  new.updated_at := now();
+  insert into private.app_version_policy_log (platform, old_row, new_row)
+    values ('*', case when tg_op = 'UPDATE' then to_jsonb(old) end, to_jsonb(new));
+  return new;
+end;
+$$;
+revoke all on function private._app_version_settings_log() from public, anon, authenticated;
+create trigger app_version_settings_log before update on private.app_version_settings
+  for each row execute function private._app_version_settings_log();
+
+-- Which distribution channel an update link sends people to. Any other https link (an internal staging install page)
+-- counts as staging_internal; web always reloads from the website.
+create or replace function private._update_url_channel(p_platform text, p_url text)
+returns text
+language sql
+immutable
+set search_path = pg_temp
+as $$
+  select case
+    when p_platform = 'web' then 'website'
+    when p_url is null then null
+    when p_url ~* '^(itms-apps://|https://apps\.apple\.com/)' then 'app_store'
+    when p_url ~* '^(market://|https://play\.google\.com/)' then 'google_play'
+    when p_url ~* '^(itms-beta://|https://testflight\.apple\.com/)' then 'testflight'
+    when p_url ~* '^https://' then 'staging_internal' end;
+$$;
+revoke all on function private._update_url_channel(text, text) from public, anon, authenticated;
 
 create or replace function private._app_version_policy_guard()
 returns trigger
@@ -85,45 +137,40 @@ language plpgsql
 set search_path = private, public, pg_temp
 as $$
 declare
-  v_newest integer;
-  v_store text;
-  v_target integer;
-  v_stricter boolean;
+  v_channel text;
+  v_raise_min boolean;
+  v_raise_latest boolean;
+  v_url_changed boolean;
 begin
   -- Only a change that makes things stricter or changes the link is checked: lowering, clearing and switching off always
   -- go through (emergency recovery can never be blocked by these checks).
-  v_stricter := tg_op = 'INSERT' or new.update_url is distinct from old.update_url
-    or (new.enforced and not old.enforced)
-    or (new.enforced and new.min_supported_build > coalesce(old.min_supported_build, 0))
-    or (new.latest_build > coalesce(old.latest_build, 0));
-  select max(build) into v_newest from private.app_build_availability where platform = new.platform;
-  -- Raising (or enforcing) a minimum needs that build to be available on this platform. Lowering / switching off: always.
-  if new.enforced and (tg_op = 'INSERT' or not old.enforced or new.min_supported_build > coalesce(old.min_supported_build, 0)) then
-    if v_newest is null or new.min_supported_build > v_newest then
-      raise exception 'Build % is not recorded as available on % (newest available: %); a mandatory update would point people at a build they cannot get',
-        new.min_supported_build, new.platform, coalesce(v_newest::text, 'none') using hint = 'build_not_available';
+  v_url_changed := tg_op = 'UPDATE' and new.update_url is distinct from old.update_url;
+  v_raise_min := new.enforced and (tg_op = 'INSERT' or not old.enforced
+    or new.min_supported_build > coalesce(old.min_supported_build, 0) or v_url_changed);
+  v_raise_latest := new.latest_build is not null and (tg_op = 'INSERT'
+    or new.latest_build > coalesce(old.latest_build, 0) or v_url_changed);
+  v_channel := private._update_url_channel(new.platform, new.update_url);
+  -- A mandatory update always says where to get the build (the app's Update button), and that place must already carry
+  -- it: the build is recorded available on THAT channel (TestFlight testers are never sent to an App Store listing
+  -- without it, public users never to a TestFlight link). Web: the website must carry it.
+  if v_raise_min then
+    if new.platform <> 'web' and new.update_url is null then
+      raise exception 'Enforcing a minimum on % needs an update link (where people get build %)', new.platform,
+        new.min_supported_build using hint = 'update_url_required';
+    end if;
+    if not exists (select 1 from private.app_build_availability a
+        where a.platform = new.platform and a.channel = v_channel and a.build >= new.min_supported_build) then
+      raise exception 'Build % is not recorded as available on % via % (the update link); a mandatory update would point people at a build they cannot get',
+        new.min_supported_build, new.platform, v_channel using hint = 'build_not_available';
     end if;
   end if;
-  -- Raising the optional "a newer version is available" build needs it to be available too (never announce a build
-  -- nobody can install). Lowering or clearing it: always.
-  if new.latest_build is not null and (tg_op = 'INSERT' or new.latest_build > coalesce(old.latest_build, 0)) then
-    if v_newest is null or new.latest_build > v_newest then
-      raise exception 'Build % is not recorded as available on % (newest available: %)', new.latest_build, new.platform,
-        coalesce(v_newest::text, 'none') using hint = 'build_not_available';
-    end if;
-  end if;
-  -- A public store link only once that store really has the build people are sent for (testers on TestFlight are never
-  -- pointed at an App Store / Google Play listing that doesn't carry it yet).
-  v_store := case
-    when new.update_url ~* '^(itms-apps://|https://apps\.apple\.com/)' then 'app_store'
-    when new.update_url ~* '^(market://|https://play\.google\.com/)' then 'google_play'
-    when new.update_url ~* '^(itms-beta://|https://testflight\.apple\.com/)' then 'testflight' end;
-  v_target := coalesce(case when new.enforced then new.min_supported_build end, new.latest_build);
-  if v_stricter and v_store is not null and v_target is not null and not exists (
-      select 1 from private.app_build_availability a
-      where a.platform = new.platform and a.channel = v_store and a.build >= v_target) then
-    raise exception 'The update link goes to % but build % is not recorded as available there', v_store, v_target
-      using hint = 'link_channel_unavailable';
+  -- The optional "a newer version is available" build: available where the link (or, without a link, anywhere on this
+  -- platform) sends people. Lowering or clearing it: always.
+  if v_raise_latest and not exists (select 1 from private.app_build_availability a
+      where a.platform = new.platform and a.build >= new.latest_build
+        and (v_channel is null or a.channel = v_channel)) then
+    raise exception 'Build % is not recorded as available on % %', new.latest_build, new.platform,
+      case when v_channel is null then '' else ' via ' || v_channel end using hint = 'build_not_available';
   end if;
   new.updated_at := now();
   insert into private.app_version_policy_log (platform, old_row, new_row)
@@ -153,9 +200,21 @@ $$;
 revoke all on function public.get_app_version_policy(text) from public;
 grant execute on function public.get_app_version_policy(text) to anon, authenticated, service_role;
 
--- The build that sent this PostgREST request, or no row when it can't be identified.
+-- Probe for edge functions: called with the client's forwarded version headers; the pre-request hook above refuses it
+-- exactly as it would the client's own REST call. Returns true when it runs.
+create or replace function public.app_version_ok()
+returns boolean
+language sql
+stable
+set search_path = pg_temp
+as $$ select true $$;
+revoke all on function public.app_version_ok() from public;
+grant execute on function public.app_version_ok() to anon, authenticated, service_role;
+
+-- The build that sent this PostgREST request: (platform, build) when identified, else (null, null, malformed).
+-- malformed = a version header was sent but isn't valid (and no Nearby user agent identifies the build either).
 create or replace function private._request_client_build(p_headers json)
-returns table (platform text, build integer)
+returns table (platform text, build integer, malformed boolean)
 language plpgsql
 immutable
 set search_path = pg_temp
@@ -167,13 +226,16 @@ declare
   v_m text;
 begin
   if v_build ~ '^[0-9]{1,6}$' and v_platform in ('ios', 'android', 'web') then
-    platform := v_platform; build := v_build::integer; return next; return;
+    platform := v_platform; build := v_build::integer; malformed := false; return next; return;
   end if;
   -- Builds <= 87 send no header; their native iOS networking sends "Nearby/<build> CFNetwork/... Darwin/...".
   v_m := substring(v_ua from '^Nearby/([0-9]{1,6})(\s|$)');
   if v_m is not null and v_ua ~ '(CFNetwork|Darwin)/' then
-    platform := 'ios'; build := v_m::integer; return next;
+    platform := 'ios'; build := v_m::integer; malformed := false; return next; return;
   end if;
+  platform := null; build := null;
+  malformed := (p_headers ->> 'x-nearby-build') is not null or (p_headers ->> 'x-nearby-platform') is not null;
+  return next;
 end;
 $$;
 revoke all on function private._request_client_build(json) from public, anon, authenticated;
@@ -187,21 +249,39 @@ set search_path = private, public, pg_temp
 as $$
 declare
   v_refuse boolean := false;
+  v_strict boolean := false;
   v_client record;
   v_min integer;
 begin
+  -- Always pass: the policy read (an app must be able to learn it needs an update) and server-side callers.
   if coalesce(current_setting('request.path', true), '') = '/rpc/get_app_version_policy' then
     return;
   end if;
+  -- (security definer: current_user is the owner here, so the caller's role comes from the request's JWT claims)
+  begin
+    if nullif(current_setting('request.jwt.claims', true), '')::json ->> 'role' = 'service_role' then
+      return;
+    end if;
+  exception when others then
+    null; -- unreadable claims: not a server-side caller
+  end;
+  begin
+    select s.refuse_unidentified into v_strict from private.app_version_settings s;
+    v_strict := coalesce(v_strict, false);
+  exception when others then
+    v_strict := false; -- the setting can't be read: strict mode can't be assumed
+  end;
   begin
     select * into v_client from private._request_client_build(nullif(current_setting('request.headers', true), '')::json);
     if v_client.build is not null then
       select min_supported_build into v_min from private.app_version_policy
         where platform = v_client.platform and enforced;
       v_refuse := v_min is not null and v_client.build < v_min;
+    else
+      v_refuse := v_strict; -- unidentified or malformed: refused only in strict mode
     end if;
   exception when others then
-    v_refuse := false; -- fail open: a fault in the version check never locks anyone out
+    v_refuse := v_strict; -- strict off: fail open; strict on: a check that can't complete refuses
   end;
   if v_refuse then
     raise exception 'A newer version of Nearby is required. Please update the app.'

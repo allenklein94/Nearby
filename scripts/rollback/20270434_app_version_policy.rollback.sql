@@ -10,9 +10,14 @@ grant execute on function public.nearby_pre_request() to anon, authenticated, se
 
 drop function if exists private._app_version_gate();
 drop function if exists private._request_client_build(json);
+drop function if exists public.app_version_ok();
 drop function if exists public.get_app_version_policy(text);
 drop trigger if exists app_version_policy_guard on private.app_version_policy;
 drop function if exists private._app_version_policy_guard();
+drop trigger if exists app_version_settings_log on private.app_version_settings;
+drop function if exists private._app_version_settings_log();
+drop table if exists private.app_version_settings;
+drop function if exists private._update_url_channel(text, text);
 drop table if exists private.app_version_policy_log;
 drop table if exists private.app_build_availability;
 drop table if exists private.app_version_policy;

@@ -53,6 +53,11 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${tryPolicy('raise_above_available', `update private.app_version_policy set min_supported_build = 91 where platform = 'ios';`)}
   ${tryPolicy('latest_unavailable', `update private.app_version_policy set latest_build = 92 where platform = 'ios';`)}
   ${tryPolicy('store_link_testflight_only', `update private.app_version_policy set update_url = 'itms-apps://apps.apple.com/app/id0' where platform = 'ios';`)}
+  ${tryPolicy('staging_link_not_on_staging', `update private.app_version_policy set update_url = 'https://expo.dev/accounts/x/projects/y/builds/z' where platform = 'ios';`)}
+  insert into private.app_build_availability (platform, build, channel, recorded_by, evidence)
+    values ('android', 5, 'google_play', 'journey', 'journey fixture');
+  ${tryPolicy('enforce_without_link', `update private.app_version_policy set min_supported_build = 5, enforced = true where platform = 'android';`)}
+  ${tryPolicy('web_not_on_website', `update private.app_version_policy set min_supported_build = 3, enforced = true where platform = 'web';`)}
   ${tryPolicy('bad_url', `update private.app_version_policy set update_url = 'javascript:alert(1)' where platform = 'ios';`)}
   -- 3. enforced: below = refused, at / above = allowed, signed out and signed in
   ${anon}
@@ -71,6 +76,29 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${req('no_headers', `'{}'`)}
   ${req('malformed_header_old_ua', `json_build_object('x-nearby-build', 'abc', 'x-nearby-platform', 'ios', 'user-agent', '${OLD_IOS}')::text`)}
   ${req('ua_without_darwin', ua('Nearby/87'))}
+  ${req('probe_89', hdr(89), '/rpc/app_version_ok')}
+  ${req('probe_90', hdr(90), '/rpc/app_version_ok')}
+  ${tryPolicy('probe_runs_as_anon', `perform public.app_version_ok();`)}
+  ${server}
+  -- 3b. strict mode: unidentified / malformed clients refused too; server callers + the policy read still pass
+  update private.app_version_settings set refuse_unidentified = true, updated_by = 'journey';
+  ${anon}
+  ${req('strict_browser', ua('Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15'))}
+  ${req('strict_no_headers', `'{}'`)}
+  ${req('strict_malformed', `json_build_object('x-nearby-build', 'abc', 'x-nearby-platform', 'ios')::text`)}
+  ${req('strict_unknown_platform', hdr(95, 'windows'))}
+  ${req('strict_identified_95', hdr(95))}
+  ${req('strict_policy_read', `'{}'`, '/rpc/get_app_version_policy')}
+  ${server}
+  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+  ${req('strict_service_role', `'{}'`)}
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.headers', '{not json', true);
+  perform set_config('request.path', '/rpc/x', true);
+  ${tryPolicy('strict_gate_bad_json', `perform private._app_version_gate();`)}
+  update private.app_version_settings set refuse_unidentified = false, updated_by = 'journey';
+  ${anon}
+  ${req('strict_off_browser', ua('Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15'))}
   ${signedIn}
   ${req('signed_in_old_ua', ua(OLD_IOS))}
   ${req('signed_in_write_old', hdr(80), '/rpc/set_business_operating_hours')}
@@ -101,6 +129,8 @@ d('journey: an app build below an enforced minimum is refused by the server, and
   ${server}
   select count(*) into v_n from private.app_version_policy_log where platform = 'ios';
   ${rec('log_rows', `to_jsonb(v_n)`)}
+  select count(*) into v_n from private.app_version_policy_log where platform = '*';
+  ${rec('settings_log_rows', `to_jsonb(v_n)`)}
 `);
     s = stepMap(log);
   }, 120000);
@@ -122,9 +152,35 @@ d('journey: an app build below an enforced minimum is refused by the server, and
     expect(res('latest_unavailable')).toBe('refused');
     expect(hint('latest_unavailable')).toBe('build_not_available');
   });
-  test('a public store link only once that store carries the build (testers never sent to an empty listing)', () => {
+  test('the update link must carry the build: a store link before the store has it, a staging link before staging has it', () => {
     expect(res('store_link_testflight_only')).toBe('refused');
-    expect(hint('store_link_testflight_only')).toBe('link_channel_unavailable');
+    expect(hint('store_link_testflight_only')).toBe('build_not_available');
+    expect(res('staging_link_not_on_staging')).toBe('refused');
+    expect(hint('staging_link_not_on_staging')).toBe('build_not_available');
+  });
+  test('a mandatory minimum needs an update link (app platforms) / the website carrying it (web)', () => {
+    expect(res('enforce_without_link')).toBe('refused');
+    expect(hint('enforce_without_link')).toBe('update_url_required');
+    expect(res('web_not_on_website')).toBe('refused');
+    expect(hint('web_not_on_website')).toBe('build_not_available');
+  });
+  test('edge functions probe the same hook: below the minimum refused, at it allowed, callable signed out', () => {
+    expect(res('probe_89')).toBe('refused');
+    expect(hint('probe_89')).toBe('app_update_required');
+    expect(res('probe_90')).toBe('allowed');
+    expect(res('probe_runs_as_anon')).toBe('allowed');
+  });
+  test('strict mode: unidentified, malformed and unknown-platform clients refused; identified, policy read, service role pass', () => {
+    for (const k of ['strict_browser', 'strict_no_headers', 'strict_malformed', 'strict_unknown_platform']) {
+      expect([k, res(k)]).toEqual([k, 'refused']);
+      expect(hint(k)).toBe('app_update_required');
+    }
+    expect(res('strict_identified_95')).toBe('allowed');
+    expect(res('strict_policy_read')).toBe('allowed');
+    expect(res('strict_service_role')).toBe('allowed');
+    expect(res('strict_gate_bad_json')).toBe('refused');
+    expect(res('strict_off_browser')).toBe('allowed');
+    expect(s.settings_log_rows.data).toBe(2);
   });
   test('below the minimum = refused, at or above = allowed, signed out and signed in', () => {
     expect(res('anon_89')).toBe('refused');
@@ -160,7 +216,7 @@ d('journey: an app build below an enforced minimum is refused by the server, and
     expect(res('client_writes_policy')).toBe('refused');
     expect(res('client_calls_gate')).toBe('refused');
   });
-  test('fail open: a broken request never locks anyone out of the version check', () => {
+  test('strict mode off (default): a broken request never locks anyone out of the version check', () => {
     expect(res('gate_bad_json')).toBe('allowed');
   });
   test('emergency recovery: lowering and switching off always work, at once (even with no availability record left)', () => {
