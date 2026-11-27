@@ -46,9 +46,16 @@ describe('entries that start on a tab open Discover -> People -> Friends in plac
   });
 });
 
+describe('the Friends list (no workflow in progress) opens the canonical Discover -> People -> Friends (owner 2026-11-27)', () => {
+  test('empty state Meet New People', () => {
+    const src = read('screens/FriendsScreen.js');
+    expect(src).toMatch(/navigation\.navigate\('Discover', \{ \.\.\.PEOPLE_FRIENDS \}\)/);
+    expect(src).not.toMatch(/'FriendDiscovery'/);
+  });
+});
+
 describe('entries from a stack screen open the FriendDiscovery presentation on top; Back returns exactly there', () => {
   test.each([
-    ['Friends screen', 'screens/FriendsScreen.js', ['MainTabs', 'Friends']],
     ['gathering published (panel on the gathering)', 'components/GatheringPublishedPanel.js', ['MainTabs', 'GatheringDetail']],
     ['Create invite picker', 'components/FriendInviteSelector.js', ['MainTabs', 'CreateGathering']],
   ])('%s', (_label, file, origin) => {

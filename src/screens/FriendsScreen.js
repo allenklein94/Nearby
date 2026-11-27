@@ -16,6 +16,7 @@ import { MatchAnimation, SkeletonFeed, modalAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
 
 export default function FriendsScreen({ navigation }) {
   const { t, language } = useLanguage();
@@ -400,9 +401,11 @@ export default function FriendsScreen({ navigation }) {
                   direct action attached to the empty state itself
                   shouldn't depend on the user noticing a button "above" --
                   Meet New People is a real, distinct destination that
-                  button doesn't cover. */}
+                  button doesn't cover.
+                  Owner 2026-11-27: an ordinary entry (no workflow in progress here) opens the canonical
+                  Discover -> People -> Friends, never the on-top presentation. */}
               <TouchableOpacity
-                onPress={() => navigation.navigate('FriendDiscovery')}
+                onPress={() => navigation.navigate('Discover', { ...PEOPLE_FRIENDS })}
                 accessibilityLabel={t('ui.friends.meetNewPeopleNearbyA11y')}
                 accessibilityRole="button"
                 style={{ marginTop: spacing.md }}
