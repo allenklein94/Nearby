@@ -12,6 +12,7 @@ export const FUNCTIONAL_ICONS = Object.freeze({
   settings: 'settings-outline',
   search: 'search-outline',
   camera: 'camera-outline',
+  messages: 'chatbubbles-outline',
 });
 
 export const FUNCTIONAL_ICON_SIZE = 21;

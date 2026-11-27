@@ -100,3 +100,11 @@ test('item 30: Activity shows the Premium upsell only when there is a locked not
   const src = require('fs').readFileSync(require('path').join(__dirname, 'ActivityScreen.js'), 'utf8');
   expect(src).toContain("{!premium && items.some((i) => i.type === 'notice') && (");
 });
+
+describe('item 34: Business Mode messages button uses the outline icon set', () => {
+  test('no emoji as its control', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, 'BusinessDashboardScreen.js'), 'utf8');
+    expect(src).not.toContain("<Text style={{ fontSize: 22 }}>💬</Text>");
+    expect(src).toContain('name={FUNCTIONAL_ICONS.messages}');
+  });
+});

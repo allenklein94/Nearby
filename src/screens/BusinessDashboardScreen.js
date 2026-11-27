@@ -28,6 +28,8 @@ import { offerFunnelView } from '../utils/offerFunnel';
 import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionConfirmations';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE } from '../constants/functionalIcons';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -3820,7 +3822,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
             accessibilityLabel={t('ui.bizDash1.messagesA11y')}
             accessibilityRole="button"
           >
-            <Text style={{ fontSize: 22 }}>💬</Text>
+            <Ionicons name={FUNCTIONAL_ICONS.messages} size={FUNCTIONAL_ICON_SIZE + 3} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
         {/* 20270424: an account with several locations switches here (server-checked); one location = the plain name. */}
