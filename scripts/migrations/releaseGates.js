@@ -221,20 +221,49 @@ function backupFailures(dir, now = Date.now()) {
 // the iOS minimum ENFORCED at >= the floor with that build recorded as available on iOS (the database refuses enforcing
 // otherwise), and Android either enforced the same way or recorded as never released ("android: never-released" on the
 // distribution line; no Android build has ever been made). The website is covered by its own "website:" line (re-export).
+// The server minimum covers PostgREST (pre-request hook), the edge functions that call the shared check and Storage
+// WRITES (restrictive policy). It can't cover: Auth, Storage reads, Realtime, and the static GitHub Pages' fixed
+// signed-out endpoints (strict mode lets them through: a page can't be told to update). A migration touching any of
+// those still needs older builds retired (distribution line + session read), whatever the policy says.
+const STATIC_PAGE_ENDPOINTS = ['get_public_gathering_invite_preview', 'get_public_occasion_group_plan_guest_view',
+  'respond_to_occasion_group_plan_guest_invite', 'get_public_shared_night', 'get_live_tracking_session', 'business_acquisition_events'];
+function serverFloorGaps(content) {
+  // comments never count: only statements
+  const sql = String(content || '').replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const gaps = [];
+  // Auth's own behaviour: a trigger, policy, grant or table change ON an auth table, or an Auth hook. Reading auth.uid()
+  // or auth.users inside a REST-called function is ordinary PostgREST work (covered by the hook).
+  if (/\bon\s+(?:table\s+)?auth\s*\.\s*[a-z_]+\b(?!\s*\()/i.test(sql) || /\b(?:alter|create|drop)\s+table\s+(?:if\s+(?:not\s+)?exists\s+)?auth\s*\./i.test(sql)
+    || /\bhook_[a-z_]+\b/i.test(sql)) gaps.push('Auth (a trigger/policy/grant/table change on the auth schema, or an Auth hook)');
+  if (/\bsupabase_realtime\b|\brealtime\s*\.\s*[a-z_]+/i.test(sql)) gaps.push('Realtime');
+  if (/\bstorage\s*\.\s*buckets\b/i.test(sql)) gaps.push('Storage buckets');
+  const objPolicies = sql.match(/\b(?:create|alter|drop)\s+policy\b[^;]*?\bon\s+storage\s*\.\s*objects\b[^;]*/gi) || [];
+  if (objPolicies.some((p) => !/^\s*drop\b/i.test(p) && !/\bfor\s+(insert|update|delete)\b/i.test(p))) gaps.push('Storage reads (a select / all policy on storage.objects)');
+  const hit = STATIC_PAGE_ENDPOINTS.filter((n) => new RegExp(`\\b${n}\\b`, 'i').test(sql));
+  if (hit.length) gaps.push(`static GitHub Pages endpoints (${hit.join(', ')})`);
+  return gaps;
+}
+
 const POLICY_PRESENT_SQL = "select to_regclass('private.app_version_policy') is not null as present";
 const POLICY_SQL = `select p.platform, p.min_supported_build, p.enforced,
-  (select max(a.build) from private.app_build_availability a where a.platform = p.platform) as newest_available
+  (select max(a.build) from private.app_build_availability a where a.platform = p.platform) as newest_available,
+  (select coalesce(bool_or(s.refuse_unidentified), false) from private.app_version_settings s) as strict
   from private.app_version_policy p`;
+// rows: POLICY_SQL. Strict mode must be ON: otherwise a client with no version identity (an old website tab, an Android
+// build from before the mechanism) passes and could still reach the incompatible database.
 function serverFloorCovers(rows, floor, distributionLine = '') {
   if (!floor.build || !Array.isArray(rows)) return false;
+  if (!rows.length || !rows.every((r) => r.strict === true)) return false;
   const ok = (pf) => {
     const x = rows.find((r) => r.platform === pf);
     return !!x && x.enforced === true && Number(x.min_supported_build) >= floor.build && Number(x.newest_available) >= floor.build;
   };
   return ok('ios') && (ok('android') || /\bandroid:\s*never-released\b/i.test(distributionLine || ''));
 }
-async function readServerFloor(run, floor, repoRoot, evidenceOpts = {}) {
+async function readServerFloor(run, floor, repoRoot, evidenceOpts = {}, content = '') {
   if (!floor.build) return { covered: false };
+  const gaps = serverFloorGaps(content);
+  if (gaps.length) return { covered: false, gaps };
   try {
     const present = await run(POLICY_PRESENT_SQL);
     if (!present?.[0]?.present) return { covered: false };
@@ -249,8 +278,8 @@ async function readServerFloor(run, floor, repoRoot, evidenceOpts = {}) {
 async function releaseGateFailures({ facts, run, repoRoot, backupDir = process.env.NEARBY_BACKUP_DIR || '/workspaces/.nearby-verify/backups', now, evidenceOpts }) {
   if (!facts.version) return [];
   const floor = effectiveFloor(facts.version, repoRoot);
-  const server = await readServerFloor(run, floor, repoRoot, evidenceOpts);
-  const r = [...evidenceFailures(facts.version, repoRoot, floor, { ...evidenceOpts, serverFloor: server.covered }), ...backupFailures(backupDir, now),
+  const server = await readServerFloor(run, floor, repoRoot, evidenceOpts, facts.content);
+  const r = [...(server.gaps || []).map((g) => `release gate: ${facts.version} touches ${g}, which the server minimum version can't cover: older builds must be retired (distribution line + no older sessions), not only refused`),...evidenceFailures(facts.version, repoRoot, floor, { ...evidenceOpts, serverFloor: server.covered }), ...backupFailures(backupDir, now),
     ...privacyFailures(facts.version, repoRoot, evidenceOpts)];
   if (floor.build) {
     try { r.push(...sessionFailures(await run(SESSIONS_SQL), floor, { serverFloor: server.covered })); } catch (e) { r.push(`release gate: could not read live sessions (${e.message.slice(0, 120)}): refused`); }
@@ -258,4 +287,4 @@ async function releaseGateFailures({ facts, run, repoRoot, backupDir = process.e
   return r;
 }
 
-module.exports = { serverFloorCovers, readServerFloor, POLICY_SQL, POLICY_PRESENT_SQL, distributionFailures, appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };
+module.exports = { STATIC_PAGE_ENDPOINTS, serverFloorGaps, serverFloorCovers, readServerFloor, POLICY_SQL, POLICY_PRESENT_SQL, distributionFailures, appSourceChanged, CLIENT_FLOOR, PRIVACY_REQUIRED, privacyRequired, privacyFailures, EVIDENCE_FILE, SESSIONS_SQL, headerFloor, effectiveFloor, parseEvidence, evidenceFailures, sessionFailures, backupFailures, releaseGateFailures };

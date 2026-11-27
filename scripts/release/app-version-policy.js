@@ -8,6 +8,11 @@
 //   node ... plan --platform=ios [--min=88|none] [--latest=88|none] [--url=itms-beta://...|none] [--enforce=on|off] --target=...
 //   NEARBY_VERSION_APPROVAL=<code from plan> node ... set <same arguments> --target=prod
 //   NEARBY_VERSION_APPROVAL=version-off node ... off --platform=ios|android|web|all --target=prod             EMERGENCY, instant
+//     (--platform=all also switches strict mode off)
+//   node ... strict --strict=on|off --target=...          plan; NEARBY_VERSION_APPROVAL=<code> applies it on production
+//     Strict mode = refuse requests whose build can't be identified (no version header, no Nearby user agent), except the
+//     static GitHub Pages' fixed signed-out endpoints. deploy.js accepts the server minimum in place of retiring older
+//     builds only while strict mode is ON (an unidentified client could otherwise still reach an incompatible database).
 //
 // Production: every change needs the code `plan` prints for exactly that change on exactly the current row (a code never
 // outlives a change to the row, to 20270434 or to this file), except `off`, which takes the fixed code "version-off" so
@@ -77,6 +82,11 @@ function offSql(platform, who) {
   returning platform, min_supported_build, enforced`;
 }
 
+function strictSql(on, who) {
+  return `update private.app_version_settings set refuse_unidentified = ${on ? 'true' : 'false'}, updated_by = ${quote(who)},
+  reason = ${quote(on ? 'strict on' : 'strict off')} returning refuse_unidentified`;
+}
+
 function availableSql({ platform, build, channel, evidence }, who) {
   return `insert into private.app_build_availability (platform, build, channel, recorded_by, evidence)
   values (${quote(platform)}, ${build}, ${quote(channel)}, ${quote(who)}, ${quote(evidence)})
@@ -112,6 +122,7 @@ const STATUS_SQL = `select jsonb_build_object(
   'policy', case when to_regclass('private.app_version_policy') is null then null else (select jsonb_agg(to_jsonb(p) order by p.platform) from private.app_version_policy p) end,
   'available', case when to_regclass('private.app_build_availability') is null then null else (select jsonb_agg(jsonb_build_object('platform', a.platform, 'build', a.build, 'channel', a.channel, 'available_at', a.available_at) order by a.platform, a.build) from private.app_build_availability a) end,
   'recent_changes', case when to_regclass('private.app_version_policy_log') is null then null else (select jsonb_agg(x) from (select platform, changed_at, new_row ->> 'min_supported_build' as min, new_row ->> 'latest_build' as latest, new_row ->> 'enforced' as enforced, new_row ->> 'updated_by' as by from private.app_version_policy_log order by id desc limit 10) x) end,
+  'strict', case when to_regclass('private.app_version_settings') is null then null else (select to_jsonb(x) from private.app_version_settings x) end,
   'hook', (select c from pg_db_role_setting s join pg_roles r on r.oid = s.setrole, unnest(s.setconfig) c where r.rolname = 'authenticator' and c like 'pgrst.db_pre_request=%' limit 1)
 ) as status`;
 
@@ -128,8 +139,8 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   const args = parseArgs(argv);
   const cmd = args._[0];
   const target = args.target;
-  if (!['status', 'record-available', 'plan', 'set', 'off'].includes(cmd)) {
-    throw new Error('usage: app-version-policy.js status|record-available|plan|set|off --target=prod|staging|local [...] (see the file header)');
+  if (!['status', 'record-available', 'plan', 'set', 'off', 'strict'].includes(cmd)) {
+    throw new Error('usage: app-version-policy.js status|record-available|plan|set|off|strict --target=prod|staging|local [...] (see the file header)');
   }
   const L = require('../migrations/ledger');
   const { name, run, ref } = L.runner(target, env);
@@ -146,6 +157,29 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     if (prod && env.NEARBY_VERSION_APPROVAL !== OFF_CODE) throw new Error(`production: set NEARBY_VERSION_APPROVAL=${OFF_CODE} to switch enforcement off`);
     const rows = await run(offSql(args.platform, who));
     console.log(rows.length ? `enforcement OFF: ${rows.map((r) => r.platform).join(', ')} (takes effect on the next request)` : 'nothing was enforced');
+    if (args.platform === 'all' && status.strict && status.strict.refuse_unidentified) {
+      await run(strictSql(false, who));
+      console.log('strict mode OFF (unidentified clients pass again)');
+    }
+    return rows;
+  }
+
+  if (cmd === 'strict') {
+    if (!['on', 'off'].includes(args.strict)) throw new Error('--strict must be on or off');
+    if (!status.strict) throw new Error('20270434 on this target has no strict-mode setting (re-apply the current file)');
+    const on = args.strict === 'on';
+    const { updated_at: _u, updated_by: _b, reason: _r, ...currentStrict } = status.strict;
+    const strictCode = approvalCode({ ref: ref || name, row: currentStrict, change: { strict: on } });
+    const allowed = !prod || env.NEARBY_VERSION_APPROVAL === strictCode || (!on && env.NEARBY_VERSION_APPROVAL === OFF_CODE);
+    if (!env.NEARBY_VERSION_APPROVAL && prod) {
+      console.log(`current: refuse_unidentified = ${currentStrict.refuse_unidentified}\nafter:   refuse_unidentified = ${on}`);
+      if (on) console.log('refused while on: any request with no x-nearby-build/x-nearby-platform header and no "Nearby/<build> CFNetwork" user agent (the old website export, scripts using a user token, unknown clients); the static pages\' fixed endpoints and server-side callers still pass');
+      console.log(`sql:\n${strictSql(on, who)}\napproval code: ${strictCode}${on ? '' : ` (or ${OFF_CODE})`}`);
+      return { code: strictCode };
+    }
+    if (!allowed) throw new Error('production: NEARBY_VERSION_APPROVAL must be the code this command printed for exactly this change (re-run without it)');
+    const rows = await run(strictSql(on, who));
+    console.log(`strict mode ${on ? 'ON' : 'OFF'} (takes effect on the next request)`);
     return rows;
   }
 
@@ -185,5 +219,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-  OFF_CODE, parseArgs, parseChange, parseAvailable, setSql, offSql, availableSql, approvalCode, affected, STATUS_SQL, main,
+  OFF_CODE, strictSql, parseArgs, parseChange, parseAvailable, setSql, offSql, availableSql, approvalCode, affected, STATUS_SQL, main,
 };

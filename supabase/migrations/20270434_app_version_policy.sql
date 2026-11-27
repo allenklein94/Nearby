@@ -34,10 +34,13 @@
 --     headers), the request passes, so a fault here never locks out supported users. With strict mode on, a check that
 --     can't complete refuses (the policy read + service role still pass, so `off` always works). The business-location
 --     check keeps its own fail-closed rule.
+--   * Storage writes: a restrictive policy on storage.objects asks the same gate (Storage API requests carry the same
+--     headers). Strict mode exempts only the static GitHub Pages' fixed signed-out endpoints (_static_page_request).
 --   * Not covered, by design (documented in RELEASE_COMPATIBILITY_PROCESS): Auth (sign-in, recovery, sign-out keep
---     working; every REST / edge-function call after it is refused), Storage uploads (an old build's upload can't be
---     attached: the REST / moderate-photo call that registers it is refused), Realtime (read-only, RLS-filtered).
---     deploy.js accepts enforcement in place of retiring old builds only for migrations that touch none of those.
+--     working; every REST / edge-function / Storage write after it is refused), Storage reads + Realtime (read-only,
+--     RLS-filtered), edge functions that don't call the shared check (server-side / webhook / signed-out pages).
+--     deploy.js accepts enforcement in place of retiring old builds only with strict mode ON and only for migrations
+--     that touch none of those (scripts/migrations/releaseGates.js serverFloorGaps).
 -- Additive: no existing row, policy or function body changes. Builds <= 88 work unchanged with enforcement off.
 
 do $$
@@ -240,6 +243,40 @@ end;
 $$;
 revoke all on function private._request_client_build(json) from public, anon, authenticated;
 
+-- Strict mode's one exemption: a signed-out (anon) request from the static pages docs/invite.html,
+-- docs/occasion-invite.html, docs/shared-night.html, docs/track.html and docs/business.html, to exactly the endpoints
+-- they call. Listed by name in releaseGates.js (STATIC_PAGE_ENDPOINTS): a migration touching one of them can't rely on
+-- the server minimum in place of retiring older clients.
+create or replace function private._static_page_request()
+returns boolean
+language plpgsql
+stable
+set search_path = pg_temp
+as $$
+declare
+  v_path text := coalesce(current_setting('request.path', true), '');
+  v_method text := upper(coalesce(current_setting('request.method', true), ''));
+  v_role text;
+begin
+  begin
+    v_role := nullif(current_setting('request.jwt.claims', true), '')::json ->> 'role';
+  exception when others then
+    return false;
+  end;
+  if coalesce(v_role, 'anon') <> 'anon' then
+    return false;
+  end if;
+  return (v_method = 'POST' and v_path in (
+      '/rpc/get_public_gathering_invite_preview',
+      '/rpc/get_public_occasion_group_plan_guest_view',
+      '/rpc/respond_to_occasion_group_plan_guest_invite',
+      '/rpc/get_public_shared_night',
+      '/rpc/get_live_tracking_session',
+      '/business_acquisition_events'));
+end;
+$$;
+revoke all on function private._static_page_request() from public, anon, authenticated;
+
 create or replace function private._app_version_gate()
 returns void
 language plpgsql
@@ -278,7 +315,9 @@ begin
         where platform = v_client.platform and enforced;
       v_refuse := v_min is not null and v_client.build < v_min;
     else
-      v_refuse := v_strict; -- unidentified or malformed: refused only in strict mode
+      -- unidentified or malformed: refused only in strict mode, except the static GitHub Pages (docs/*.html) that call
+      -- these fixed endpoints signed out with the anon key and no app build (they are pages, not app builds).
+      v_refuse := v_strict and not private._static_page_request();
     end if;
   exception when others then
     v_refuse := v_strict; -- strict off: fail open; strict on: a check that can't complete refuses
@@ -290,6 +329,35 @@ begin
 end;
 $$;
 revoke all on function private._app_version_gate() from public, anon, authenticated;
+
+-- Storage writes (uploads, overwrites, deletes) go to the Storage API, not PostgREST, so the pre-request hook never sees
+-- them. The Storage API runs each request's RLS check with the same request.headers / request.jwt.claims settings, so a
+-- RESTRICTIVE policy (ANDed with every existing permissive one, which stay unchanged) asks the same gate. Non-raising:
+-- a refused build gets Storage's ordinary row-level-security refusal (the app's next REST call shows the update screen).
+-- Reads stay open (read-only, RLS-filtered, like Realtime). service_role bypasses RLS as before.
+create or replace function public.app_version_allows()
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = private, public, pg_temp
+as $$
+begin
+  perform private._app_version_gate();
+  return true;
+exception when others then
+  return false;
+end;
+$$;
+revoke all on function public.app_version_allows() from public;
+grant execute on function public.app_version_allows() to anon, authenticated, service_role;
+
+create policy nearby_app_version_insert on storage.objects as restrictive for insert to anon, authenticated
+  with check (public.app_version_allows());
+create policy nearby_app_version_update on storage.objects as restrictive for update to anon, authenticated
+  using (public.app_version_allows()) with check (public.app_version_allows());
+create policy nearby_app_version_delete on storage.objects as restrictive for delete to anon, authenticated
+  using (public.app_version_allows());
 
 -- Keep the business-location check exactly as 20270427 left it, under a private name, and chain it.
 alter function public.nearby_pre_request() set schema private;

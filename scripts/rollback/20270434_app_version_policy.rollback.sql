@@ -8,7 +8,12 @@ alter function public._business_pre_request() rename to nearby_pre_request;
 revoke all on function public.nearby_pre_request() from public;
 grant execute on function public.nearby_pre_request() to anon, authenticated, service_role;
 
+drop policy if exists nearby_app_version_insert on storage.objects;
+drop policy if exists nearby_app_version_update on storage.objects;
+drop policy if exists nearby_app_version_delete on storage.objects;
+drop function if exists public.app_version_allows();
 drop function if exists private._app_version_gate();
+drop function if exists private._static_page_request();
 drop function if exists private._request_client_build(json);
 drop function if exists public.app_version_ok();
 drop function if exists public.get_app_version_policy(text);

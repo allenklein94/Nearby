@@ -171,7 +171,7 @@ describe('returning older installs (signed out, dormant, expired session)', () =
 
 describe('server-side minimum version (20270434) in place of "older builds can\'t launch"', () => {
   const f = { build: 88, from: [20270373] };
-  const row = (platform, min, enforced, newest) => ({ platform, min_supported_build: min, enforced, newest_available: newest });
+  const row = (platform, min, enforced, newest, strict = true) => ({ platform, min_supported_build: min, enforced, newest_available: newest, strict });
   const ANDROID_NONE = 'distribution: PASS build 88 2026-12-01 android: never-released';
   test('covered only when iOS is enforced at >= the floor with that build available, and Android enforced or never released', () => {
     expect(G.serverFloorCovers([row('ios', 88, true, 88), row('android', null, false, null)], f, ANDROID_NONE)).toBe(true);
@@ -202,5 +202,35 @@ describe('server-side minimum version (20270434) in place of "older builds can\'
     expect((await G.readServerFloor(run, f, REPO, { show: () => ANDROID_NONE })).covered).toBe(true);
     expect((await G.readServerFloor(run, f, REPO, { show: () => '' })).covered).toBe(false);
     expect(await G.readServerFloor(run, { build: null }, REPO)).toEqual({ covered: false });
+  });
+  test('strict mode OFF = not covered (an unidentified client could still reach the database)', () => {
+    expect(G.serverFloorCovers([row('ios', 88, true, 88, false), row('android', null, false, null, false)], f, ANDROID_NONE)).toBe(false);
+    expect(G.serverFloorCovers([row('ios', 88, true, 88, true), row('android', null, false, null, true)], f, ANDROID_NONE)).toBe(true);
+  });
+  test('a migration touching Auth, Realtime, Storage reads/buckets or a static page endpoint is never covered', async () => {
+    expect(G.serverFloorGaps('create policy x on public.t for select using (true);')).toEqual([]);
+    expect(G.serverFloorGaps('-- mentions auth.users and supabase_realtime only in a comment\nselect 1;')).toEqual([]);
+    expect(G.serverFloorGaps('create trigger t after insert on auth.users for each row execute function f();').join()).toMatch(/Auth/);
+    expect(G.serverFloorGaps('create function public.hook_before_user_created(e jsonb) returns jsonb as $$ select e $$ language sql;').join()).toMatch(/Auth/);
+    expect(G.serverFloorGaps('alter publication supabase_realtime add table public.t;').join()).toMatch(/Realtime/);
+    expect(G.serverFloorGaps("update storage.buckets set public = false where id = 'x';").join()).toMatch(/buckets/);
+    expect(G.serverFloorGaps('create policy r on storage.objects for select to authenticated using (true);').join()).toMatch(/Storage reads/);
+    expect(G.serverFloorGaps('create policy r on storage.objects using (true);').join()).toMatch(/Storage reads/);
+    expect(G.serverFloorGaps('create policy w on storage.objects for insert to authenticated with check (true);')).toEqual([]);
+    expect(G.serverFloorGaps('drop policy if exists r on storage.objects;')).toEqual([]);
+    expect(G.serverFloorGaps('create or replace function public.get_public_shared_night(t text) returns jsonb as $$ select null $$ language sql;').join()).toMatch(/static GitHub Pages/);
+    const run = async (sql) => (sql === G.POLICY_PRESENT_SQL ? [{ present: true }] : [row('ios', 90, true, 90), row('android', null, false, null)]);
+    const r = await G.readServerFloor(run, f, REPO, { show: () => ANDROID_NONE }, 'alter publication supabase_realtime add table public.t;');
+    expect(r.covered).toBe(false);
+    expect(r.gaps.join()).toMatch(/Realtime/);
+  });
+  test('every static page endpoint really is what docs/*.html calls, and 0434 exempts exactly those', () => {
+    const fs = require('fs'); const path = require('path');
+    const docs = ['invite', 'occasion-invite', 'shared-night', 'track', 'business'].map((n) => fs.readFileSync(path.join(REPO, 'docs', `${n}.html`), 'utf8')).join('\n');
+    const mig = fs.readFileSync(path.join(REPO, 'supabase/migrations/20270434_app_version_policy.sql'), 'utf8');
+    G.STATIC_PAGE_ENDPOINTS.forEach((n) => { expect(docs).toContain(n); expect(mig).toContain(n === 'business_acquisition_events' ? `'/${n}'` : `'/rpc/${n}'`); });
+    const called = new Set([...docs.matchAll(/rest\/v1\/rpc\/([a-z_]+)/g)].map((m) => m[1]).concat([...docs.matchAll(/callRpc\('([a-z_]+)'/g)].map((m) => m[1]))
+      .concat([...docs.matchAll(/rest\/v1\/([a-z_]+)/g)].map((m) => m[1]).filter((n) => n !== 'rpc')));
+    called.forEach((n) => expect(G.STATIC_PAGE_ENDPOINTS).toContain(n));
   });
 });
