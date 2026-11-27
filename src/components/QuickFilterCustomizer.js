@@ -146,7 +146,7 @@ export default function QuickFilterCustomizer({ mode: modeProp, onChange }) {
                 <Text style={styles.rowLabel}>{info.icon} {info.label}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                   <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       onPress={() => moveUp(index)}
                       disabled={index === 0}
                       style={[styles.arrowButton, index === 0 && styles.arrowButtonDisabled]}
@@ -155,7 +155,7 @@ export default function QuickFilterCustomizer({ mode: modeProp, onChange }) {
                     >
                       <Text style={styles.arrowText}>↑</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       onPress={() => moveDown(index)}
                       disabled={index === order.length - 1}
                       style={[styles.arrowButton, index === order.length - 1 && styles.arrowButtonDisabled]}

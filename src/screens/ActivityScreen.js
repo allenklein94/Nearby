@@ -743,7 +743,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                     </Text>
                   </View>
                   {premium && (
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                       style={[styles.inlineButton, alreadyNoticedBack && styles.inlineButtonDone, (alreadyNoticedBack) && disabledButtonStyle(colors)]}
                       onPress={() => handleNoticeBack(item)}
                       disabled={alreadyNoticedBack}

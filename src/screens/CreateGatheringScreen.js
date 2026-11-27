@@ -1494,7 +1494,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
                 {capacityOption === '10+' && (
                   <View style={styles.stepperRow}>
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                       onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => Math.max(10, n - 1)); }}
                       style={styles.stepperButton}
                       accessibilityLabel={t('ui.gatheringForm.decreaseA11y')}
@@ -1503,7 +1503,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                       <Text style={styles.stepperButtonText}>−</Text>
                     </TouchableOpacity>
                     <Text style={styles.stepperValue}>{t('ui.common.count.people', { count: capacityCustom })}</Text>
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                       onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => n + 1); }}
                       style={styles.stepperButton}
                       accessibilityLabel={t('ui.gatheringForm.increaseA11y')}

@@ -28,7 +28,7 @@ export default function SharedGatheringCard({ gatheringId, isMe, senderLabel, on
   }
   if (!g) {
     return (
-      <TouchableOpacity onLongPress={onLongPress} activeOpacity={1} style={[styles.card, isMe && styles.mine]}
+      <TouchableOpacity accessibilityRole="button" onLongPress={onLongPress} activeOpacity={1} style={[styles.card, isMe && styles.mine]}
         accessibilityLabel={t('ui.shareInChat.unavailableA11y', { sender: senderLabel })}>
         <Text style={styles.unavailable}>{t('ui.shareInChat.unavailable')}</Text>
       </TouchableOpacity>

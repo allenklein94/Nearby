@@ -192,15 +192,15 @@ function DatingVariant({
               success state is never just "start chatting" -- Plan Something Together sits right
               beside Message as a co-equal action, not a lesser afterthought, at the exact moment
               the connection is created. */}
-          <TouchableOpacity style={styles.messageButton} onPress={onSendMessage} activeOpacity={0.85}>
+          <TouchableOpacity accessibilityRole="button" style={styles.messageButton} onPress={onSendMessage} activeOpacity={0.85}>
             <Text style={styles.messageButtonText}>Message</Text>
           </TouchableOpacity>
           {onPlanTogether && (
-            <TouchableOpacity style={styles.planButton} onPress={onPlanTogether} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" style={styles.planButton} onPress={onPlanTogether} activeOpacity={0.85}>
               <Text style={styles.planButtonText}>🤝 Plan Something Together</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={onDismiss} style={{ marginTop: spacing.md }}>
+          <TouchableOpacity accessibilityRole="button" onPress={onDismiss} style={{ marginTop: spacing.md }}>
             <Text style={styles.dismissText}>Keep Browsing</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -246,10 +246,10 @@ function FriendVariant({ haptic = false, visible, theirPhotoUrl, theirName, onSa
             <View style={[styles.photo, styles.photoPlaceholder]} />
           )}
 
-          <TouchableOpacity style={styles.primaryButton} onPress={onSayHi} activeOpacity={0.85}>
+          <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={onSayHi} activeOpacity={0.85}>
             <Text style={styles.primaryButtonText}>Say Hi →</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={onDismiss} activeOpacity={0.85}>
+          <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={onDismiss} activeOpacity={0.85}>
             <Text style={styles.secondaryButtonText}>Keep Browsing</Text>
           </TouchableOpacity>
         </Animated.View>

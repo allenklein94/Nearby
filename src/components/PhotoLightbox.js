@@ -131,12 +131,12 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <Animated.View style={[styles.overlay, { opacity: backgroundOpacity }]}>
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose} accessibilityLabel={t('ui.media.closePhotoA11y')} accessibilityRole="button">
+        <TouchableOpacity hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }} style={styles.closeButton} onPress={handleClose} accessibilityLabel={t('ui.media.closePhotoA11y')} accessibilityRole="button">
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
 
         {commentsEnabled && (
-          <TouchableOpacity
+          <TouchableOpacity hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
             style={styles.commentsToggle}
             onPress={() => setCommentsOpen((prev) => !prev)}
             accessibilityLabel={commentsOpen ? t('ui.media.hideCommentsA11y') : comments.length ? t('ui.media.showCommentsCountA11y', { count: comments.length }) : t('ui.media.showCommentsA11y')}

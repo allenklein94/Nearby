@@ -25,7 +25,7 @@ export default function ActionSheetModal({ visible, onClose, title, message, opt
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} accessibilityLabel={t('ui.smallParts.closeMenuA11y')} />
+        <TouchableOpacity accessibilityRole="button" style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} accessibilityLabel={t('ui.smallParts.closeMenuA11y')} />
         <View style={styles.sheet}>
           {!!title && <Text style={styles.title}>{title}</Text>}
           {!!message && <Text style={styles.message}>{message}</Text>}
@@ -62,7 +62,7 @@ const getStyles = (colors) => StyleSheet.create({
   list: { marginTop: spacing.sm },
   row: { paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   rowText: { color: colors.textPrimary, fontSize: 16, textAlign: 'center' },
-  rowTextDestructive: { color: colors.danger || '#e53e3e' },
+  rowTextDestructive: { color: colors.danger },
   cancelRow: { marginTop: spacing.md, paddingVertical: spacing.sm },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 15, fontWeight: '600' },
 });

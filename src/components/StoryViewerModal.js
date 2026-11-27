@@ -204,16 +204,16 @@ export default function StoryViewerModal({ visible, group, onClose }) {
         </View>
 
         <View style={styles.tapZones}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={goBack} accessibilityLabel={t('ui.media.previousStoryA11y')} />
-          <TouchableOpacity style={{ flex: 1 }} onPress={advance} accessibilityLabel={t('ui.media.nextStoryA11y')} />
+          <TouchableOpacity accessibilityRole="button" style={{ flex: 1 }} onPress={goBack} accessibilityLabel={t('ui.media.previousStoryA11y')} />
+          <TouchableOpacity accessibilityRole="button" style={{ flex: 1 }} onPress={advance} accessibilityLabel={t('ui.media.nextStoryA11y')} />
         </View>
 
-        <TouchableOpacity style={styles.shareButton} onPress={handleShareStory} accessibilityLabel={t('ui.media.shareThisStoryA11y')} accessibilityRole="button">
+        <TouchableOpacity hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }} style={styles.shareButton} onPress={handleShareStory} accessibilityLabel={t('ui.media.shareThisStoryA11y')} accessibilityRole="button">
           <Text style={styles.shareButtonText}>↗</Text>
         </TouchableOpacity>
 
         {!isOwnStory && story && (
-          <TouchableOpacity style={styles.reportButton} onPress={startReport} accessibilityLabel={t('ui.reportBlock.reportPhoto')} accessibilityRole="button">
+          <TouchableOpacity hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }} style={styles.reportButton} onPress={startReport} accessibilityLabel={t('ui.reportBlock.reportPhoto')} accessibilityRole="button">
             <Text style={styles.reportButtonText}>⚑</Text>
           </TouchableOpacity>
         )}
@@ -223,7 +223,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
             <TouchableOpacity style={styles.viewersButton} onPress={handleShowViewers} accessibilityLabel={t('ui.media.seeWhoViewedThisStoryA11y')} accessibilityRole="button">
               <Text style={styles.viewersButtonText}>{t('ui.media.viewers')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteStory} accessibilityLabel={t('ui.media.deleteThisStoryA11y')} accessibilityRole="button">
+            <TouchableOpacity hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }} style={styles.deleteButton} onPress={handleDeleteStory} accessibilityLabel={t('ui.media.deleteThisStoryA11y')} accessibilityRole="button">
               <Text style={styles.deleteButtonText}>🗑</Text>
             </TouchableOpacity>
           </>

@@ -982,7 +982,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.lg },
   perkCard: {
-    backgroundColor: '#f59e0b15', borderRadius: radius.lg, borderWidth: 1, borderColor: '#f59e0b',
+    backgroundColor: colors.warning + '15', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.warning,
     padding: spacing.md, marginBottom: spacing.sm,
   },
   perkSubLink: { color: colors.primary, fontWeight: '600', fontSize: 13 },

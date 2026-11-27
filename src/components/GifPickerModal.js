@@ -60,7 +60,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
             }}
             autoFocus
           />
-          <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+          <TouchableOpacity accessibilityRole="button" onPress={onClose} style={styles.cancelButton}>
             <Text style={styles.cancelText}>{t('ui.smallParts.cancel')}</Text>
           </TouchableOpacity>
         </View>

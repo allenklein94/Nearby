@@ -595,10 +595,10 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
                 </ToggleRow>
 
                 <View style={styles.modalButtonRow}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setPolicyModalVisible(false)}>
+                  <TouchableOpacity accessibilityRole="button" style={styles.cancelButton} onPress={() => setPolicyModalVisible(false)}>
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.saveButton, (savingPolicy) && disabledButtonStyle(colors)]} onPress={handleSavePolicy} disabled={savingPolicy}>
+                  <TouchableOpacity accessibilityRole="button" style={[styles.saveButton, (savingPolicy) && disabledButtonStyle(colors)]} onPress={handleSavePolicy} disabled={savingPolicy}>
                     {savingPolicy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveButtonText}>Save Policy</Text>}
                   </TouchableOpacity>
                 </View>

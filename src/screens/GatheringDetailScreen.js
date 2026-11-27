@@ -1607,10 +1607,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   timelineTime: { color: colors.textTertiary, fontSize: 12, fontWeight: '700' },
   timelineLabel: { color: colors.textPrimary, fontSize: 14 },
   perkCard: {
-    backgroundColor: '#f59e0b15', borderRadius: radius.lg, borderWidth: 1, borderColor: '#f59e0b',
+    backgroundColor: colors.warning + '15', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.warning,
     padding: spacing.md,
   },
-  perkKicker: { color: '#f59e0b', fontSize: 11, fontWeight: '700', marginBottom: 2 },
+  perkKicker: { color: colors.warning, fontSize: 11, fontWeight: '700', marginBottom: 2 },
   perkTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
   perkSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   perkSubLink: { color: colors.primary, fontWeight: '600' },
@@ -1661,7 +1661,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   youreInTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: 4 },
   youreInSub: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.md },
   sayHelloLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  leaveLink: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
+  leaveLink: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   pendingPanel: {
     marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, alignItems: 'center',

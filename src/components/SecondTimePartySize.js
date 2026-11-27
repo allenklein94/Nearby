@@ -24,11 +24,11 @@ export default function SecondTimePartySize({ total, value = null, onChange }) {
   const n = Math.min(Math.max(1, value), whole - 1);
   return (
     <View style={styles.row}>
-      <TouchableOpacity style={[styles.step, n <= 1 && styles.stepOff]} disabled={n <= 1} onPress={() => onChange(n - 1)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.onePersonFewerA11y')} accessibilityState={{ disabled: n <= 1 }}>
+      <TouchableOpacity hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }} style={[styles.step, n <= 1 && styles.stepOff]} disabled={n <= 1} onPress={() => onChange(n - 1)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.onePersonFewerA11y')} accessibilityState={{ disabled: n <= 1 }}>
         <Text style={styles.stepText}>−</Text>
       </TouchableOpacity>
       <Text style={styles.label} accessibilityLiveRegion="polite">{t('ui.bizDash3.secondTimeFor', { count: n, total: whole })}</Text>
-      <TouchableOpacity style={[styles.step, n >= whole - 1 && styles.stepOff]} disabled={n >= whole - 1} onPress={() => onChange(n + 1)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.onePersonMoreA11y')} accessibilityState={{ disabled: n >= whole - 1 }}>
+      <TouchableOpacity hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }} style={[styles.step, n >= whole - 1 && styles.stepOff]} disabled={n >= whole - 1} onPress={() => onChange(n + 1)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.onePersonMoreA11y')} accessibilityState={{ disabled: n >= whole - 1 }}>
         <Text style={styles.stepText}>+</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[styles.chip, { marginTop: 0, marginLeft: spacing.sm }]} onPress={() => onChange(null)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash1.clear')}>

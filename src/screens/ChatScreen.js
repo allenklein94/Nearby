@@ -1273,7 +1273,7 @@ export default function ChatScreen({ route, navigation }) {
                     <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
                   </TouchableOpacity>
                 ) : item.media_url ? (
-                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.85}>
+                  <TouchableOpacity accessibilityRole="button" onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.85}>
                     {mediaUrls[item.id] === undefined ? (
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center' }]}>
                         <ActivityIndicator color={colors.primary} />
@@ -1308,7 +1308,7 @@ export default function ChatScreen({ route, navigation }) {
                     )}
                   </TouchableOpacity>
                 ) : item.gif_url ? (
-                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.85}>
+                  <TouchableOpacity accessibilityRole="button" onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.85}>
                     <Image
                       source={{ uri: item.gif_url }}
                       style={styles.gifBubble}
@@ -1318,7 +1318,7 @@ export default function ChatScreen({ route, navigation }) {
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.bubbleWithTranslate}>
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
                       onLongPress={() => showReactionPicker(item.id)}
                       activeOpacity={0.85}
@@ -1397,7 +1397,7 @@ export default function ChatScreen({ route, navigation }) {
             <View style={styles.recordingIndicator} />
             <Text style={styles.recordingTime}>{formatRecordingTime(recordingSeconds)}</Text>
             <Text style={styles.recordingHint}>{t('ui.chat.recordingVoiceNote')}</Text>
-            <TouchableOpacity
+            <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={styles.cancelRecordingButton}
               onPress={handleCancelRecording}
               accessibilityLabel={t('ui.chat.cancelRecordingWithoutSendingA11y')}

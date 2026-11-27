@@ -113,7 +113,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
           </View>
 
           {view === 'score' && !introduction && !loadingIntro && (report.sharedInterests.length > 0 || report.matchingFields.length > 0) && (
-            <TouchableOpacity style={styles.introButton} onPress={generateIntroduction} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" style={styles.introButton} onPress={generateIntroduction} activeOpacity={0.85}>
               <Text style={styles.introButtonText}>{t('ui.compatibility.whyYouTwoMightConnect')}</Text>
             </TouchableOpacity>
           )}
@@ -216,7 +216,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
             )}
           </ScrollView>
 
-          <TouchableOpacity onPress={resetAndClose} style={styles.closeButton}>
+          <TouchableOpacity accessibilityRole="button" onPress={resetAndClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>{t('ui.compatibility.close')}</Text>
           </TouchableOpacity>
         </View>

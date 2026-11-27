@@ -2080,7 +2080,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
   function renderLockedFeature(feature, description) {
     const label = ENTITLEMENT_FEATURE_LABELS[feature] ? t(`ui.bizDash1.feature.${feature}`) : feature;
     return (
-      <TouchableOpacity style={styles.lockedFeatureCard} onPress={() => showUpgradePlaceholder(feature)} activeOpacity={0.85}>
+      <TouchableOpacity accessibilityRole="button" style={styles.lockedFeatureCard} onPress={() => showUpgradePlaceholder(feature)} activeOpacity={0.85}>
         <Text style={styles.lockedFeatureTitle}>🔒 {label}</Text>
         {description ? <Text style={styles.lockedFeatureDescription}>{description}</Text> : null}
         <Text style={styles.lockedFeatureCta}>{t('ui.bizDash1.seeWhatYouGet')}</Text>

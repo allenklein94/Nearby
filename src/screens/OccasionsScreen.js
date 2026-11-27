@@ -904,7 +904,7 @@ export default function OccasionsScreen({ navigation, route }) {
               </View>
               <Text style={{ color: colors.textPrimary }}>{t('ui.occasions.repeatsEveryYear2')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.addButton, (submitting) && disabledButtonStyle(colors)]} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" style={[styles.addButton, (submitting) && disabledButtonStyle(colors)]} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
               <Text style={styles.addButtonText}>{submitting ? t('ui.occasions.adding') : t('ui.occasions.addOccasion')}</Text>
             </TouchableOpacity>
           </View>
@@ -945,7 +945,7 @@ export default function OccasionsScreen({ navigation, route }) {
                 })
               )}
             </ScrollView>
-            <TouchableOpacity style={styles.addButton} onPress={saveCalendarSelection} activeOpacity={0.85}>
+            <TouchableOpacity accessibilityRole="button" style={styles.addButton} onPress={saveCalendarSelection} activeOpacity={0.85}>
               <Text style={styles.addButtonText}>{t('ui.occasions.saveSelection')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ alignItems: 'center', marginTop: spacing.sm, paddingVertical: spacing.sm }} onPress={() => setShowCalendarPicker(false)} accessibilityRole="button" accessibilityLabel={t('ui.occasions.cancelA11y')}>

@@ -253,7 +253,7 @@ export default function GatheringPublishedPanel({ topInset = 0, gathering, gathe
                     ? t('ui.gatheringConfirmation.circleEmpty', { name: circle.name })
                     : t('ui.gatheringConfirmation.inviteCircle', { name: circle.name, count: targetCount });
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       key={circle.id}
                       style={[styles.circleChip, (allInvited || isEmpty) && styles.circleChipDone]}
                       onPress={() => handleInviteCircle(circle)}

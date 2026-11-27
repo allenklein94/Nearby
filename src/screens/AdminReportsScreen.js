@@ -594,7 +594,7 @@ export default function AdminReportsScreen({ navigation }) {
                   </TouchableOpacity>
                 ) : null}
                 {!item.resolved && (
-                  <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={() => markResolved(item)}>
+                  <TouchableOpacity accessibilityRole="button" style={[styles.actionButton, styles.resolveButton]} onPress={() => markResolved(item)}>
                     <Text style={styles.actionText}>Mark Resolved</Text>
                   </TouchableOpacity>
                 )}

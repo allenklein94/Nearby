@@ -31,8 +31,8 @@ export default function GatheringOfferBadge({ gatheringId }) {
 
 const getStyles = (colors) => StyleSheet.create({
   badge: {
-    alignSelf: 'flex-start', backgroundColor: '#f59e0b20', borderRadius: radius.full,
-    paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: '#f59e0b',
+    alignSelf: 'flex-start', backgroundColor: colors.warning + '20', borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.warning,
   },
-  text: { color: '#f59e0b', fontSize: 11, fontWeight: '700' },
+  text: { color: colors.warning, fontSize: 11, fontWeight: '700' },
 });

@@ -1065,7 +1065,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.morePhotos')}</Text>
         <View style={styles.galleryGrid}>
           {extraPhotos.map((photo, index) => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={photo.id}
               style={styles.galleryItem}
               onLongPress={() => confirmDeleteExtraPhoto(photo)}

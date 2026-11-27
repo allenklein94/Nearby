@@ -2783,7 +2783,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {renderEnvironmentChip()}
               </ScrollView>
               {showViewToggle && (
-                <TouchableOpacity
+                <TouchableOpacity hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   style={styles.viewToggleButton}
                   onPress={() => { setRestoreMapRegion(mapRegionToRestore(mapRegionRef.current, mapContext)); setViewStyle(viewStyle === 'list' ? 'map' : 'list'); }}
                   accessibilityLabel={t(viewStyle === 'list' ? 'ui.discover.toMap' : 'ui.discover.toList')}
@@ -2886,7 +2886,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   );
                 })}
               </View>
-              <TouchableOpacity
+              <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 style={styles.postStoryButton}
                 onPress={handlePostStory}
                 disabled={postingStory}

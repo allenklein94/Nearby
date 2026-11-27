@@ -287,9 +287,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   deckActionLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
   rewindButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: '#f59e0b', justifyContent: 'center', alignItems: 'center', ...shadow.card,
+    borderWidth: 1, borderColor: colors.warning, justifyContent: 'center', alignItems: 'center', ...shadow.card,
   },
-  rewindButtonText: { color: '#f59e0b', fontSize: 22, fontWeight: '700' },
+  rewindButtonText: { color: colors.warning, fontSize: 22, fontWeight: '700' },
   skipButton: {
     width: 52, height: 52, borderRadius: 26, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', ...shadow.card,

@@ -322,7 +322,7 @@ export default function FriendsScreen({ navigation }) {
                         >
                           <Text style={styles.acceptButtonText}>{t('ui.friends.accept')}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                           style={styles.declineButton}
                           onPress={() => handleRespond(person.friendshipId, false, person)}
                           accessibilityLabel={t('ui.friends.declineFriendRequestFromA11y', { name: person.display_name })}
@@ -458,7 +458,7 @@ export default function FriendsScreen({ navigation }) {
                   <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85} accessibilityLabel={t('ui.friends.createCircleA11y')} accessibilityRole="button">
                     <Text style={styles.modalButtonText}>{t('ui.friends.createCircle')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
+                  <TouchableOpacity accessibilityRole="button" onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
                     <Text style={styles.modalCancelText}>{t('ui.friends.cancel')}</Text>
                   </TouchableOpacity>
                 </View>

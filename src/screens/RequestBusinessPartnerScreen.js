@@ -99,10 +99,10 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
               <Text style={styles.emptyText}>
                 {t('ui.requestPartner.youDontHaveAGathering')}
               </Text>
-              <TouchableOpacity style={styles.emptyLink} onPress={() => navigation.navigate('CreateGathering')}>
+              <TouchableOpacity accessibilityRole="button" style={styles.emptyLink} onPress={() => navigation.navigate('CreateGathering')}>
                 <Text style={styles.emptyLinkText}>{t('ui.requestPartner.hostAGathering')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.emptyLink} onPress={() => navigation.navigate('CreateCommunity')}>
+              <TouchableOpacity accessibilityRole="button" style={styles.emptyLink} onPress={() => navigation.navigate('CreateCommunity')}>
                 <Text style={styles.emptyLinkText}>{t('ui.requestPartner.createACommunity')}</Text>
               </TouchableOpacity>
             </FadeInState>
@@ -155,7 +155,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
           <>
             <View style={styles.selectedCard}>
               <Text style={styles.rowTitle}>{selectedPartner.name}</Text>
-              <TouchableOpacity onPress={() => setSelectedPartner(null)}>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setSelectedPartner(null)}>
                 <Text style={styles.changeLink}>{t('ui.requestPartner.change')}</Text>
               </TouchableOpacity>
             </View>

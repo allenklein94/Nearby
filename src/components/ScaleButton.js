@@ -22,7 +22,7 @@ export default function ScaleButton({ onPress, style, children, disabled, ...pro
   }
 
   return (
-    <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} disabled={disabled} {...props}>
+    <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} disabled={disabled} {...props}>
       <Animated.View style={[style, { transform: [{ scale }] }]}>
         {children}
       </Animated.View>

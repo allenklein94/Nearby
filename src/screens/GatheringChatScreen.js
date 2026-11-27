@@ -257,7 +257,7 @@ export default function GatheringChatScreen({ route, navigation }) {
                 )}
                 <View style={{ maxWidth: '75%' }}>
                   {!isMe && (
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
                       onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name, content: { type: 'gathering_message', id: item.id } })}
                       accessibilityLabel={t('ui.groupChat.viewProfileHoldToReportA11y', { name: item.profiles?.display_name })}

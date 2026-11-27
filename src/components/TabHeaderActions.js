@@ -84,7 +84,7 @@ export default function TabHeaderActions({ navigation }) {
 
   return (
     <View style={styles.row}>
-      <TouchableOpacity
+      <TouchableOpacity hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
         onPress={() => navigation.navigate('Messages')}
         style={styles.messageButton}
         accessibilityLabel={unreadCount > 0 ? t('ui.shared.header.messagesUnread', { count: unreadCount }) : t('ui.shared.header.messages')}

@@ -88,7 +88,7 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
     <Modal visible={!!preview} animationType={fromPin ? 'none' : modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View ref={overlayRef} style={styles.overlay} collapsable={false}>
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: grow }]} />
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
           onPress={onClose}
