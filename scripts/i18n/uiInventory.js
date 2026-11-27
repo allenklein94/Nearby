@@ -13,7 +13,7 @@ const TEXT_PROPS = { has: (n) => typeof n === 'string' && TEXT_NAME.test(n) && !
 const TEXT_KEYS = { has: (n) => typeof n === 'string' && (TEXT_NAME.test(n) || /^(short|long|name)$/.test(n)) };
 const SKIP_EXACT = new Set(['logSoftFailure', 'trackEvent', 'capture', 'require', 'navigate', 'push', 'replace', 'from', 'select', 'eq', 'neq',
   'rpc', 'order', 'in', 'or', 'ilike', 'like', 'contains', 'filter', 'getItem', 'setItem', 'removeItem', 'Error', 't', 'tr', 'translate',
-  'interpolate', 'uiText', 'emptyCopy', 'addEventListener', 'registerCategoryTag', 'fetch', 'test', 'it', 'describe', 'expect', 'setParams',
+  'interpolate', 'uiText', 'emptyCopy', 'addEventListener', 'registerCategoryTag', 'fetch', 'functionFetch', 'test', 'it', 'describe', 'expect', 'setParams',
   'reset', 'goBack', 'getParent', 'dispatch', 'track', 'identify', 'screen', 'match', 'startsWith', 'endsWith', 'includes', 'split', 'join',
   'toLocaleDateString', 'toLocaleTimeString', 'toLocaleString', 'Date', 'RegExp', 'upsert', 'insert', 'update', 'delete', 'single', 'maybeSingle',
   'limit', 'gte', 'lte', 'gt', 'lt', 'is', 'not', 'channel', 'on', 'subscribe', 'invoke', 'getPublicUrl', 'upload', 'storage', 'createSignedUrl']);

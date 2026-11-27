@@ -13,6 +13,8 @@ const load = (rel) => babel.transformSync(
 ).code;
 const CHECKOUT_SRC = load('create-sponsored-checkout');
 const WEBHOOK_SRC = load('sponsored-stripe-webhook');
+// Minimum supported app version (_shared/appVersion.ts): the version check passes here; its own tests cover it.
+const VERSION_OK = async () => null;
 
 class Res {
   constructor(body, init = {}) { this.body = body; this.status = init.status ?? 200; }
@@ -141,9 +143,9 @@ function makeCheckout({ env = {}, check = { ok: true }, classify = { riskTier: '
     return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body };
   };
   // eslint-disable-next-line no-new-func
-  new Function('serve', 'createClient', 'classifyContent', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', CHECKOUT_SRC)(
+  new Function('serve', 'createClient', 'classifyContent', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', 'appVersionRefusal', 'clientVersionHeaders', CHECKOUT_SRC)(
     (h) => { handler = h; }, () => client, async () => { classifyCalls += 1; return classify; },
-    { env: { get: (k) => e[k] } }, Res, fetchStub, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY);
+    { env: { get: (k) => e[k] } }, Res, fetchStub, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY, VERSION_OK, () => ({}));
   const tomorrow = () => new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
   const call = async (body = {}, auth = 'Bearer tok') => {
     const res = await handler({
@@ -278,8 +280,8 @@ describe('admin-sponsored-refund', () => {
     } });
     const fakeFetch = async (url, init) => { fetches.push({ url, init }); const r = stripe ?? { ok: true, body: { id: 're_1' } }; return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body }; };
     // eslint-disable-next-line no-new-func
-    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', SRC)(
-      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY);
+    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', 'appVersionRefusal', 'clientVersionHeaders', SRC)(
+      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY, VERSION_OK, () => ({}));
     const call = async (body, auth = 'Bearer t') => {
       const res = await handler({ headers: { get: () => auth }, json: async () => body });
       return { status: res.status, body: res.json() };
@@ -333,8 +335,8 @@ describe('cancel-sponsored-placement', () => {
     } });
     const fakeFetch = async (url, init) => { fetches.push({ url, init }); const r = stripe ?? { ok: true, body: { id: 're_9' } }; return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body }; };
     // eslint-disable-next-line no-new-func
-    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', SRC)(
-      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY);
+    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', 'appVersionRefusal', 'clientVersionHeaders', SRC)(
+      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY, VERSION_OK, () => ({}));
     const call = async (body, auth = 'Bearer t') => { const res = await handler({ headers: { get: () => auth }, json: async () => body }); return { status: res.status, body: res.json() }; };
     return { call, rpcs, fetches };
   }
