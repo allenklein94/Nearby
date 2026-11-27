@@ -292,9 +292,8 @@ export default function MatchesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header">{t('matches.title')}</Text>
-      </View>
+      {/* Device test (owner, 2026-11-27): no "Matches" heading here. This list only ever shows inside Messages, under its
+          already-selected Matches tab, so a second heading repeated it. */}
 
       {newOfferCount > 0 && (
         <TouchableOpacity

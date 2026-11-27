@@ -33,6 +33,8 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { orderForTonight } from '../utils/meetTonight';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICON_SIZE, switchToIcon } from '../constants/functionalIcons';
 
 // Taxonomy audit Phase 3 (CLAUDE.md, Aug 25 2026): the 3 real distance
 // buckets get_friend_discovery_candidates() already returns -- never a
@@ -328,7 +330,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
             accessibilityLabel={viewStyle === 'cards' ? t('ui.dating.currentlyOnCardViewSwitchA11y') : t('ui.dating.currentlyOnListViewSwitchA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.headerIconText}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
+            <Ionicons name={switchToIcon(viewStyle, ['cards', 'list'])} size={FUNCTIONAL_ICON_SIZE} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
         {enabled && (
@@ -560,6 +562,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
       ) : (
         viewStyle === 'cards' ? (
           <FriendDiscoverySwipeCards
+            discoveryMode={discoveryMode}
             data={shownCandidates}
             photoUrls={photoUrls}
             onlineStatuses={onlineStatuses}
@@ -571,6 +574,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           />
         ) : (
           <FriendDiscoveryList
+            discoveryMode={discoveryMode}
             data={shownCandidates}
             photoUrls={photoUrls}
             onlineStatuses={onlineStatuses}

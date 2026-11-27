@@ -57,7 +57,9 @@ export const EMPTY_STATES = {
   perks_search: { title: "No perks match \"{query}\"", body: "Try a different word, or clear the search." },
   // Item 80, second sweep: two-part, chat, dynamic-label and remaining empties.
   legacy_library: { title: "Nothing shared yet", body: "This library grows as couples choose to leave their reflections." },
-  friend_discovery_empty: { title: "No one nearby right now", body: "People nearby who turn on friend discovery will show up here. Check back later." },
+  // Device test (owner, 2026-11-27): Browse and Crossed Paths showed the same words; each now says what it is.
+  friend_discovery_empty: { title: "No new people to discover yet", body: "People nearby who turn on friend discovery will show up here." },
+  friend_crossed_paths_empty: { title: "No crossed paths yet", body: "When your path crosses someone who's open to friendship, they'll show up here. This uses Nearby's location access, so it depends on your location settings." },
   momentum_empty: { title: "Nothing in the last {weeks} weeks", body: "Join or host a gathering to see it here." },
   chemistry_diary: { title: "Nothing here yet", body: "Add an entry any time after spending time with someone, from above, their profile or a chat." },
   context_gatherings: { title: "No {topic} gatherings nearby", body: "Nothing is scheduled nearby right now." },

@@ -145,6 +145,8 @@ import { filterOpenNow, gatheringEntity, placeEntity, perkEntity } from '../util
 import { placesNeedFetch } from '../utils/placesFetchPlan';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICON_SIZE, switchToIcon } from '../constants/functionalIcons';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -2759,7 +2761,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   accessibilityLabel={t(viewStyle === 'list' ? 'ui.discover.toMap' : 'ui.discover.toList')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.viewToggleIcon}>{viewStyle === 'list' ? '🗺️' : '📋'}</Text>
+                  <Ionicons name={switchToIcon(viewStyle, ['list', 'map'])} size={FUNCTIONAL_ICON_SIZE - 3} color={colors.textPrimary} />
                 </TouchableOpacity>
               )}
             </View>

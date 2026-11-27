@@ -46,6 +46,8 @@ import { orderForTonight } from '../utils/meetTonight';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import ToggleRow from '../components/ToggleRow';
+import { Ionicons } from '@expo/vector-icons';
+import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE, switchToIcon } from '../constants/functionalIcons';
 const UNDO_WINDOW_SECONDS = 5;
 
 const DISCOVERY_FILTER_FIELDS = [
@@ -644,7 +646,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
               accessibilityLabel={discoveryMode === 'browse' ? t('ui.dating.learnHowBrowseWorksA11y') : t('ui.dating.learnHowCrossedPathsWorksA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.headerIconText}>ⓘ</Text>
+              <Ionicons name={FUNCTIONAL_ICONS.info} size={FUNCTIONAL_ICON_SIZE} color={colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={toggleViewStyle}
@@ -652,7 +654,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
               accessibilityLabel={viewStyle === 'cards' ? t('ui.dating.currentlyOnCardViewSwitchA11y') : t('ui.dating.currentlyOnListViewSwitchA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.headerIconText}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
+              <Ionicons name={switchToIcon(viewStyle, ['cards', 'list'])} size={FUNCTIONAL_ICON_SIZE} color={colors.textSecondary} />
             </TouchableOpacity>
             {discoveryMode === 'crossedPaths' && (
               <TouchableOpacity
@@ -661,7 +663,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
                 accessibilityLabel={t('ui.dating.seeAllYourCrossedPathsA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.headerIconText}>🗺️</Text>
+                <Ionicons name={FUNCTIONAL_ICONS.map} size={FUNCTIONAL_ICON_SIZE} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
             {/* Aug 30 2026 (CLAUDE.md, external product-critique reply):
@@ -675,7 +677,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
               accessibilityLabel={t('ui.dating.yourDatingProfileWhatYoureA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.headerIconText}>👤</Text>
+              <Ionicons name={FUNCTIONAL_ICONS.datingProfile} size={FUNCTIONAL_ICON_SIZE} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>

@@ -17,14 +17,15 @@ export { DISTANCE_BUCKET_KEYS };
 
 // The empty state both Friends modes share (list and deck): a real next action, not a dead end -- the same InviteFriends
 // destination every other empty state routes to (Thursday plan item 25).
-export function FriendDiscoveryEmpty({ navigation }) {
+// Browse and Crossed Paths each say what they are (device test 2026-11-27); mode = the screen's discoveryMode.
+export function FriendDiscoveryEmpty({ navigation, mode = 'browse' }) {
   const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyEmoji}>🤝</Text>
-      <EmptyCopy id="friend_discovery_empty" />
+      <EmptyCopy id={mode === 'crossedPaths' ? 'friend_crossed_paths_empty' : 'friend_discovery_empty'} />
       {navigation && (
         <TouchableOpacity
           onPress={() => navigation.navigate('InviteFriends')}
@@ -44,7 +45,7 @@ export function FriendDiscoveryEmpty({ navigation }) {
 // The screen also removes a decided person (undecidedCandidates), so a person decided in the list never appears here, and
 // a failed write puts them back on top. Swiping is optional: the labelled Pass / Connect buttons do
 // exactly what the swipe does (FriendDecisionButtons, FRIEND_DECISIONS).
-export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation }) {
+export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation, discoveryMode = 'browse' }) {
   const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -90,7 +91,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
   ).current;
 
   const item = deck.visible();
-  if (!item) return <FriendDiscoveryEmpty navigation={navigation} />;
+  if (!item) return <FriendDiscoveryEmpty navigation={navigation} mode={discoveryMode} />;
 
   const nextItem = deck.next();
   const storyGroup = storyByUserId[item.id] ?? null;

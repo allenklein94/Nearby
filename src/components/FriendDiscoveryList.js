@@ -11,12 +11,12 @@ import { FriendDiscoveryEmpty } from './FriendDiscoverySwipeCards';
 // one static card per candidate (the same FriendCandidateDetails the optional deck shows) with the labelled Pass / Connect
 // pair. Nothing to swipe; a decided person leaves the list at once with no motion (the screen's undecidedCandidates), and
 // comes back if the write fails.
-export default function FriendDiscoveryList({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onDecide, navigation }) {
+export default function FriendDiscoveryList({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onDecide, navigation, discoveryMode = 'browse' }) {
   const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
-  if (!data.length) return <FriendDiscoveryEmpty navigation={navigation} />;
+  if (!data.length) return <FriendDiscoveryEmpty navigation={navigation} mode={discoveryMode} />;
 
   return (
     <FlatList

@@ -57,8 +57,9 @@ export default function MessagesScreen({ navigation, route }) {
   const [groupChats, setGroupChats] = useState([]);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: mode === 'friends' ? t('ui.nav.title.messagesFriends') : t('ui.nav.title.messages') });
-  }, [navigation, mode, t]);
+    // Device test (owner, 2026-11-27): the parent keeps its name; Matches / Friends change the content, never the screen's title.
+    navigation.setOptions({ title: t('ui.nav.title.messages') });
+  }, [navigation, t]);
 
   const loadGroupChats = useCallback(async () => {
     try {
@@ -192,7 +193,7 @@ const getStyles = (colors) => StyleSheet.create({
   groupChatsRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   groupChatChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, maxWidth: 160,
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, maxWidth: 260, // device test 2026-11-27: "Downtown run..." cut off at 160
   },
   groupChatChipIcon: { fontSize: 14, marginRight: 4 },
   groupChatChipText: { color: colors.textPrimary, fontWeight: '600', fontSize: 13, flexShrink: 1 },
