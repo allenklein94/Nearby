@@ -582,7 +582,9 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
         </View>
       </View>
 
-      {!premium && (
+      {/* Device test 2026-11-27 (item 30): the upsell shows only beside something it actually unlocks (a locked notice or
+          wave), never over an empty Activity; Premium stays reachable from Settings and every locked row. */}
+      {!premium && items.some((i) => i.type === 'notice') && (
         <TouchableOpacity
           style={styles.upsell}
           onPress={() => navigation.navigate('Paywall')}

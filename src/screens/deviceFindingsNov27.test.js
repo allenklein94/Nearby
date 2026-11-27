@@ -95,3 +95,8 @@ describe('item 34: functional controls use the one outline icon set, never emoji
     ['screens/DiscoverHubScreen.js', '<Text style={styles.searchIcon}>🔍'], ['screens/DiscoverHubScreen.js', '<Text style={styles.postStoryButtonIcon}>📷'],
   ])('%s has no %s control', (f, glyph) => expect(rd(f)).not.toContain(glyph));
 });
+
+test('item 30: Activity shows the Premium upsell only when there is a locked notice to unlock', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, 'ActivityScreen.js'), 'utf8');
+  expect(src).toContain("{!premium && items.some((i) => i.type === 'notice') && (");
+});
