@@ -4,7 +4,7 @@ export default {
   en: {
     someInvitesDidntGoThrough: "Some invites didn't go through",
     invitedOfInTryThe: "Invited {sent} of {total} in \"{name}\" — try the rest individually below.",
-    loadingYourGathering: "Loading your gathering...",
+    loadingYourGathering: "Loading your gathering…",
     couldntLoadYourGathering: "Couldn't load your gathering.",
     continueToYourGatheringA11y: "Continue to your gathering",
     continueToYourGathering: "Continue to your gathering →",
@@ -42,7 +42,7 @@ export default {
   es: {
     someInvitesDidntGoThrough: "Algunas invitaciones no se enviaron",
     invitedOfInTryThe: "Invitaste a {sent} de {total} en \"{name}\". Invita al resto uno por uno abajo.",
-    loadingYourGathering: "Cargando tu reunión...",
+    loadingYourGathering: "Cargando tu reunión…",
     couldntLoadYourGathering: "No se pudo cargar tu reunión.",
     continueToYourGatheringA11y: "Ir a tu reunión",
     continueToYourGathering: "Ir a tu reunión →",
@@ -80,7 +80,7 @@ export default {
   de: {
     someInvitesDidntGoThrough: "Einige Einladungen wurden nicht gesendet",
     invitedOfInTryThe: "{sent} von {total} in „{name}“ eingeladen. Lade die anderen unten einzeln ein.",
-    loadingYourGathering: "Dein Treffen wird geladen...",
+    loadingYourGathering: "Dein Treffen wird geladen…",
     couldntLoadYourGathering: "Dein Treffen konnte nicht geladen werden.",
     continueToYourGatheringA11y: "Weiter zu deinem Treffen",
     continueToYourGathering: "Weiter zu deinem Treffen →",
@@ -118,7 +118,7 @@ export default {
   fr: {
     someInvitesDidntGoThrough: "Certaines invitations n'ont pas été envoyées",
     invitedOfInTryThe: "{sent} sur {total} invités dans « {name} ». Invitez les autres un par un ci-dessous.",
-    loadingYourGathering: "Chargement de votre rencontre...",
+    loadingYourGathering: "Chargement de votre rencontre…",
     couldntLoadYourGathering: "Impossible de charger votre rencontre.",
     continueToYourGatheringA11y: "Aller à votre rencontre",
     continueToYourGathering: "Aller à votre rencontre →",
@@ -156,7 +156,7 @@ export default {
   pt: {
     someInvitesDidntGoThrough: "Alguns convites não foram enviados",
     invitedOfInTryThe: "{sent} de {total} convidados em \"{name}\". Convide o restante um por um abaixo.",
-    loadingYourGathering: "Carregando seu encontro...",
+    loadingYourGathering: "Carregando seu encontro…",
     couldntLoadYourGathering: "Não foi possível carregar seu encontro.",
     continueToYourGatheringA11y: "Ir para seu encontro",
     continueToYourGathering: "Ir para seu encontro →",
@@ -194,7 +194,7 @@ export default {
   ht: {
     someInvitesDidntGoThrough: "Kèk envitasyon pa t pase",
     invitedOfInTryThe: "Ou envite {sent} sou {total} nan \"{name}\". Eseye rès yo youn pa youn anba a.",
-    loadingYourGathering: "N ap chaje rasanbleman ou...",
+    loadingYourGathering: "N ap chaje rasanbleman ou…",
     couldntLoadYourGathering: "Nou pa t ka chaje rasanbleman ou.",
     continueToYourGatheringA11y: "Ale nan rasanbleman ou",
     continueToYourGathering: "Ale nan rasanbleman ou →",
@@ -232,7 +232,7 @@ export default {
   zh: {
     someInvitesDidntGoThrough: "部分邀请未能发送",
     invitedOfInTryThe: "已邀请“{name}”中的 {sent}/{total} 人，请在下方逐个邀请其余的人。",
-    loadingYourGathering: "正在加载你的聚会...",
+    loadingYourGathering: "正在加载你的聚会…",
     couldntLoadYourGathering: "无法加载你的聚会。",
     continueToYourGatheringA11y: "前往你的聚会",
     continueToYourGathering: "前往你的聚会 →",
@@ -270,7 +270,7 @@ export default {
   vi: {
     someInvitesDidntGoThrough: "Một số lời mời chưa gửi được",
     invitedOfInTryThe: "Đã mời {sent}/{total} người trong \"{name}\". Hãy mời từng người còn lại bên dưới.",
-    loadingYourGathering: "Đang tải buổi gặp mặt của bạn...",
+    loadingYourGathering: "Đang tải buổi gặp mặt của bạn…",
     couldntLoadYourGathering: "Không thể tải buổi gặp mặt của bạn.",
     continueToYourGatheringA11y: "Đi tới buổi gặp mặt của bạn",
     continueToYourGathering: "Đi tới buổi gặp mặt của bạn →",
@@ -308,7 +308,7 @@ export default {
   tl: {
     someInvitesDidntGoThrough: "Hindi naipadala ang ilang imbitasyon",
     invitedOfInTryThe: "Naimbitahan ang {sent} sa {total} sa \"{name}\". Subukang imbitahan isa-isa ang iba sa ibaba.",
-    loadingYourGathering: "Nilo-load ang iyong gathering...",
+    loadingYourGathering: "Nilo-load ang iyong gathering…",
     couldntLoadYourGathering: "Hindi ma-load ang iyong gathering.",
     continueToYourGatheringA11y: "Tumuloy sa iyong gathering",
     continueToYourGathering: "Tumuloy sa iyong gathering →",
@@ -346,7 +346,7 @@ export default {
   ru: {
     someInvitesDidntGoThrough: "Некоторые приглашения не отправились",
     invitedOfInTryThe: "Приглашено {sent} из {total} в «{name}». Пригласите остальных по одному ниже.",
-    loadingYourGathering: "Загружаем вашу встречу...",
+    loadingYourGathering: "Загружаем вашу встречу…",
     couldntLoadYourGathering: "Не удалось загрузить вашу встречу.",
     continueToYourGatheringA11y: "Перейти к вашей встрече",
     continueToYourGathering: "Перейти к вашей встрече →",
@@ -384,7 +384,7 @@ export default {
   ko: {
     someInvitesDidntGoThrough: "일부 초대를 보내지 못했어요",
     invitedOfInTryThe: "\"{name}\"에서 {total}명 중 {sent}명을 초대했어요. 나머지는 아래에서 한 명씩 초대해 보세요.",
-    loadingYourGathering: "모임을 불러오는 중...",
+    loadingYourGathering: "모임을 불러오는 중…",
     couldntLoadYourGathering: "모임을 불러올 수 없어요.",
     continueToYourGatheringA11y: "내 모임으로 이동",
     continueToYourGathering: "내 모임으로 이동 →",
