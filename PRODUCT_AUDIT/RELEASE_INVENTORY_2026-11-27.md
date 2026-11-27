@@ -93,3 +93,31 @@ session, never before it (each tolerates the missing server piece, but the new b
 owner downloads it. A restore INTO production is a separate, owner-run decision (Supabase restore of a logical dump into a
 fresh project, then repoint): never attempted from a session. Storage files: checksummed copy alongside (27 files on
 2026-11-26).
+
+## 6. Missing production secrets: what depends on each (audit 2026-11-27, code + read-only secret names)
+| Secret(s) | Read by | Behaviour while missing | Migrations that depend | Before launch? |
+|---|---|---|---|---|
+| `RESEND_API_KEY` + `EMAIL_FROM` (+ optional `EMAIL_REPLY_TO`) | send-push (email fallback), business-email (`_shared/email`) | email skipped, `{sent:false, reason:'email_not_configured'}`; pushes unaffected | 0421 (one email for a dead push token) and 0428 (message alerts, exact-request link) are inert without them | MANDATORY before any business owner who uses only the website (no app = no push token = no alert at all). Not needed for build 88 testing on the owner's phone. |
+| `BUSINESS_WEB_URL` | send-push (email link), business-stripe-connect-onboarding, create-sponsored-checkout | send-push: email without the "open in browser" link; Stripe functions fall back to `https://allenklein94.github.io/Nearby/business/` | 0428's exact-request link | Set with Resend. Change only at the custom-domain cutover. |
+| `REVIEWER_EMAIL` | review-login, setup-review-account (repo versions only) | LIVE v7 / v9 have the address inline and work today; the repo versions refuse without it | none | Needed only BEFORE redeploying review-login (PIN cap) or setup-review-account. Safe to leave unset while they stay as deployed. |
+| `GOOGLE_WEB_RISK_API_KEY` | screen-user-content (`_shared/linkSafety`) | every link = 'unavailable' -> the text with a link is refused (503 "couldn't check this right now"), never let through; text without links unaffected | 0396 (link safety), via 0373's screening | MANDATORY before 0396 if public text may contain links; otherwise every post with a link is refused with a misleading "try again". |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SPONSORED_WEBHOOK_SECRET`, `STRIPE_LIVE_APPROVED` | 6 payment / sponsored functions | payment functions refuse; acceptance still books (pay the business directly, idea "235"); sponsored inert | none | NOT needed for launch: payments + sponsored can stay off. Live needs the blocked-on-owner approvals (counsel, finance approver). |
+
+## 7. Rollbacks vs data changes that a schema rollback can't undo (audit 2026-11-27)
+Method: every statement outside function bodies in 0348-0433 that changes existing rows, drops data or moves it, plus the
+jobs the migrations schedule. Production row counts read-only 2026-11-27: 0 live stories, 0 ID submissions, 0 offers
+with a read receipt, 1 report.
+
+| Kind | Migrations | Rollback handles it? |
+|---|---|---|
+| Rows rewritten, rollback maps them back | 0370 report reasons -> codes; 0398 (unsafe_situation -> 'other' + original reason in details) | YES (rollback updates them back; 0398's is lossy by design, wording kept in details) |
+| Data moved to a new table | 0422 read receipts -> `business_offer_views` | YES (rollback copies `viewed_at` back) |
+| New tables holding user data | 0416 offer evidence, 0423 contact details, 0424 memberships, 0355 report evidence, 0369 case history | Dropping them loses what accrued: 0416 + 0423 rollbacks REFUSE while rows exist (export + owner approval first). Others: export the table before rolling back (step below). |
+| Rows ended / deleted at apply | 0389 + 0390 end live Business Moments / personal Stories (`expires_at = now()`); 0429 drops a 5-minute alert-window table | NO, not restorable by the rollback. Production has 0 live stories, so nothing is lost today; the window table is transient |
+| Generated / derived column dropped | 0398 `review_priority` | nothing lost (recomputed) |
+| Settings rows | 0358, 0365, 0380, 0386, 0412 thresholds; 0354/0390 bucket limits | YES (rollbacks restore the previous values) |
+| Deletions done by scheduled jobs after deploy | 0363 (location jumps 1 h), 0369 (closed cases 12 months), 0374/0375/0376/0378 retention, 0391 report-file cleanup, 0400 ID images, 0402/0403 account deletion | NO: once a job has deleted something, no rollback brings it back. Only the same-day backup has it, and restoring it also reverts every user write since. |
+
+Procedure added to every rollback (packets): (1) `select count(*)` of each table the migration created or wrote; (2) if
+any row exists, export those tables into the backup folder (0600) and record the counts; (3) roll back only with the
+owner's approval naming that export; (4) a job-deleted record is NOT recoverable by rollback: say so in the stop report.

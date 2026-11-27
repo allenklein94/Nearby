@@ -10,11 +10,13 @@ or done by Claude on request. Each step names what it unblocks. Nothing here is 
    (deploy.js refuses a migration without a verified + encrypted backup < 24 h).
 2. **Download the encrypted backup** (`/workspaces/.nearby-verify/backups/nearby-backup-<ts>.tar.gpg`) to your computer
    (VS Code: right-click > Download), and check it opens there: `gpg -d <file> | tar -t | head`.
-3. **App Store Connect check.** List every build on the App Store and in TestFlight (internal + external groups) and
-   who has each. Tell Claude the result. Unblocks: Batch 1 (R2: no public build <= 86) and, later, the 0373 client-floor
-   gate ("distribution" line; deploy.js refuses 0373+ without it).
-4. **Privacy corrections to counsel.** Send `PRODUCT_AUDIT/PRIVACY_LEGAL_REVIEW_2026-11-27.md` (part 1 = processing
-   live today, expedited). Unblocks: publishing part 1 (separate approval).
+3. **App Store Connect check.** (a) Was ANY build ever released on the App Store (not just TestFlight)? (b) List every
+   TestFlight build and group. (c) Expire build 86 and older in TestFlight now (0348 breaks them; an expired beta won't
+   open). Keep build 87 until build 88 is on every device. Tell Claude the result. If (a) is yes for any build below 88,
+   0373 needs a minimum-version check first (your decision). Unblocks: Batch 1 (R2) and, later, the 0373 gate.
+4. **Privacy corrections to counsel.** Send `PRODUCT_AUDIT/PRIVACY_LEGAL_REVIEW_2026-11-27.md`. Part 1 (live today) is
+   ready to publish on its own as branch `privacy/live-corrections-2026-11-27` (needs no migration). The 0351 sentence
+   is branch `privacy/0351-suspension` (carries the marker deploy.js checks). Publishing = merging to main, with your approval.
 5. **Staging test sign-in expires 2026-11-28 15:23 UTC.** If you want staging phone tests after that, tell Claude to
    renew it (staging only; a new fictional-number entry).
 
@@ -51,14 +53,20 @@ eas build -p ios --profile staging      # sign in to Apple when asked (ad hoc)
     every device that has Nearby. Re-check App Store Connect (step 3) so no older build remains available.
 
 ## F. Wall B: 0373 onward (needs D, 13, 14)
-15. **Website:** approve re-export + publish from build 88 source (Claude prepares it). Gives the "website" line.
-16. Tell Claude the App Store Connect result after step 14 (the "distribution" line). deploy.js also checks, live, that
+15. **Expire build 87 in TestFlight** once build 88 is on every device (the distribution line needs "testflight-older:
+   expired" + "appstore-older: never-released").
+16. **Website:** approve re-export + publish from build 88 source (Claude prepares it). Gives the "website" line.
+17. Tell Claude the App Store Connect result after step 14 (the "distribution" line). deploy.js also checks, live, that
     no older app build is still signed in: an old device must update or sign out first.
-17. **External services before their batch:** Google Web Risk key (before 0396), Resend production secrets (business
-    email; commands below), Twilio upgrade (before any outside business owner).
-18. Approve Batches 6-11 migration by migration.
+18. **External services before their batch** (audit: `RELEASE_INVENTORY_2026-11-27.md` section 6):
+    - MANDATORY: Google Web Risk key before 0396 (without it every public post with a link is refused); Resend production
+      secrets + `BUSINESS_WEB_URL` before any business owner who uses only the website (commands below); Twilio upgrade
+      before any outside business owner.
+    - Can stay off for launch: Stripe (bookings still work, pay the business directly); `REVIEWER_EMAIL` (needed only
+      before redeploying review-login / setup-review-account; the live versions work).
+19. Approve Batches 6-11 migration by migration.
 
-### Resend on production (step 17; never paste the key in chat)
+### Resend on production (step 18; never paste the key in chat)
 ```
 read -rs RESEND_API_KEY && supabase secrets set --project-ref enmosvippabmuqslzrox RESEND_API_KEY="$RESEND_API_KEY"; unset RESEND_API_KEY
 supabase secrets set --project-ref enmosvippabmuqslzrox EMAIL_FROM='Nearby for Business <alerts@mail.thisisnearby.com>' \

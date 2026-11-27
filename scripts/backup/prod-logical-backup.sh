@@ -129,6 +129,9 @@ if [ "$(tr -d '[:space:]' < "$OUT/pub-$TS.txt")" = t ]; then
   SA psql -h localhost -U supabase_admin -d postgres -X -q -c 'grant usage on schema public to public' >/dev/null
 fi
 SA psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 -c 'create extension if not exists pg_cron' >/dev/null
+# pg_net as on production (2026-11-27: the dump skips extensions, so the copy had none and every net.http_post failed
+# before any request). The copy has no route out, so a request it makes fails with "Couldn't resolve host name".
+SA psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 -c 'create extension if not exists pg_net' >/dev/null
 SA psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 < "$OUT/cron-$TS.sql" >/dev/null || { echo "FAIL: cron jobs did not recreate"; exit 1; }
 
 echo "3/3 verify (row counts + row md5 per table, schema + grants diff)"

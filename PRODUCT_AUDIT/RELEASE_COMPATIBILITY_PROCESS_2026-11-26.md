@@ -66,3 +66,28 @@ migrations on main without a production ledger row, the oldest one's age, and br
   (`releaseInventory.test.js`, `RELEASE_INVENTORY_2026-11-27.md`). Rules 5 + 6 reported by `npm run release:status`.
 - Enforced by process only: rule 2 (proved per release by the compat run at production's current version), rule 4
   (feature switches), rule 5's merging itself. No CI exists; the checks run in a session.
+
+## Returning older installs (owner, 2026-11-27): audit + what the 0373 gate now requires
+Audit: Nearby has NO minimum-supported-version mechanism (no version check in the app, database, pre-request hook or edge
+functions). Each build's native HTTP stack sends `Nearby/<build>` as its user agent; Auth stores it per session.
+Production Auth: sessions never expire (`sessions_timebox` 0, `sessions_inactivity_timeout` 0); live sessions today:
+1 x `Nearby/87` (owner's iPhone, active 2026-11-26), 5 browser.
+
+| Who | Visible to the live-session read? | What stops them after 0373 |
+|---|---|---|
+| Build 87, still signed in, used daily | yes | gate refuses until they're on build 88 or signed out |
+| Build 87, signed in, dormant for weeks | yes (sessions never expire, so the row stays) | same |
+| Build 87, signed out | no | only: the build can't be opened (TestFlight build expired) |
+| Build 87, session ended (refresh token revoked, password/number change, admin sign-out) | no | same |
+| Build 87 installed, never signed in | no | same |
+| Any build ever released on the App Store | no | nothing: it stays installed and launchable forever |
+
+So from 0373 the distribution line must say `testflight-older: expired appstore-older: never-released` (deploy.js refuses
+otherwise; tests in `releaseGates.test.js`). An expired TestFlight build won't launch, which covers every row above.
+If App Store Connect shows ANY App Store release below build 88, the gate can't pass and 0373 needs a server-side
+minimum-version refusal first (proposal only, not built: refuse requests whose user agent is `Nearby/<88` in the
+pre-request hook with an "update the app" hint, plus a build-88 screen for that hint; owner decision).
+Order: expire build 86 and older now (0348 already breaks build 86); expire build 87 only after build 88 is installed on
+every device and Tier 1 is done.
+Web: a business-website tab left open keeps the old JavaScript until reloaded; the website line requires the re-export,
+and a reload picks it up (one business account today).
