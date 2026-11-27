@@ -10,6 +10,7 @@ import { moneyLabel, moneyNumber } from '../utils/outcomeDisplay';
 import { tr, getCurrentLanguage } from '../i18n/translate';
 import { localDate, localClockOfDate } from '../i18n/format';
 import { compareRanked } from '../constants/signalPriority';
+import { localDateKey } from '../utils/whenPresets';
 
 // The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
 // 'activity' step) -- exported so occasion_group_plan_options' own
@@ -284,7 +285,7 @@ export function buildOccasionSaveParams({ occasion, title, scheduledAt, connecte
   return {
     occasionType: occasion,
     title,
-    occasionDate: scheduledAt.toISOString().slice(0, 10),
+    occasionDate: localDateKey(scheduledAt), // the local day, never the UTC day
     recursAnnually: occasion === 'anniversary' || occasion === 'birthday',
     connectedUserId: surpriseMode ? null : (connectedUserId ?? null),
     whoForName: whoForName ?? null,

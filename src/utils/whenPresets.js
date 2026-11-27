@@ -45,3 +45,9 @@ export function dateForPreset(preset) {
   }
   return new Date(now.getTime() + 60 * 60 * 1000);
 }
+
+// The LOCAL calendar day of a date as YYYY-MM-DD. Never toISOString().slice(0, 10): that is the UTC day, so a 7 PM
+// Eastern "Tonight" (midnight UTC) became tomorrow's date (found 2026-11-27 in Celebrate Something).
+export function localDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

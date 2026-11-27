@@ -47,7 +47,7 @@ import {
   experienceLevelToPriceLevel,
 } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
-import { WHEN_PRESETS } from '../utils/whenPresets';
+import { WHEN_PRESETS, localDateKey } from '../utils/whenPresets';
 import { isOccasionInviteExpired, expiredDateLabel } from '../utils/inviteExpiry';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -241,7 +241,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   }
 
   function addPendingDateOption() {
-    const iso = pickerDate.toISOString().slice(0, 10);
+    const iso = localDateKey(pickerDate);
     setPendingDateOptions((prev) => (prev.includes(iso) ? prev : [...prev, iso].sort()));
     setShowDatePicker(false);
   }
@@ -761,7 +761,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       </View>
                     )}
                     <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.pickACandidateDateA11y')}>
-                      <Text style={{ color: colors.textPrimary }}>{formatDateOptionLabel(pickerDate.toISOString().slice(0, 10))}</Text>
+                      <Text style={{ color: colors.textPrimary }}>{formatDateOptionLabel(localDateKey(pickerDate))}</Text>
                     </TouchableOpacity>
                     {showDatePicker && (
                       <DateTimePicker

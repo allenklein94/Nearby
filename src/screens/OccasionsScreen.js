@@ -41,6 +41,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { localDateKey } from '../utils/whenPresets'; // the LOCAL day (never the UTC day)
 
 // Sep 14 2026 (CLAUDE.md, "global onboarding -> product wiring" master
 // plan, Phase H) -- a real Occasions CRUD screen, same shape/scope as
@@ -249,7 +250,7 @@ export default function OccasionsScreen({ navigation, route }) {
   // planning yet.
   async function handleSaveEventAsOccasion(event) {
     setHandlingEventId(event.id);
-    const isoDate = new Date(event.startDate).toISOString().slice(0, 10);
+    const isoDate = localDateKey(new Date(event.startDate));
     const result = await addOccasion({
       occasionType: guessOccasionTypeFromEventTitle(event.title),
       title: event.title,

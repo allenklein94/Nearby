@@ -24,7 +24,7 @@ import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../service
 import { sendPreferencePoll, getMyAskedPreferencePolls } from '../services/preferencePolls';
 import { PREFERENCE_POLL_QUESTIONS } from '../constants/preferencePollQuestions';
 import { occasionGroupOptions } from '../constants/businessAttributes';
-import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
+import { WHEN_PRESETS, dateForPreset, presetLeavesTime, localDateKey } from '../utils/whenPresets';
 import {
   composeCelebrationTitle,
   composeCelebrationAskText,
@@ -554,7 +554,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         whoForName: trimmedName,
         whoForFriendId,
         whenPreset,
-        scheduledDate: scheduledAt.toISOString().slice(0, 10),
+        scheduledDate: localDateKey(scheduledAt),
         inviteeIds: Array.from(selectedInviteeIds),
         surpriseMode,
         budgetMin: null,
@@ -805,7 +805,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       })).catch(() => null);
       savedOccasionId = saveResult?.data?.id ?? null;
     }
-    const dateParam = scheduledAt.toISOString().slice(0, 10);
+    const dateParam = localDateKey(scheduledAt);
     const results = await Promise.allSettled(
       selected.map((c) => submitBusinessRequest({
         text: askText,
@@ -1018,7 +1018,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         params.prefillDateWindow = 'tomorrow';
       } else if (whenPreset === 'custom') {
         params.prefillDateWindow = PICK_DATE_KEY;
-        params.prefillPickedDateISO = scheduledAt.toISOString().slice(0, 10);
+        params.prefillPickedDateISO = localDateKey(scheduledAt);
       }
       // "ok do it" (CLAUDE.md): the "Skip -- post manually" escape hatch
       // reaches this branch too, and "Involve" already happened before it
@@ -1646,7 +1646,9 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 {whenPreset && (
                   <TouchableOpacity style={styles.dateDisplay} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.celebrate.changeDateAndTimeA11y')}>
                     <Text style={styles.dateDisplayText}>
-                      {`${localDate(scheduledAt, language)} · ${localClockOfDate(scheduledAt, language)}`}
+                      {/* Device test (owner, 2026-11-27): Tonight / Tomorrow set the day only, so no clock time is shown for them; the
+                          time is asked where it is needed (Create asks it; a business request keeps it optional). */}
+                      {presetLeavesTime(whenPreset) ? localDate(scheduledAt, language) : `${localDate(scheduledAt, language)} · ${localClockOfDate(scheduledAt, language)}`}
                     </Text>
                   </TouchableOpacity>
                 )}

@@ -41,6 +41,7 @@ import { getGatheringById } from '../services/gatherings';
 import { gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs } from '../utils/gatheringBusinessAsk';
 import { disabledButtonStyle } from '../constants/buttonStates';
+import { localDateKey } from '../utils/whenPresets'; // the LOCAL day (never the UTC day)
 // Same canonical 26-tag list business_requests.category's own (now-widened)
 // CHECK constraint validates against -- was a separate, independently-
 // drifting 24-tag copy (missing 'Faith & Spirituality' and 'Dating') before
@@ -98,11 +99,11 @@ function toDateParam(dateWindow) {
   // business_requests.date is a plain calendar date with no time-of-day
   // component, so there's no honest way to narrow further than "today"
   // against it.
-  if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') return todayStart.toISOString().slice(0, 10);
+  if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') return localDateKey(todayStart);
   if (dateWindow === 'tomorrow') {
     const d = new Date(todayStart);
     d.setDate(d.getDate() + 1);
-    return d.toISOString().slice(0, 10);
+    return localDateKey(d);
   }
   if (dateWindow === 'weekend') {
     const dayOfWeek = todayStart.getDay();
@@ -114,7 +115,7 @@ function toDateParam(dateWindow) {
     const daysUntilSaturday = dayOfWeek === 0 ? -1 : 6 - dayOfWeek;
     const d = new Date(todayStart);
     d.setDate(d.getDate() + daysUntilSaturday);
-    return d.toISOString().slice(0, 10);
+    return localDateKey(d);
   }
   return null;
 }
@@ -125,7 +126,7 @@ function toDateParam(dateWindow) {
 // fires), so pickedDate is never null here in practice, but the fallback
 // to toDateParam() keeps this safe regardless.
 function resolveDateParam(dateWindow, pickedDate) {
-  if (dateWindow === PICK_DATE_KEY && pickedDate) return pickedDate.toISOString().slice(0, 10);
+  if (dateWindow === PICK_DATE_KEY && pickedDate) return localDateKey(pickedDate);
   return toDateParam(dateWindow);
 }
 
