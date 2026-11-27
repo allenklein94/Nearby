@@ -74,3 +74,14 @@ Build 88 passes at 0347, i.e. it needs NO pending migration. So no migration can
 | Dating Browse + Crossed Paths empty | pre-0348 read asks for hide switches the Dating view lacks | Batch 1 (0348) or build 88 |
 | Set as main photo fails | `swap_main_photo` arrives with 0349 | Batch 1 (0349) |
 | Friends crossed paths may show people already passed | `friend_discovery_swipes.to_user` not readable; error ignored | 20270433 |
+
+## Restored production copy (owner task 5, 2026-11-27)
+Same runner, same 15 checkpoints, on the 2026-11-26 14:51 UTC production backup restored into an isolated container
+(internal Docker network with no route out, checked by the restore and by a DNS probe that must fail; all 26 cron jobs
+paused before any migration; every table's rows identical to production's, 207 tables, PASS; copy deleted after: 0 left).
+Migrations 0348-0433 applied in order on production's real rows at every checkpoint.
+- **Build 88: 225/225** (15/15 at 0347 and at every checkpoint through 0433): identical to the replay run.
+- **Build 87:** 14/15 at 0347 (the live Dating defect, fixed by 0348), 15/15 at 0354-0372, then 10/15 from 0373 and 9/15
+  from 0382: identical to the replay run, i.e. the client floor build 88 (Wall B) exactly where `releaseGates.js` puts it.
+- Limit: the script's extra "outbound requests" count query had a SQL error and reported nothing; isolation rests on the
+  network (no route) and the DNS probe, not on that count. Logs: `/workspaces/.nearby-verify/compat/prodcopy*`.
