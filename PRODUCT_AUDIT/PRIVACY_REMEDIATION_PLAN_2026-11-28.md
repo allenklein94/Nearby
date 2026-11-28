@@ -1,0 +1,99 @@
+# Privacy + moderation remediation: findings and expedited plan (2026-11-28)
+
+PREPARATION ONLY. Nothing was deployed or written. Production was read through the Management API with `read_only: true`
+(verified: `transaction_read_only = on`), catalog and aggregate counts only: no profile value, email, phone or location was
+retrieved. Migration packets, codes and per-migration checks: `BATCH1_APPROVAL_PACKET_2026-11-25.md` (hashes re-checked
+today: all seven match HEAD, incl. the 2026-11-28 0353).
+
+## 1. What is exposed today (production at 0347)
+
+**Profiles (0348).** `profiles` has 107 columns; `authenticated` can SELECT **all 107** (anon: 0). The only row filter is
+"own row OR (photo_verified AND not profile_hidden)". So any signed-in account reads every column of every visible profile.
+
+| | Count today |
+|---|---|
+| Accounts in Auth | 10 (all the owner's; newest created 2026-10-27; **0 created in the last 30 days**) |
+| Profiles / readable by any signed-in account | 4 / 3 |
+| Readable profiles with a birthdate / sexual orientation / wide area (0.1 deg) | 3 / 1 / 1 |
+| ... flagged admin / business manager / referral code | 1 / 1 / 1 |
+| ... gender or ethnicity marked hidden but stored | 0 / 0 |
+| Push or Spotify tokens left in `profiles` | 0 (moved by 0347, live) |
+
+Fields that should never reach another account and are readable today: `birthdate` (exact), `sexual_orientation`,
+`gender` / `ethnicity` even when `*_hidden` (hidden is enforced only by the app), `ethnicity_preferences`, dating
+preferences (age, height, hair/eye), `interested_in_genders`, `wide_area`, `timezone`, `is_admin`, `managed_partner_id`,
+`referral_code` / `referred_by`, every notification setting and counter, `intent_visibility`, `share_interest_in_demand`,
+`voice_intro_path`. 0348 replaces this with a viewer-safe column list + `get_my_profile()` for the own row.
+
+**Who could exploit it now:** email sign-up is still open in Auth, so a stranger could create an account through the API
+and read the three visible profiles. No such account exists (above). Practical exposure today = the owner's own accounts.
+
+**Crossed Paths (0353 + 0383).** On production the push trigger tells anyone the other person crossed, with no check of
+either person's Dating / friend-discovery opt-in, blocks or visibility; sightings are recorded and readable regardless.
+Today: 1 sighting row, **2 crossed-paths pushes ever (last 2026-11-27 21:08 UTC)**, all between the owner's accounts.
+Server-side boundaries after Batch 1 (the 2026-11-28 0353 carries 0383's guard verbatim):
+- push: `_crossed_paths_may_tell` per direction (both discoverable, visible, no block, same pool, proximity on);
+- write: `aa_sighting_consent_guard` BEFORE INSERT/UPDATE drops a refused sighting (report-presence unchanged);
+- read: the sightings policy also needs the pair rule, so a later opt-out / hide / block / suspension hides old rows;
+- retention: `purge_expired_sightings` also deletes refused rows.
+Verified (local replay to 0354, isolated network, `/workspaces/.nearby-verify/v481`): `crossedPathsConsent` (0383's own
+journey) PASS, `sightingExpiry`, `storySightingLocation`, `datingConsent`, `profileColumnPrivacy`, `trustSafety`,
+`photoScreeningBinding`, `build87Compatibility`, `appVersionCompatibility` PASS.
+
+**What Batch 1 does NOT close (location processing):** `report-presence` still stores a presence report (rounded area,
+about 11 m, deleted after 1 h) for any signed-in caller, opted in or not; the app sends it from Dating discovery and the
+background task. 0353 stops it from becoming a sighting or a push. Stopping the storage itself is 20270384 (own
+Crossed Paths switch, off by default, + anti-probing), which needs build 88's switch UI and a `report-presence` redeploy.
+Moving 0384 into Phase A would turn Crossed Paths off for build 87 with no way to turn it on: **owner decision** (my
+recommendation: keep 0384 in Phase B; the presence row lives 1 h and is never readable by another account).
+
+**Suspension (0351).** Not on production (no suspension function or column). Until it is, an abusive account can only be
+handled by deleting it. Matters only once outside users exist.
+
+**Main photo (0349).** `swap_main_photo` does not exist on production, so build 87's "Set as main photo" fails. 0349 adds
+it (plus the self-granted verification/admin guard and exact-file photo screening).
+
+## 2. Interim containment (each is a production change: needs your approval; none is required if Batch 1 goes soon)
+
+| Risk | Containment | Cost | Recommendation |
+|---|---|---|---|
+| Stranger signs up and reads profiles | Auth: `disable_signup = true` until Batch 1 + 0367's phone-only hook are live | blocks ALL new sign-ups (incl. phone; Tier 1 item 0(f) waits); existing accounts sign in normally; instant to undo | Do it only if Batch 1 can't go within days, or before inviting anyone |
+| Crossed-paths push without consent | You turn off Settings > Notifications > proximity on your accounts | covers only your accounts (all accounts today) | Optional; Batch 1 fixes it server-side |
+| No suspension | Don't invite outside users before Batch 1 | none | Already the rule |
+
+There is no smaller safe migration than 0348 for the profile exposure (a column revoke IS 0348), and 0348's only device
+gate (build 87 everywhere) is met: production's live sessions today = one `Nearby/87` session + one July session with no
+app user agent.
+
+## 3. Expedited, dependency-safe sequence
+
+Number order is enforced by `deploy.js`; nothing is skipped or reordered.
+
+| Step | Files | Gates (all existing; none bypassed) | Closes |
+|---|---|---|---|
+| 1a | 0348, then 0349 (+ `moderate-photo` redeploy, own approval) | R2 App Store Connect, R8 website pass before, same-day verified + encrypted backup, `--check`, your code per file | profile exposure, main photo, self-granted admin, Dating Browse empty on build 87 |
+| 1b | 0350, 0351, 0352, 0353, 0354 (same day or next) | same backup window; 0351's Privacy sentence published with the `nearby-processing: 20270351` marker | suspension, verified phone for social, Crossed Paths consent (push + write + read + retention), ID bucket limits |
+| 2-5 | 0355-0372 | as in the packets | rest of Phase A |
+| 6+ | 0373-0435 | Wall B (section 4) | Phase B |
+
+**Decision for you:** the packet lists R3 (Tier 1 passes on build 87) as a precondition of the whole batch. Tier 1 checks the
+app on today's database; 0348/0349 fix two of Tier 1's known defects and have their own post-deploy checks. I recommend you
+allow steps 1a-1b once R2 + R8 + backup are done, and run Tier 1 right after on the fixed database. If you keep R3 first,
+nothing changes except the wait. The 2026-11-27 phone session does NOT count as Tier 1 (it was a findings session, not the
+packet's list).
+
+**Stopping conditions (any = stop, report, no automatic rollback or next file):** `--check` fails; a post-deploy check
+or journey fails; `get_my_profile()` cross-user returns a row; the website pass after 0348 fails; a crossed-paths push
+appears for a non-opted-in pair; build 87 can't sign in / open Profile / Dating after a file.
+
+**Rollback:** each file has a proven rollback (to 0347 except ACL order + whitespace). 0348's rollback re-opens the
+exposure (never once outside users exist); 0349's leaves issued photo links valid for their 15 min.
+
+## 4. Phase B requirements (0373-0435)
+- Build 88 (this branch, after merge) installed on EVERY device; "released" is not "installed": check production
+  sessions by user agent (`Nearby/<n>`) shows no build <= 87 still refreshing, and TestFlight build 87 expired/removed.
+- No App Store / external TestFlight copy of build <= 87 (0373 refuses unscreened public text; 0382 breaks 87's Dating).
+- Anthropic credit returns allow/deny from `screen-business-content` (else every public post fails closed).
+- Website re-exported from the merged branch and published (0419, 0422, 0424-0427, 0430 depend on it).
+- Phase A post-deploy checks all PASS; 0435 (cuisine) is last and needs nothing beyond Wall B.
+- 0434 (version policy) enforcement and strict mode stay OFF; each is its own later approval.
