@@ -40,7 +40,11 @@ class Boundary extends React.Component {
 
 const Stack = createNativeStackNavigator();
 export default function PreviewApp() {
-  const name = (typeof window !== 'undefined' && window.location.hash.slice(1)) || 'Home';
+  // #Name or #Name|{json params} (gallery variants: Dating / Friends mode, a women-only gathering, ...).
+  const raw = (typeof window !== 'undefined' && decodeURIComponent(window.location.hash.slice(1))) || 'Home';
+  const [name, json] = raw.split('|');
+  let extra = {};
+  try { extra = json ? JSON.parse(json) : {}; } catch (_) { extra = {}; }
   const Screen = (SCREENS[name] || SCREENS.Home)();
   return (
     <PostHogProvider apiKey="disabled" options={{ disabled: true }} autocapture={false}>
@@ -50,7 +54,7 @@ export default function PreviewApp() {
             <Boundary>
               <NavigationContainer>
                 <Stack.Navigator>
-                  <Stack.Screen name={name} component={Screen} initialParams={PARAMS[name]} options={{ headerShown: false }} />
+                  <Stack.Screen name={name} component={Screen} initialParams={{ ...(PARAMS[name] || {}), ...extra }} options={{ headerShown: false }} />
                 </Stack.Navigator>
               </NavigationContainer>
             </Boundary>
