@@ -183,7 +183,7 @@ export function gatheringCuisineFit(gathering, cuisine) {
   if (!cuisine || !declared) return { eligible: true, matched: false, reason: null, delta: 0 };
   if (declared !== cuisine) return { eligible: false, matched: false, reason: null, delta: 0 };
   const label = CUISINE_OPTIONS.find((c) => c.key === cuisine)?.label ?? cuisine;
-  return { eligible: true, matched: true, reason: reasonText('askedForCuisine', { cuisineFood: `${label} food` }), delta: SCORE_HAPPENING_NOW };
+  return { eligible: true, matched: true, reason: reasonText('askedForCuisine', { cuisineFood: label + ' food' }), delta: SCORE_HAPPENING_NOW };
 }
 
 export function activityFitBonus(row, askedActivities) {
