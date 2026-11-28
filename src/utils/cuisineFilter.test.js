@@ -97,3 +97,30 @@ describe('cuisine stays a business discovery attribute', () => {
     expect(fn).not.toMatch(/navigate\(/);
   });
 });
+
+describe('gatherings join the cuisine filter by their declared cuisine (owner 2026-11-28)', () => {
+  const { applyGatheringCuisine, gatheringDeclaredCuisine } = require('./cuisineFilter');
+  const g = (id, cuisine, title = 'Dinner') => ({ id, interest_tag: 'Foodie', title, ...(cuisine !== undefined ? { cuisine } : {}) });
+  const rows = [g('a', 'italian'), g('b', 'mexican'), g('c', null, 'Italian night'), g('d', undefined, 'Pasta Italian feast'), g('e', 'italian')];
+  it('Italian returns only gatherings that DECLARED Italian, never by title or activity', () => {
+    expect(applyGatheringCuisine(rows, 'italian').map((x) => x.id)).toEqual(['a', 'e']);
+  });
+  it('before 20270435 (no cuisine field on any row) no gathering is ever claimed as a match', () => {
+    const pre = rows.map(({ cuisine, ...rest }) => rest);
+    expect(applyGatheringCuisine(pre, 'italian')).toEqual([]);
+  });
+  it('no constraint = the list unchanged; Other is never a declared cuisine', () => {
+    expect(applyGatheringCuisine(rows, null)).toBe(rows);
+    expect(gatheringDeclaredCuisine({ cuisine: 'other' })).toBeNull();
+  });
+  it('chips count declared gathering cuisines beside business cuisines', () => {
+    const chips = cuisineChips([perk('t', 'japanese')], null, [g('x', 'italian'), g('y', 'italian'), g('z', null, 'Italian')]);
+    expect(chips.map((c) => [c.key, c.count])).toEqual([['italian', 2], ['japanese', 1]]);
+  });
+  it('Discover shows the gathering section only once the server stores cuisine, reading the shared rule', () => {
+    expect(discover).toMatch(/applyGatheringCuisine\(contextCuisineGatheringsAll, activeCuisine\)/);
+    expect(discover).toMatch(/activeCuisine && cuisineGatheringsSupported \?/);
+    expect(discover).toMatch(/attachGatheringCuisines\(/);
+    expect(discover).not.toMatch(/applyGatheringCuisine\([^)]*title/);
+  });
+});

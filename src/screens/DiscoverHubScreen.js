@@ -6,7 +6,9 @@ import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { isFamilyView, gatheringDeclaresFamily, partnerDeclaresFamily } from '../utils/familyDeclared';
-import { contextHasCuisines, offerInContext, applyCuisine, cuisineChips, cuisineConstraintFromText, cuisineLabel } from '../utils/cuisineFilter';
+import { contextHasCuisines, offerInContext, applyCuisine, applyGatheringCuisine, cuisineChips, cuisineConstraintFromText, cuisineLabel } from '../utils/cuisineFilter';
+import { attachGatheringCuisines } from '../services/gatherings';
+import useGatheringCuisineSupported from '../hooks/useGatheringCuisineSupported';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
@@ -1468,7 +1470,30 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const cuisineRowVisible = !!expandedContext && contextHasCuisines(contextScope.tags);
   const activeCuisine = cuisineRowVisible ? cuisineFilter : null;
   const activeCuisineLabel = activeCuisine ? cuisineLabel(activeCuisine) : null;
-  const contextCuisineChips = cuisineRowVisible ? cuisineChips(contextOffersBroad, activeCuisine) : [];
+  // Owner 2026-11-28: gatherings in this view join the cuisine filter by their own DECLARED cuisine (20270435), read once per
+  // set of rows; before the column exists (or while the read is pending) no gathering carries one, so none is ever claimed.
+  const cuisineGatheringsSupported = useGatheringCuisineSupported();
+  const [gatheringCuisineById, setGatheringCuisineById] = useState({});
+  const cuisineCandidateRows = cuisineRowVisible ? [...contextGatheringsAll, ...contextOtherTimeAll] : [];
+  const cuisineCandidateKey = cuisineGatheringsSupported ? cuisineCandidateRows.map((g) => g.id).sort().join(',') : '';
+  useEffect(() => {
+    if (!cuisineCandidateKey) return undefined;
+    let live = true;
+    const ids = cuisineCandidateKey.split(',');
+    attachGatheringCuisines(ids.map((id) => ({ id }))).then((rows) => {
+      if (!live) return;
+      setGatheringCuisineById((prev) => {
+        const next = { ...prev };
+        for (const r of rows) if (r && 'cuisine' in r) next[r.id] = r.cuisine ?? null;
+        return next;
+      });
+    });
+    return () => { live = false; };
+  }, [cuisineCandidateKey]);
+  const withDeclaredCuisine = (g) => (g && g.id in gatheringCuisineById ? { ...g, cuisine: gatheringCuisineById[g.id] } : g);
+  const contextCuisineGatheringsAll = cuisineGatheringsSupported ? byLadder(cuisineCandidateRows.map(withDeclaredCuisine)) : [];
+  const contextCuisineGatherings = activeCuisine && cuisineGatheringsSupported ? applyGatheringCuisine(contextCuisineGatheringsAll, activeCuisine) : [];
+  const contextCuisineChips = cuisineRowVisible ? cuisineChips(contextOffersBroad, activeCuisine, contextCuisineGatheringsAll) : [];
   const contextOffers = applyCuisine(contextOffersBroad, activeCuisine);
   const cuisineMatchesAnyTime = activeCuisine ? applyCuisine(contextOffersAnyTime, activeCuisine) : [];
   // The one real topic label this context is about, regardless of which
@@ -2915,7 +2940,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
            secondary section underneath, never a peer tab. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {activeCuisine ? (
-            <Text style={styles.contextGroupNote}>{t('ui.discover.cuisineNote', { cuisine: activeCuisineLabel })}</Text>
+            <Text style={styles.contextGroupNote}>{t(cuisineGatheringsSupported ? 'ui.discover.cuisineNoteWithGatherings' : 'ui.discover.cuisineNote', { cuisine: activeCuisineLabel })}</Text>
+          ) : null}
+          {activeCuisine && cuisineGatheringsSupported ? (
+            <>
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.gatherings')}</Text>
+              {contextCuisineGatherings.length > 0
+                ? <View>{contextCuisineGatherings.map(renderContextGatheringRow)}</View>
+                : <Text style={styles.contextGroupNote}>{t('ui.discover.cuisineGatheringsNone', { cuisine: activeCuisineLabel })}</Text>}
+            </>
           ) : null}
           {!activeCuisine && (<>
           {contextFriendLine ? <Text style={styles.contextGroupNote}>{contextFriendLine}</Text> : null}
