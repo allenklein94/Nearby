@@ -1,5 +1,27 @@
 # What only you can do, and in what order (2026-11-28)
 
+**Updated later on 2026-11-28 (round 4): the short checklist below replaces sections A-G's order.** Sections A-G stay as
+the detail for each step. Decisions already taken: Batch 1 before Tier 1 (all other gates kept), registrations closed
+(already on in Auth, see step 2), 0353 carries 0383's guard, 0384 stays in Phase B, cuisine filter includes gatherings.
+
+## Sequential checklist
+| # | Where | Do | Tell Claude |
+|---|---|---|---|
+| 1 | App Store Connect | Section A.1 (any public build? builds <= 86 expired? external groups?) | "R2: ..." |
+| 2 | Terminal (`! ` prefix) | `SUPABASE_ACCESS_TOKEN=... node scripts/trust-safety/signup-closed-check.js` (proves sign-up refused on every path, your test account still signs in; fictional address/number only) | paste the PASS/FAIL lines |
+| 3 | Crossed Paths | Pick A (recommended), B, C or D from the privacy plan section 5. C = turn off Settings > Notifications > proximity on your accounts now | "Crossed Paths: A" (+ C if done) |
+| 4 | Signed-in website | Coastal Coffee pass (section A.2), before 0348 | PASS/FAIL per row |
+| 5 | Your computer | Open the design ZIP's index.html; note any screen you don't like by its number | "D1-D8 approved" or the numbers |
+| 6 | Approval | "Back up now" (temporary read-only role, encrypted file, you download + match sha256) | sha256 match |
+| 7 | Approval | One message per file: 0348 code, then 0349 (+ `moderate-photo` redeploy) | each code |
+| 8 | Signed-in website | Coastal Coffee pass again, right after 0348 | PASS/FAIL |
+| 9 | Approval | 0350, 0351 (+ its Privacy sentence on main), 0352, 0353, 0354, one code each | each code |
+| 10 | Approval | Merge `fix/device-findings-nov27` into main; then the taxonomy sync (`plan` code, exact 3-row difference) | "merge" / the sync code |
+| 11 | EAS (you) | Build 88 from merged main (`eas build --profile production -p ios`), submit, wait for TestFlight processing | build number |
+| 12 | Phone | Tier 1 on build 88 (packet items 0-10); Dating + Friends on two accounts/devices (section D); Manage Subscription (section E) | results |
+| 13 | External | Anthropic staging org + credit (section C); then real offer test on staging | "credit set" |
+| 14 | People | Native-language review (section F); website export publish approval; Phase B files | each approval |
+
 Everything below needs your hands, your accounts or your approval. What Claude can do alone is at the end.
 
 ## A. Before Batch 1 (privacy fixes 0348-0354) — about 45 minutes
