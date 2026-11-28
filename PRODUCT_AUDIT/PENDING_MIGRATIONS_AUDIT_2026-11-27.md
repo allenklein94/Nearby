@@ -5,6 +5,13 @@ ledger at **20270347**; **88 pending** (0348-0435, no gaps; 0435 = this round's 
 codes + per-migration post-deploy checks + rollback notes: `MIGRATION_APPROVAL_PACKETS_0348-0433.md` (regenerated today,
 now through 0435). History, walls and requirements R1-R12: `MIGRATION_CATCHUP_PLAN_2026-11-23.md` section 8.
 
+**Update 2026-11-28:** the privacy items are now planned separately in `PRIVACY_REMEDIATION_PLAN_2026-11-28.md` (read-only
+catalog findings: all 107 profile columns readable by any signed-in account; 2 crossed-paths pushes ever, both between the
+owner's accounts; no suspension; no `swap_main_photo`). 0353 now carries 0383's sighting write guard, read policy and purge
+verbatim, so Crossed Paths consent is fully enforced at Batch 1 (Phase A), not after build 88; 0383 re-states them later as
+a no-op. 0384 (own Crossed Paths switch, off by default; stops storing presence for people without it) stays in Phase B:
+owner decision. Proposed split: Batch 1a = 0348 + 0349, Batch 1b = 0350-0354.
+
 ## 1. Short answers
 
 | Question | Answer |
