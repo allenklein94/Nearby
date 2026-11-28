@@ -8,6 +8,53 @@ instruction of 2026-11-27 (40 numbered sections; 37-40 are process sections).
 No approved visual mockup exists in the repo or in either owner message. The design items (16, 24, 31, 34) follow the
 written spec only and are NOT checked against an approved mockup; each is a restrained change the phone session should judge.
 
+## Round 2 (owner, 2026-11-27 evening -> 2026-11-28): final reconciliation
+
+Still on this branch only. Nothing merged, built, deployed or published; the only production access was read-only
+(`migration:status`, the taxonomy comparison, deploy.js's gate reads) plus one cuisine journey in a rolled-back transaction.
+
+### Status of all 40 items, by what each still needs
+| Group | Items |
+|---|---|
+| **Fully implemented and tested** (automated proof is the whole proof: process / preserved behaviour) | 1, 4, 9, 14, 36, 37, 38, 39, 40 |
+| **Implemented, awaiting physical phone verification** (Jest / journeys / headless pass; nothing on this branch has run on a phone) | 2, 3, 5, 6, 8, 10, 13, 15, 17, 19 (build 88 fallback), 22 (Your Progress), 23, 25, 26, 27, 28, 30, 35; on main already, first native compile in the next build: 12, 21, 32 |
+| **Awaiting database deployment** | 7 cuisine storage (0435, Phase B), 19 for build 87 (0348), 20 main photo (0349); 33's production inventory sync (a taxonomy sync, not a migration; after merge) |
+| **Awaiting visual approval** | 16, 24, 31 (written spec, no mockup), 34 visual consolidation D1-D8 (`DESIGN_SYSTEM_AUDIT_2026-11-27.md`) |
+| **Awaiting external accounts, credit or native review** | 11 real business offers (Anthropic credit + a seeded business), 22 Manage Subscription (native store sheet), native review: 18, 29, 35 and round 1's other machine-authored strings (round 2 added no new strings: cuisine reuses `ui.askBusiness.cuisineOptional` + existing cuisine names) |
+
+Partly implemented is never listed as done: 7 (no Discover ranking by a gathering's cuisine until 0435 is live) and 34
+(visual consolidation not applied) say so in their rows.
+
+### What round 2 changed
+1. **Cuisine (item 7) is a real structured fact**: migration 20270435 (staged) + client; see row 7.
+2. **Design system (item 34)**: role + touch-target + contrast fixes with AST tools and a guard; D1-D8 measured and
+   proposed; see row 34.
+3. **Pending migrations**: `PENDING_MIGRATIONS_AUDIT_2026-11-27.md` (all 88, live gaps, batches, 0348/0349 readiness);
+   approval packets regenerated through 0435; 0435 has its post-deploy step + rollback.
+4. **Friends discovery**: approved as implemented (owner); unchanged.
+5. **Taxonomy**: exact 2 new rows + 1 changed count (section above); production = main; no sync.
+6. **Website**: export prepared, not published (below).
+
+### Validation (round 2)
+| Check | Result | Log |
+|---|---|---|
+| Jest, full | 630/630 suites, 8,573 passed, 11 todo | `/workspaces/.nearby-verify/v479/jest.log` |
+| Journeys, all, local replay 0001-0435 (isolated network) | 146/146 suites, 1,603/1,603 | `/workspaces/.nearby-verify/v475` |
+| Cuisine journey on production as prelude (rolled back) | 5/5; without 0435 5/5 FAIL (it really tests the migration) | this session |
+| 0435 rollback round trip (local) | rollback removes every cuisine object; re-apply = identical schema (0 lines) | `/workspaces/.nearby-verify/v479` |
+| Release compatibility, this branch's build | runtime 15/15 at 0347 and every batch boundary through 0435; static at 0435 = the 2 known fallbacks; recorded in `evidence/release-compat.md` | `/workspaces/.nearby-verify/v477` |
+| deploy.js gates for 0348 (rolled-back check; nothing sent) | before the new evidence: only the approval code/ref/session and the stale compatibility line; the evidence line is now fresh | this session |
+| Business website export (from this branch) | builds clean; differs from the published `docs/business/` by one bundle + index.html; headless (mocked Supabase, no network): 123/123, offer-preview dock 128/128 at 320-430 pt | `/workspaces/.nearby-verify/v476` |
+| Narrowed inference test | still protects the original rule: a planted `setActivityLevel(1)` makes it fail; only the `setActivityListOpen` list toggle is exempt | this session |
+| iOS bundle | see below | `/workspaces/.nearby-verify/v479/ios.log` |
+
+The website's pre-0348 signed-in pass (Coastal Coffee, five tabs + a profile save) is a real-browser check that only you can
+run; publishing the export is a separate approval.
+
+Environment note: the codespace disk filled at 23:56 UTC (local verification databases); two runs failed on it and were
+re-run; space freed by removing one unused Postgres 15 image, two superseded replay containers, three pushed+clean
+verification worktrees and the npm cache. The findings file was emptied by the failed write and restored from git.
+
 ## Production incident (taxonomy inventory) and repair
 - **What happened:** `scripts/taxonomy/sync-code-dependencies.js` was run (session 31aba860, ~22:05 UTC) without being read.
   It calls `sync_category_code_dependencies` on PRODUCTION, which (function read from prod) deletes and re-inserts
