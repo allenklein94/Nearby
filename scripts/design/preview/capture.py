@@ -89,7 +89,7 @@ with sync_playwright() as p:
             page.add_init_script(init)
             page.goto(BASE + '#' + name, wait_until='networkidle')
             page.wait_for_timeout(3500)
-            page.screenshot(path=f'{OUT}/{name}-{scheme}.png', full_page=False)
+            page.screenshot(path=f'{OUT}/{name}-{scheme}.png', full_page=os.environ.get('FULL') == '1')
             text = page.inner_text('body')
             report[f'{name}-{scheme}'] = {'errors': errs, 'preview_error': 'PREVIEW ERROR' in text, 'chars': len(text)}
             ctx.close()
