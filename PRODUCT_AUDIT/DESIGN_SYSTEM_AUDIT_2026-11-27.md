@@ -41,7 +41,24 @@ Each has a concrete recommendation that can be applied in one pass once you appr
 Business Mode shares the same tokens and the same findings (its dashboards use the same chip/card/button styles; Make
 an Offer uses `offerCardStyles`, already shared with the customer card).
 
-## 3. Why D1-D8 aren't applied blind
-They change what every screen looks like; nobody (including me) has seen the current app on a phone since the device
-session, and there is no approved mockup to check against. Applying them now would put an unreviewed visual redesign into
-the next build. With approval, D1-D5 are a mechanical pass with an audit test (like section 1), roughly one session.
+## 3. Applied (owner approved all eight, 2026-11-28): status per item
+
+Implemented by the idempotent codemod `scripts/design/consolidate-styles.py` (dry run prints every change; a second run
+changes nothing) and kept true by `src/design/designSystemScale.test.js` (mutation-checked). Visual review page with
+before/after renders (main, this branch before the pass, this branch now; light + dark; Home and Profile scrolled):
+https://claude.ai/artifact/KQttbznqc5VXbEdPaDp8b2 (private; browser renders of real screens from invented data, network
+refused; capture: `scripts/design/preview/`, logs `/workspaces/.nearby-verify/v484`, `v485`, `v490`).
+
+| # | Implemented | Remaining after the pass (counted 2026-11-28) | Visual approval | Phone |
+|---|---|---|---|---|
+| D1 type scale | 34/26/20/18/16/15/14/13/12; nothing below 12 (guard) | 1 inline 17 (Chat header title = the iOS system title size, kept); 22+ only on glyph/number styles | pending (gallery) | not run |
+| D2 primary button | `PRIMARY_BUTTON` (padding 14, minHeight 48, pill) on every block CTA + its outline secondary | compact row actions keep their size by rule (Join on GatheringDetail uses its own coral style) | pending | not run |
+| D3 chips | one size 12 x 6; dense Discover filter rows 12 x 4 | none | pending | not run |
+| D4 cards | radius lg, padding md; no shadow on cards inside sheets | none | pending | not run |
+| D5 radii | literals to sm/md/lg/full | circles/thumbnails keep half-size radii by rule; hairlines <= 3 | pending | not run |
+| D6 spacing | StyleSheet margins/paddings on the token scale | 3 inline literals left on purpose: CommunityChat header button 8 (native header spacing), web date input (CSS), one business pill 10 x 14 | pending | not run |
+| D7 items 16 / 24 / 31 | Friends header in Dating's layout; Home tiles = category-coloured outline icon on a tinted circle; Profile headings bolder, lighter completion card, outline gear | none | pending (gallery shows each) | not run |
+| D8 women-only badge | darker pink text token, >= 4.5:1 in both themes (guard) | none | pending (only on a women-only gathering; not in the gallery fixtures) | not run |
+
+Business Mode is covered by the same codemod (it scans every file in `src/screens` + `src/components`); the gallery shows
+the business dashboard. What the gallery can't show: real fonts on iOS, native headers, sheets, keyboard, Dynamic Type.
