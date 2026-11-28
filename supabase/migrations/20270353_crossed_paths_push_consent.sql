@@ -61,3 +61,87 @@ begin
   return new;
 end;
 $function$;
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Sighting consent, moved forward from 20270383 (owner, 2026-11-28: resolve Crossed Paths consent in Phase A, not after
+-- build 88). The statements below are copied VERBATIM from 20270383, which stays byte-identical and re-states them when its
+-- turn comes (CREATE OR REPLACE / DROP ... IF EXISTS: a no-op then). Nothing between 20270354 and 20270382 redefines the
+-- sightings read policy, purge_expired_sightings or these functions (checked 2026-11-28), so the protection holds from here.
+-- What it adds to the push rule above: a sighting is recorded, readable and kept ONLY for a pair who both chose the same
+-- pool (Dating or friend discovery), both discoverable, both visible, no block either way:
+--   1. Write: BEFORE INSERT OR UPDATE trigger drops a refused sighting (no row, no push, no error; report-presence unchanged).
+--   2. Read: the policy also needs the rule, so a later opt-out, hide, suspension or block hides existing rows at once.
+--   3. Retention: purge_expired_sightings (cron every 10 min) also deletes refused rows; run once here.
+-- Requires 20270352 (person_discoverable), 20270339 (policy + purge) and the push rule above.
+
+create or replace function private.crossed_paths_pair_allowed(a uuid, b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select a is not null and b is not null and a <> b
+    and public.person_discoverable(a) and public.person_discoverable(b)
+    and not exists (select 1 from blocks k where (k.blocker_id = a and k.blocked_id = b)
+                                             or (k.blocker_id = b and k.blocked_id = a))
+    and exists (
+      select 1 from profiles pa, profiles pb
+       where pa.id = a and pb.id = b
+         and coalesce(pa.photo_verified, false) and not coalesce(pa.profile_hidden, false)
+         and coalesce(pb.photo_verified, false) and not coalesce(pb.profile_hidden, false)
+         and ((public.is_dating_discoverable(pa.onboarding_motivations) and public.is_dating_discoverable(pb.onboarding_motivations))
+              or (coalesce(pa.open_to_friend_discovery, false) and coalesce(pb.open_to_friend_discovery, false))));
+$function$;
+revoke all on function private.crossed_paths_pair_allowed(uuid, uuid) from public, anon, authenticated;
+
+-- For the read policy: answers only for a pair that includes the caller (never an oracle about two other people).
+create or replace function public.sighting_pair_visible(a uuid, b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select auth.uid() is not null and auth.uid() in (a, b) and private.crossed_paths_pair_allowed(a, b);
+$function$;
+revoke all on function public.sighting_pair_visible(uuid, uuid) from public, anon;
+grant execute on function public.sighting_pair_visible(uuid, uuid) to authenticated;
+
+-- 1. Write guard (named to run before sighting_area_to_pin).
+create or replace function private.sighting_consent_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  if not private.crossed_paths_pair_allowed(new.user_a, new.user_b) then
+    return null;
+  end if;
+  return new;
+end;
+$function$;
+revoke all on function private.sighting_consent_guard() from public, anon, authenticated;
+drop trigger if exists aa_sighting_consent_guard on public.sightings;
+create trigger aa_sighting_consent_guard before insert or update on public.sightings
+  for each row execute function private.sighting_consent_guard();
+
+-- 2. Read.
+drop policy if exists "Users can view their own sightings only" on public.sightings;
+create policy "Users can view their own sightings only" on public.sightings
+  for select
+  using (((auth.uid() = user_a) or (auth.uid() = user_b)) and expires_at > now() and public.sighting_pair_visible(user_a, user_b));
+
+-- 3. Retention.
+create or replace function public.purge_expired_sightings()
+ returns void
+ language sql
+ security definer
+ set search_path to 'public'
+as $function$
+  delete from sightings where expires_at <= now() or not private.crossed_paths_pair_allowed(user_a, user_b);
+$function$;
+revoke execute on function public.purge_expired_sightings() from public, anon, authenticated;
+
+select public.purge_expired_sightings();
