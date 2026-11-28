@@ -50,7 +50,7 @@ export default function PreviewApp() {
             <Boundary>
               <NavigationContainer>
                 <Stack.Navigator>
-                  <Stack.Screen name={name} component={Screen} initialParams={PARAMS[name]} options={{ headerShown: name === 'GatheringDetail' || name === 'FriendDiscovery' }} />
+                  <Stack.Screen name={name} component={Screen} initialParams={PARAMS[name]} options={{ headerShown: false }} />
                 </Stack.Navigator>
               </NavigationContainer>
             </Boundary>

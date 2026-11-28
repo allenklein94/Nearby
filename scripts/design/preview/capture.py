@@ -83,7 +83,7 @@ with sync_playwright() as p:
             page.route('**/*', lambda r: r.continue_() if r.request.url.startswith(BASE) else r.abort('internetdisconnected'))
             page.route('**/*supabase.co/**', respond)
             signed = name != 'Login'
-            init = f"localStorage.setItem('nearby-theme-preference', '{scheme}');"
+            init = f"localStorage.setItem('nearby-theme-preference', '{scheme}'); localStorage.setItem('tab_header_actions_hint_seen', 'true');"
             if signed:
                 init += f"localStorage.setItem('sb-{REF}-auth-token', {json.dumps(json.dumps(SESSION))});"
             page.add_init_script(init)
