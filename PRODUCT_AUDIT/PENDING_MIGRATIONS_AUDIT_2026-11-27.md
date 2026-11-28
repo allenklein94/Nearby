@@ -40,10 +40,19 @@ They go back to back (0349 needs 0348 recorded). Batch 1 continues 0350-0354 the
 | 6-13 | 0373-0435 | Wall B: build 88 everywhere (TestFlight + any store release), Anthropic credit returns allow/deny, website re-exported + published, distribution + website evidence lines, Batch 1-5 checks PASS |
 
 ## 4. Compatibility evidence (re-run today)
-See section 6 (filled when the local run finishes).
+Local replay (isolated network, `/workspaces/.nearby-verify/v477`), recorded in `PRODUCT_AUDIT/evidence/release-compat.md`:
+- **This branch's build (next build):** runtime 15/15 at 0347 and at every batch boundary (0354, 0362, 0366, 0369, 0372, 0373,
+  0381, 0398, 0406, 0417, 0429, 0432, 0433, 0434, 0435). It needs no pending migration (no circular dependency): on today's
+  production it uses two known fallbacks (peopleRead hide-switch columns, preferencePolls profile columns) and the cuisine
+  column fallback.
+- **Build 87 (released):** 15/15 at 0354-0372 (Phase A safe); 14/15 at 0347 = the live Dating defect 0348 fixes; fails from
+  0373 by design (Wall B / client floor).
 
 ## 5. Website
-See section 7 (filled when the headless run finishes).
+Export built from this branch (`/workspaces/.nearby-verify/v476`, NOT published): builds clean; differs from the published
+`docs/business/` by one JS bundle + index.html; headless browser (mocked Supabase, no network) 123/123, offer-preview dock
+128/128 at 320-430 pt. Not covered (needs you, in a real browser): the signed-in pre-0348 pass (Coastal Coffee account,
+five tabs + one profile save), then the same pass right after 0348. Publishing = its own approval.
 
 ## Per-migration table
 

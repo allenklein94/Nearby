@@ -46,7 +46,8 @@ Partly implemented is never listed as done: 7 (no Discover ranking by a gatherin
 | deploy.js gates for 0348 (rolled-back check; nothing sent) | before the new evidence: only the approval code/ref/session and the stale compatibility line; the evidence line is now fresh | this session |
 | Business website export (from this branch) | builds clean; differs from the published `docs/business/` by one bundle + index.html; headless (mocked Supabase, no network): 123/123, offer-preview dock 128/128 at 320-430 pt | `/workspaces/.nearby-verify/v476` |
 | Narrowed inference test | still protects the original rule: a planted `setActivityLevel(1)` makes it fail; only the `setActivityListOpen` list toggle is exempt | this session |
-| iOS bundle | see below | `/workspaces/.nearby-verify/v479/ios.log` |
+| iOS bundle (export from this branch) | clean: 2,956 modules bundled, exit 0 | `/workspaces/.nearby-verify/v480/ios.log` |
+| Final branch diff vs main | 142 files; app code + docs + design/i18n tools + one staged migration (0435) and its rollback; no change to app.json, app.config.js, eas.json, package.json or the lockfile | this session |
 
 The website's pre-0348 signed-in pass (Coastal Coffee, five tabs + a profile save) is a real-browser check that only you can
 run; publishing the export is a separate approval.
