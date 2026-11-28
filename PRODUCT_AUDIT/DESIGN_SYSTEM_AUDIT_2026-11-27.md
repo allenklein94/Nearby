@@ -62,3 +62,13 @@ refused; capture: `scripts/design/preview/`, logs `/workspaces/.nearby-verify/v4
 
 Business Mode is covered by the same codemod (it scans every file in `src/screens` + `src/components`); the gallery shows
 the business dashboard. What the gallery can't show: real fonts on iOS, native headers, sheets, keyboard, Dynamic Type.
+
+## 4. Round 4 (owner, 2026-11-28): PNG gallery outside Claude
+D1-D8 stay applied, pending your visual review. The review is now a downloadable ZIP (no artifact link needed):
+`scripts/design/preview/capture_gallery.py` renders 29 variants x light/dark for three versions (pre-design 2eeb5b444,
+main, this branch), and `make_gallery.py` packs `png/<version>/<NN-name>-<scheme>.png` + `index.html` (one row per screen,
+three columns) + README into `Nearby-design-review-<date>.zip`. Variants: the 11 reviewed screens; Home and Profile
+full-page (scrolled); Discover Dating + Friends headers and FriendDiscovery; Business Home, Opportunities, Bookings, Offers,
+Profile; a women-only gathering (detail + Discover card); empty, loading and error states of Home, Discover and Activity.
+Limits: fixture data on react-native-web (fonts, shadows, safe areas, native headers/sheets differ on iOS); a cell marked
+"render note" or "not captured" is listed in the round-4 report. No screen or navigation was changed for the gallery.

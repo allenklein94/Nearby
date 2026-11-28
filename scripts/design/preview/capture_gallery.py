@@ -113,6 +113,7 @@ with sync_playwright() as p:
             ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, color_scheme=scheme, locale='en-US',
                                 timezone_id='America/New_York')
             page = ctx.new_page(); errs = []
+            page.set_default_timeout(20000)
             page.on('pageerror', lambda e: errs.append(str(e)[:160]))
             page.route('**/*', lambda r: r.continue_() if r.request.url.startswith(BASE) else r.abort('internetdisconnected'))
             page.route('**/*supabase.co/**', respond)
@@ -128,10 +129,15 @@ with sync_playwright() as p:
                 try:
                     page.get_by_text(tab, exact=True).last.click(timeout=3000); page.wait_for_timeout(2000)
                 except Exception as e: note = f'tab {tab} not found'
-            page.screenshot(path=f'{OUT}/{fname}-{scheme}.png', full_page=full)
-            text = page.inner_text('body')
+            try:
+                page.screenshot(path=f'{OUT}/{fname}-{scheme}.png', full_page=full, timeout=30000, animations='disabled')
+                text = page.inner_text('body')
+            except Exception as e:
+                note = (note + ' ' if note else '') + f'capture failed: {str(e)[:80]}'; text = ''
             report[f'{fname}-{scheme}'] = {'errors': errs, 'preview_error': 'PREVIEW ERROR' in text, 'chars': len(text), 'note': note}
-            ctx.close()
+            try: ctx.close()
+            except Exception: pass
+            print(fname, scheme, flush=True)
     b.close()
 srv.terminate()
 json.dump(report, open(f'{OUT}/report.json', 'w'), indent=1)
