@@ -109,37 +109,47 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     for scheme in ('light', 'dark'):
         for fname, hsh, mode, full, tab in VARIANTS:
-            MODE['v'] = mode
-            ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, color_scheme=scheme, locale='en-US',
-                                timezone_id='America/New_York')
-            page = ctx.new_page(); errs = []
-            page.set_default_timeout(20000)
-            page.on('pageerror', lambda e: errs.append(str(e)[:160]))
-            page.route('**/*', lambda r: r.continue_() if r.request.url.startswith(BASE) else r.abort('internetdisconnected'))
-            page.route('**/*supabase.co/**', respond)
-            name = hsh.split('|')[0]
-            init = f"localStorage.setItem('nearby-theme-preference', '{scheme}'); localStorage.setItem('tab_header_actions_hint_seen', 'true');"
-            if name != 'Login': init += f"localStorage.setItem('sb-{REF}-auth-token', {json.dumps(json.dumps(SESSION))});"
-            page.add_init_script(init)
-            from urllib.parse import quote
-            page.goto(BASE + '#' + quote(hsh, safe='|'), wait_until='domcontentloaded')
-            page.wait_for_timeout(1500 if mode == 'loading' else 4000)
-            note = ''
-            if tab:
+            if os.path.exists(f'{OUT}/{fname}-{scheme}.png') and os.environ.get('RESUME') == '1': continue
+            for attempt in (1, 2):
+              try:
+                MODE['v'] = mode
+                ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, color_scheme=scheme, locale='en-US',
+                                    timezone_id='America/New_York')
+                page = ctx.new_page(); errs = []
+                page.set_default_timeout(20000)
+                page.on('pageerror', lambda e: errs.append(str(e)[:160]))
+                page.route('**/*', lambda r: r.continue_() if r.request.url.startswith(BASE) else r.abort('internetdisconnected'))
+                page.route('**/*supabase.co/**', respond)
+                name = hsh.split('|')[0]
+                init = f"localStorage.setItem('nearby-theme-preference', '{scheme}'); localStorage.setItem('tab_header_actions_hint_seen', 'true');"
+                if name != 'Login': init += f"localStorage.setItem('sb-{REF}-auth-token', {json.dumps(json.dumps(SESSION))});"
+                page.add_init_script(init)
+                from urllib.parse import quote
+                page.goto(BASE + '#' + quote(hsh, safe='|'), wait_until='domcontentloaded')
+                page.wait_for_timeout(1500 if mode == 'loading' else 4000)
+                note = ''
+                if tab:
+                    try:
+                        page.get_by_text(tab, exact=True).last.click(timeout=3000); page.wait_for_timeout(2000)
+                    except Exception as e: note = f'tab {tab} not found'
                 try:
-                    page.get_by_text(tab, exact=True).last.click(timeout=3000); page.wait_for_timeout(2000)
-                except Exception as e: note = f'tab {tab} not found'
-            try:
-                page.screenshot(path=f'{OUT}/{fname}-{scheme}.png', full_page=full, timeout=30000, animations='disabled')
-                text = page.inner_text('body')
-            except Exception as e:
-                note = (note + ' ' if note else '') + f'capture failed: {str(e)[:80]}'; text = ''
-            report[f'{fname}-{scheme}'] = {'errors': errs, 'preview_error': 'PREVIEW ERROR' in text, 'chars': len(text), 'note': note}
-            try: ctx.close()
-            except Exception: pass
-            print(fname, scheme, flush=True)
+                    page.screenshot(path=f'{OUT}/{fname}-{scheme}.png', full_page=full, timeout=30000, animations='disabled')
+                    text = page.inner_text('body')
+                except Exception as e:
+                    note = (note + ' ' if note else '') + f'capture failed: {str(e)[:80]}'; text = ''
+                report[f'{fname}-{scheme}'] = {'errors': errs, 'preview_error': 'PREVIEW ERROR' in text, 'chars': len(text), 'note': note}
+                try: ctx.close()
+                except Exception: pass
+                print(fname, scheme, flush=True)
+                break
+              except Exception as e:
+                report[f'{fname}-{scheme}'] = {'errors': [str(e)[:160]], 'preview_error': False, 'chars': 0, 'note': f'attempt {attempt} failed'}
+                try: ctx.close()
+                except Exception: pass
     b.close()
 srv.terminate()
+prev = json.load(open(f'{OUT}/report.json')) if os.path.exists(f'{OUT}/report.json') else {}
+prev.update(report); report = prev
 json.dump(report, open(f'{OUT}/report.json', 'w'), indent=1)
 for k, v in report.items():
     print(k, 'OK' if not v['errors'] and not v['preview_error'] and v['chars'] > 40 and not v['note'] else 'CHECK', v['errors'][:1], v['note'], v['chars'])
