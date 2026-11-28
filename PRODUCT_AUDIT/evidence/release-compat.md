@@ -4,7 +4,7 @@ Only the copy committed at HEAD counts. One line per kind; a FAIL line, a duplic
 production migration. Update after every release-compat run (scripts/compat/README.md). "through" = the highest database
 version the run covered; deploy.js refuses a migration above it.
 
-next: PASS build 88 @35d2bc054 through 20270435 (runtime 15/15 at 0347, 0354, 0362, 0366, 0369, 0372, 0373, 0381, 0398, 0406, 0417, 0429, 0432, 0433, 0434, 0435; static at 0435 = the same 2 known fallbacks (peopleRead hide-switch columns, preferencePolls profile columns), 0434's third flag = the cuisine column the build reads with a fallback; local replay; 2026-11-28, /workspaces/.nearby-verify/v477/compat + compat2, branch fix/device-findings-nov27)
+next: PASS build 88 @f2931878b through 20270435 (runtime 15/15 at 0347 and every boundary 0354, 0362, 0366, 0369, 0372, 0373, 0381, 0398, 0406, 0417, 0429, 0432, 0433, 0434, 0435; static at 0435 = the same 2 known fallbacks; re-run after the cuisine-support change and the 0353 move; local replay; 2026-11-28, /workspaces/.nearby-verify/v491/compat, branch fix/device-findings-nov27)
 released: PASS build 87 @2a28c8e85 through 20270372 (runtime 15/15 at 0354-0372; 14/15 at 0347 = the live Dating defect, fixed by 0348; fails from 0373 by design = client floor; 2026-11-27, /workspaces/.nearby-verify/compat/b87-v3)
 
 The two lines below are required from 20270373 on (client floor: build 88). Record them only when true:

@@ -8,6 +8,44 @@ instruction of 2026-11-27 (40 numbered sections; 37-40 are process sections).
 No approved visual mockup exists in the repo or in either owner message. The design items (16, 24, 31, 34) follow the
 written spec only and are NOT checked against an approved mockup; each is a restrained change the phone session should judge.
 
+## Round 3 (owner, 2026-11-28): privacy first, D1-D8 applied, final validation
+
+Still on `fix/device-findings-nov27` only. Nothing merged, built, deployed, synced or published. Production access was
+read-only catalog + aggregate counts (`read_only: true`, verified), no user values.
+
+### Status of every item by stage
+| Stage | Items |
+|---|---|
+| Implemented + automated validation passing | all 40 except 20 (blocked on 0349) and 22 (native sheet); 7 now complete in code incl. Discover ranking |
+| Awaiting visual approval | 16, 24, 31 and D1-D8 (item 34): gallery https://claude.ai/artifact/KQttbznqc5VXbEdPaDp8b2 |
+| Awaiting physical device verification | every UI item (nothing on this branch has run on a phone) |
+| Awaiting production deployment | 7 storage (0435, Phase B), 19 for build 87 (0348), 20 (0349), 33 taxonomy sync (after merge) |
+| Awaiting your accounts / credit / review | 11 (Anthropic + seeded business), 22 (Manage Subscription on TestFlight), native review |
+
+### What round 3 changed
+1. **Privacy investigation + plan**: `PRIVACY_REMEDIATION_PLAN_2026-11-28.md` (exposed fields, counts, containment options,
+   Batch 1a = 0348 + 0349, 1b = 0350-0354; 0353 already carries 0383's consent guard; 0384 stays Phase B).
+2. **Cuisine (item 7) complete in code**: Create/Edit offer, show and send a cuisine only once the server stores it (one
+   check per session; offline = asked again); typed asks rank a stated cuisine against a gathering's DECLARED cuisine
+   (different = left out, none = kept unranked, never read from the title). Discover's browse cuisine filter still shows
+   businesses only (its locked rule); widening it to gatherings after 0435 is a separate decision.
+3. **D1-D8**: status per item in `DESIGN_SYSTEM_AUDIT_2026-11-27.md` section 3; gallery of 11 screens x light/dark x
+   main / before pass / now, plus Home + Profile scrolled.
+4. **Owner actions**: `OWNER_ACTIONS_2026-11-28.md` (App Store Connect, Coastal Coffee website pass, Tier 1, Anthropic,
+   test accounts, Manage Subscription, native review, decisions).
+
+### Validation (round 3, HEAD f2931878b)
+| Check | Result | Log |
+|---|---|---|
+| Jest, full | 632/632 suites after the two wiring guards were updated (first run: 630/632, both failures = guards that pinned the old call text) | `/workspaces/.nearby-verify/v486` + rerun |
+| From-scratch replay 0001-0435 (isolated, real Auth schema) | 559/559 applied | `/workspaces/.nearby-verify/v488` |
+| Journeys, all, on that replay | 146/146 suites, 1,603/1,603 | same |
+| Release compatibility, this build | runtime 15/15 at 0347 + every boundary through 0435; static = the 2 known fallbacks | `/workspaces/.nearby-verify/v491/compat` |
+| iOS bundle | exports clean | `/workspaces/.nearby-verify/v489/ios.log` |
+| Business website export (this branch, not published) | headless 123/123, offer-preview dock 128/128 | `/workspaces/.nearby-verify/v487` |
+| Taxonomy inventory vs main | exactly: + Concerts, + Foodie, Nightlife 1 -> 2 (onboardingInterests); nothing else | this session |
+| Screens rendered (preview harness) | 11 screens x 2 themes, no page errors, 3 versions | `v484`, `v485`, `v490` |
+
 ## Round 2 (owner, 2026-11-27 evening -> 2026-11-28): final reconciliation
 
 Still on this branch only. Nothing merged, built, deployed or published; the only production access was read-only
