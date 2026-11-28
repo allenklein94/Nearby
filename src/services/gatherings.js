@@ -176,7 +176,7 @@ export function gatheringCuisineSupported() {
 export function resetGatheringCuisineSupportForTests() { cuisineSupport = null; }
 
 // Adds each listed gathering's declared cuisine (one read by ids) when the server has the column; otherwise the rows come
-// back unchanged (cuisine unknown, never guessed). Used by Discover's typed asks and its cuisine filter.
+// back unchanged (cuisine unknown, never guessed). Used by Discover's typed asks.
 export async function attachGatheringCuisines(rows) {
   const list = Array.isArray(rows) ? rows : [];
   const ids = list.map((g) => g?.id).filter(Boolean);

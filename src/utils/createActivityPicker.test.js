@@ -56,8 +56,13 @@ describe('item 7 + owner 2026-11-27: the cuisine is a stored fact, never the tit
   test('wiring: Create sets the cuisine, sends it, shows it on the review; never renames the title', () => {
     const c = fs.readFileSync(path.join(__dirname, '..', 'screens/CreateGatheringScreen.js'), 'utf8');
     expect(c).toContain('onPress={() => setCuisine(key)}');
-    expect(c).toContain('cuisine: cleanGatheringCuisine(cuisine, interestTag),');
+    // sent only when the server stores it (2026-11-28): never shown as saved when it wouldn't be
+    expect(c).toContain('const storedCuisine = cuisineSupported ? cleanGatheringCuisine(cuisine, interestTag) : null;');
+    expect(c).toContain('cuisine: storedCuisine,');
+    expect(c).toContain('{cuisineSupported && cuisineApplies(interestTag) && (');
     expect(c).toContain('route.params?.quickStartCuisine');
+    const e = fs.readFileSync(path.join(__dirname, '..', 'screens/EditGatheringScreen.js'), 'utf8');
+    expect(e).toContain('if (cuisineSupported && cleanCuisine !== (gathering.cuisine ?? null))');
     expect(c).not.toMatch(/titleForRefinement|setTitle\(titleFor/);
     const sheet = fs.readFileSync(path.join(__dirname, '..', 'components/StartSomethingModal.js'), 'utf8');
     expect(sheet).not.toMatch(/handlePickSub|activeCategory/);

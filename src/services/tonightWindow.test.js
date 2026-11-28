@@ -66,6 +66,6 @@ describe('wiring', () => {
   test('gatherings in a typed ask pass whether a clock time was stated', () => {
     expect(src).toMatch(/matchesDateWindow\(g\.scheduled_at, dateWindow, new Date\(\), \{ clockStated \}\)/);
     expect(src).toMatch(/const clockStated = !!\(clockWindow && \(clockWindow\.after != null \|\| clockWindow\.before != null\)\) \|\| pointClock != null;/);
-    expect(src).toMatch(/resolveGatherings\(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay, clockStated\)/);
+    expect(src).toMatch(/resolveGatherings\(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay, clockStated, cuisine\)/);
   });
 });
