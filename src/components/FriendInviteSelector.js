@@ -105,7 +105,7 @@ const getStyles = (colors) => StyleSheet.create({
   friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   friendName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  friendContext: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
+  friendContext: { color: colors.textTertiary, fontSize: 12, marginTop: 1 },
   checkbox: {
     width: 24, height: 24, borderRadius: radius.sm, borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',

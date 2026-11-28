@@ -300,7 +300,7 @@ function getStyles(colors, shadow) {
     subtitle: { ...typography.small, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 18 },
     northStarCard: {
       backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5,
-      borderColor: colors.primary, padding: spacing.lg, marginBottom: spacing.lg,
+      borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.lg,
     },
     northStarLabel: { ...typography.caption, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700', marginBottom: spacing.xs },
     northStarValue: { ...typography.title, color: colors.primary, fontWeight: '800', marginBottom: spacing.xs },

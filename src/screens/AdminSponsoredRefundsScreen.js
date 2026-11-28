@@ -101,7 +101,7 @@ export default function AdminSponsoredRefundsScreen() {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.md },
-  card: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
+  card: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
   title: { ...typography.bodyBold, color: colors.text },
   helper: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   flag: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },

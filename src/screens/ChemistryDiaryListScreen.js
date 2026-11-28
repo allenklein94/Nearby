@@ -14,6 +14,7 @@ import { displayDay } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 const SIGNALS = CHEMISTRY_SIGNALS; // one list, shared with the composer
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
@@ -273,7 +274,8 @@ const getStyles = (colors) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
   addButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginBottom: spacing.lg,
   },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
@@ -291,7 +293,7 @@ const getStyles = (colors) => StyleSheet.create({
   insightRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm },
   insightLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', width: 110 },
   insightBarTrack: { flex: 1, height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' },
-  insightBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+  insightBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 8 },
   insightPercent: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
@@ -305,7 +307,7 @@ const getStyles = (colors) => StyleSheet.create({
   cardDate: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   deleteText: { color: colors.danger, fontSize: 12, opacity: 0.7 },
   signalsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  signalChip: { backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  signalChip: { backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   signalChipText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
   noteText: { ...typography.body, color: colors.textSecondary, lineHeight: 20 },
 });

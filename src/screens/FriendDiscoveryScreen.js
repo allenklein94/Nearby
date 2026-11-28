@@ -32,7 +32,7 @@ import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quick
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { orderForTonight } from '../utils/meetTonight';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import { Ionicons } from '@expo/vector-icons';
 import { FUNCTIONAL_ICON_SIZE, switchToIcon } from '../constants/functionalIcons';
 
@@ -629,7 +629,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   // Same values as DiscoveryScreen.js's own headerIconButton/headerIconText (its list/cards toggle).
   headerIconButton: { padding: spacing.xs },
-  headerIconText: { fontSize: 17, color: colors.textSecondary },
+  headerIconText: { fontSize: 16, color: colors.textSecondary },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
   // Unified Crossed Paths, step 5: same two-button switcher shape used
   // elsewhere in this app for a binary mode choice, built from this
@@ -666,7 +666,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
   accordionSubLabel: { ...typography.small, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.xs },
   filterChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
-  filterChip: { borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  filterChip: { borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   filterChipText: { ...typography.small, color: colors.textSecondary },
   filterChipTextActive: { color: colors.primary, fontWeight: '600' },
@@ -676,7 +676,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   explainerTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.sm },
   explainerBody: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
   enableButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl, ...shadow.button,
   },
   enableButtonText: { color: '#fff', ...typography.body, fontWeight: '700' },

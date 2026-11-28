@@ -158,7 +158,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardIcon: { fontSize: 24, marginRight: spacing.sm },
   cardTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   cardMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  cardArea: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
+  cardArea: { color: colors.textTertiary, fontSize: 12, marginTop: 1 },
   cardChevron: { color: colors.textTertiary, fontSize: 20 },
   emptyState: { alignItems: 'center', paddingVertical: spacing.lg },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },

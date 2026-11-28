@@ -10,7 +10,7 @@ import { categoryName, groupName } from '../i18n/categoryNames';
 import { QUICK_INTERESTS, onboardingInterestSelection, migrateOnboardingDraft, savedOnboardingInterests, ONBOARDING_DRAFT_VERSION } from '../constants/onboardingInterests';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // This screen runs before signup — there's no account yet to save
 // these answers to. They're held in AsyncStorage temporarily and
@@ -344,9 +344,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', marginBottom: spacing.lg },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginHorizontal: 4 },
   dotActive: { backgroundColor: colors.primary, width: 20 },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 18, alignItems: 'center', ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
   buttonDisabled: { opacity: 0.5 },
   backLink: { alignSelf: 'center', paddingVertical: spacing.sm, marginBottom: spacing.xs },
   backLinkText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

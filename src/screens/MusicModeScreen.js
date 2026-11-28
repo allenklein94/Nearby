@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 WebBrowser.maybeCompleteAuthSession();
 
 const MAX_FAVORITE_TRACKS = 5;
@@ -165,7 +165,7 @@ const getStyles = (colors) => StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary },
   connectSection: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
-  connectButton: { backgroundColor: '#1DB954', borderRadius: radius.full, paddingVertical: 16, paddingHorizontal: spacing.xl, minWidth: 220, alignItems: 'center' },
+  connectButton: { backgroundColor: '#1DB954', borderRadius: radius.full, paddingVertical: 18, paddingHorizontal: spacing.xl, minWidth: 220, alignItems: 'center' },
   connectButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   connectHint: { color: colors.textTertiary, fontSize: 13, textAlign: 'center', marginTop: spacing.md },
   pickHint: { ...typography.caption, color: colors.textTertiary, paddingHorizontal: spacing.lg, marginTop: spacing.sm },
@@ -180,6 +180,6 @@ const getStyles = (colors) => StyleSheet.create({
   trackName: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   trackArtist: { color: colors.textTertiary, fontSize: 12 },
   checkmark: { color: colors.primary, fontSize: 18, fontWeight: '700', width: 24, textAlign: 'center' },
-  saveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', margin: spacing.lg },
+  saveButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', margin: spacing.lg },
   saveButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

@@ -35,6 +35,7 @@ const PRESENCE_CHOICES = [
 import { typography, spacing, radius, shadow } from '../theme';
 
 import { showSuccessToast } from '../motion';
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 // Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating should
 // own the dating-specific information" -- the real, dedicated home for
 // what's genuinely dating-specific (what you're looking for, age range,
@@ -532,7 +533,7 @@ const getStyles = (colors) =>
     heightDash: { color: colors.textTertiary },
     helperText: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm, lineHeight: 16 },
     linkText: { ...typography.body, color: colors.primary, fontWeight: '600' },
-    button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
+    button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
     buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
     strengthsButton: {
       backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,

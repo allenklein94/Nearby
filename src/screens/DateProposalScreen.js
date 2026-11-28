@@ -31,7 +31,7 @@ import { BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
 import { cleanDateVibes, requestAttributesFromProposal, dateVibesLine } from '../utils/dateProposalVibes';
 
 import { countLabel } from '../utils/plural';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // Worded by ui.dateProposal.terminal.<status>.
 const TERMINAL_STATUSES = ['declined', 'withdrawn'];
 
@@ -559,7 +559,7 @@ const getStyles = (colors) => StyleSheet.create({
   quickCategoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
   quickCategoryChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   quickCategoryChipSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
@@ -580,7 +580,7 @@ const getStyles = (colors) => StyleSheet.create({
   nearbyEmptyText: { ...typography.caption, color: colors.textTertiary, fontStyle: 'italic' },
   nearbyResultsList: { gap: spacing.xs },
   nearbyResultCard: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.sm,
   },
   nearbyResultCardSelected: { borderColor: colors.primary, borderWidth: 1.5, backgroundColor: colors.primaryMuted },
@@ -588,13 +588,13 @@ const getStyles = (colors) => StyleSheet.create({
   nearbyResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   nearbyResultMeta: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
   priorPlanCard: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,
   },
   priorPlanLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs },
   priorPlanText: { ...typography.body, color: colors.textSecondary, fontStyle: 'italic' },
   planCard: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginBottom: spacing.lg,
   },
   planCardLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs },
@@ -609,12 +609,13 @@ const getStyles = (colors) => StyleSheet.create({
   withdrawButton: { alignSelf: 'flex-start' },
   withdrawButtonText: { ...typography.caption, color: colors.danger, fontWeight: '700' },
   acceptedCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
     padding: spacing.md, marginBottom: spacing.lg,
   },
   acceptedTitle: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
   primaryButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginTop: spacing.md,
   },
   primaryButtonDisabled: { opacity: 0.5 },

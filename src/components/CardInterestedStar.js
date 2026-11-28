@@ -32,5 +32,5 @@ export default function CardInterestedStar({ title, on, flashKey, onPress, color
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 4, minWidth: 22, alignItems: 'center' },
-  glyph: { fontSize: 17, fontWeight: '600' },
+  glyph: { fontSize: 16, fontWeight: '600' },
 });

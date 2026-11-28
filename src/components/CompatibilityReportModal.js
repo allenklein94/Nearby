@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation } from '../motion';
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 function fieldLabel(key, language) {
   const field = BASICS_FIELDS.find((f) => f.key === key);
   return field ? `${field.icon} ${basicsLabel(field, language)}` : key;
@@ -243,7 +244,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   introButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   introCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.md, padding: spacing.md,
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md,
   },
   introText: { color: colors.textPrimary, fontSize: 14, lineHeight: 20, fontStyle: 'italic' },
@@ -271,6 +272,6 @@ const getStyles = (colors) => StyleSheet.create({
   },
   frictionLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14, marginBottom: spacing.xs },
   frictionDetail: { marginTop: 2 },
-  closeButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  closeButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.lg },
   closeButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

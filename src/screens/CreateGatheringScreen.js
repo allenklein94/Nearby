@@ -50,7 +50,7 @@ import { typography, spacing, radius } from '../theme';
 import { NLoader, showSuccessToast } from '../motion';
 import { getUserLocation } from '../services/userLocation';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
 // established for Google Places results, without reusing that function
@@ -1731,7 +1731,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   progressStep: { flex: 1, alignItems: 'center' },
   progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginBottom: 6 },
   progressDotActive: { backgroundColor: colors.primary },
-  progressLabel: { fontSize: 10, color: colors.textTertiary, fontWeight: '600' },
+  progressLabel: { fontSize: 12, color: colors.textTertiary, fontWeight: '600' },
   progressLabelActive: { color: colors.primary },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   subLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.sm, fontSize: 12 },
@@ -1753,12 +1753,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   publishCheckTitle: { ...typography.caption, color: colors.textPrimary, fontWeight: '700' },
   publishCheckRow: { marginTop: spacing.xs },
   navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
-  backButton: {
-    paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,
+  backButton: { ...PRIMARY_BUTTON, paddingHorizontal: spacing.lg,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
   backButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
-  nextButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  nextButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
   nextButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   publicToggle: {
     flex: 1, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1,
@@ -1767,7 +1766,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   publicToggleActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   publicToggleText: { color: colors.textPrimary, fontWeight: '700', fontSize: 14, marginBottom: 2 },
   publicToggleTextActive: { color: colors.primary },
-  publicToggleHint: { color: colors.textTertiary, fontSize: 11 },
+  publicToggleHint: { color: colors.textTertiary, fontSize: 12 },
   publicToggleHintActive: { color: colors.primary, opacity: 0.8 },
   womenOnlyToggle: {
     flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: radius.lg,
@@ -1821,7 +1820,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   stepperValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   previewCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
-    borderColor: colors.border, padding: spacing.lg, ...shadow.card,
+    borderColor: colors.border, padding: spacing.md, ...shadow.card,
   },
   previewHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   previewIcon: { fontSize: 32, marginRight: spacing.md },

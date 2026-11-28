@@ -532,7 +532,7 @@ const getStyles = (colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
@@ -553,7 +553,7 @@ const getStyles = (colors) => StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
   name: { ...typography.bodyBold, color: colors.textPrimary },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
-  compatText: { fontSize: 10, fontWeight: '700' },
+  compatText: { fontSize: 12, fontWeight: '700' },
   sub: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   planDateButton: {
     borderRadius: radius.full, backgroundColor: colors.primaryMuted,
@@ -561,5 +561,5 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.sm, paddingVertical: 6,
   },
   planDateButtonText: { fontSize: 12, fontWeight: '700', color: colors.primary },
-  chevron: { color: colors.textTertiary, fontSize: 22, fontWeight: '700' },
+  chevron: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
 });

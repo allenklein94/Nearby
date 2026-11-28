@@ -125,7 +125,7 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
     borderWidth: 1.5, borderColor: colors.background,
   },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
   // Matches DiscoveryScreen's own calloutBanner/calloutText/calloutDismiss
   // visual language (neutral surface + border, neutral dismiss text per
   // the locked coral-usage rule -- this is informational chrome, not a

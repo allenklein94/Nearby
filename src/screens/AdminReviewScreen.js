@@ -356,7 +356,7 @@ const getStyles = (colors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm, marginVertical: spacing.xs },
   sectionTitle: { ...typography.bodyBold, color: colors.textPrimary, marginTop: spacing.md, marginBottom: spacing.sm },
   subTitle: { ...typography.bodyBold, color: colors.textSecondary, marginTop: spacing.lg, marginBottom: spacing.xs },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
   cardSelected: { borderColor: colors.primary },
   title: { ...typography.bodyBold, color: colors.textPrimary },
   badge: { ...typography.caption, color: colors.textPrimary, marginTop: spacing.xs, fontWeight: '700' },
@@ -374,7 +374,7 @@ const getStyles = (colors) => StyleSheet.create({
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginTop: spacing.sm, alignSelf: 'flex-start' },
   buttonQuiet: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginTop: spacing.sm, alignSelf: 'flex-start' },
   buttonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   chipOn: { borderColor: colors.primary, backgroundColor: colors.surfaceElevated },
   chipText: { ...typography.caption, color: colors.textPrimary },
 });

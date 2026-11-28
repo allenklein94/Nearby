@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   closeButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
   commentsToggle: {
     position: 'absolute', top: 50, left: 20, zIndex: 10,
-    minWidth: 40, height: 40, borderRadius: 20, paddingHorizontal: 10, backgroundColor: 'rgba(255,255,255,0.15)',
+    minWidth: 40, height: 40, borderRadius: 20, paddingHorizontal: 12, backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center', alignItems: 'center', flexDirection: 'row',
   },
   commentsToggleText: { color: '#fff', fontSize: 15, fontWeight: '600' },
@@ -225,19 +225,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(20,20,20,0.96)', borderTopLeftRadius: 16, borderTopRightRadius: 16,
     paddingTop: 12,
   },
-  commentsList: { paddingHorizontal: 16 },
+  commentsList: { paddingHorizontal: 18 },
   commentsEmpty: { color: 'rgba(255,255,255,0.6)', fontSize: 13, paddingVertical: 12 },
   commentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 8 },
   commentText: { color: '#fff', fontSize: 14, lineHeight: 19, flex: 1 },
   commentAuthor: { fontWeight: '700' },
   deleteText: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
   commentInputRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.15)',
   },
   commentInput: {
     flex: 1, color: '#fff', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 8, fontSize: 14,
+    paddingHorizontal: 12, paddingVertical: 6, fontSize: 14,
   },
   sendText: { color: '#4da3ff', fontWeight: '700', fontSize: 14 },
 });

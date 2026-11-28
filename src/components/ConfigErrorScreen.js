@@ -17,5 +17,5 @@ export default function ConfigErrorScreen({ message }) {
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#FFF6F0' },
   title: { fontSize: 20, fontWeight: '600', color: '#1A1A1A', marginBottom: 12 },
-  body: { fontSize: 15, color: '#444444', marginBottom: 8 },
+  body: { fontSize: 15, color: '#444444', marginBottom: 6 },
 });

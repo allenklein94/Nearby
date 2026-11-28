@@ -43,6 +43,7 @@ import useLeaveGuard from '../hooks/useLeaveGuard';
 import ToggleRow from '../components/ToggleRow';
 import { Ionicons } from '@expo/vector-icons';
 import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE } from '../constants/functionalIcons';
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -1566,7 +1567,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { marginBottom: 2, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   settingsGear: { padding: spacing.xs },
-  settingsGearText: { fontSize: 22 },
+  settingsGearText: { fontSize: 20 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   // Phase 8 section H (Profile): "moderate/editorial" -- a deliberate step
@@ -1616,7 +1617,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   timelineLinkTextCol: { flex: 1 },
   timelineLinkText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
-  timelineLinkSubtitle: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  timelineLinkSubtitle: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   joinedLine: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.sm },
   timelineLinkChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   earnedStatsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
@@ -1624,7 +1625,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md,
   },
-  earnedStatLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  earnedStatLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   earnedStatValue: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   quickStatsRow: {
     flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.lg,
@@ -1632,7 +1633,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   quickStat: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
   quickStatNumber: { ...typography.headline, color: colors.textPrimary },
-  quickStatLabel: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  quickStatLabel: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   // Item 77 follow-up: "Your Plans"' own card -- one outer border/radius
   // wrapping the stat-tiles row, a hairline divider, and the Occasions
   // row, so all three read as one integrated object instead of two
@@ -1653,9 +1654,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, width: 90,
   },
   achievementIcon: { fontSize: 24, marginBottom: 4 },
-  achievementLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textAlign: 'center' },
+  achievementLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   businessModeButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginBottom: spacing.lg,
   },
   businessModeButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
@@ -1701,7 +1703,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 2,
   },
-  pendingOverlayText: { color: '#fff', fontSize: 9, textAlign: 'center', fontWeight: '700' },
+  pendingOverlayText: { color: '#fff', fontSize: 12, textAlign: 'center', fontWeight: '700' },
   addPhotoButton: {
     width: 108, height: 108, borderRadius: radius.md,
     borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed',
@@ -1745,11 +1747,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   interestSummaryChipText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   chipTextSelected: { color: '#fff' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   promptCard: {
     flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,
+    borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm,
   },
   promptQuestion: { ...typography.caption, color: colors.textTertiary, marginBottom: 4 },
   promptAnswer: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },

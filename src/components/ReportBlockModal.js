@@ -14,7 +14,7 @@ import { reportReasonsFor } from '../utils/reportReasons';
 // the reason's fixed `legacy` value, which the database maps to its stable code (20270370). Never a translated string.
 // A report about a business (target 'business', 20270381) offers the business reasons only.
 const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.legacy, key: r.key }));
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
 // the sheet shows only the report.
@@ -149,9 +149,9 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, minHeight: 70, textAlignVertical: 'top', borderWidth: 1, borderColor: colors.border,
     marginBottom: spacing.md,
   },
-  reportButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
+  reportButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center' },
   reportButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  blockButton: { paddingVertical: 14, alignItems: 'center', marginTop: spacing.sm },
+  blockButton: { paddingVertical: 12, alignItems: 'center', marginTop: spacing.sm },
   blockButtonText: { color: colors.danger, fontWeight: '700', fontSize: 15 },
   cancelText: { color: colors.textTertiary, textAlign: 'center' },
 });

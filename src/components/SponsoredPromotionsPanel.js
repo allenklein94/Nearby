@@ -192,7 +192,7 @@ const getStyles = (colors) => StyleSheet.create({
   helper: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   label: { ...typography.caption, color: colors.text, fontWeight: '600', marginTop: spacing.md },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   chipOn: { borderColor: colors.primary, backgroundColor: colors.primary },
   chipText: { ...typography.caption, color: colors.text },
   chipTextOn: { color: '#fff' },
@@ -202,6 +202,6 @@ const getStyles = (colors) => StyleSheet.create({
   ctaText: { ...typography.body, color: '#fff', fontWeight: '600' },
   item: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, marginTop: spacing.xs },
   itemTitle: { ...typography.body, color: colors.text, fontWeight: '600' },
-  ctaCheck: { fontSize: 22, color: colors.primary, marginRight: spacing.sm },
+  ctaCheck: { fontSize: 20, color: colors.primary, marginRight: spacing.sm },
   link: { ...typography.caption, color: colors.primary, marginTop: spacing.xs },
 });

@@ -29,7 +29,7 @@ export default function SettingConflictNotice({ messages = [], onSave = null, sa
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 8, gap: 4 },
+  wrap: { marginTop: 6, gap: 4 },
   line: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 2 },
   note: { fontSize: 13 },

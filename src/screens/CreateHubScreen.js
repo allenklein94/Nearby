@@ -456,7 +456,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     marginBottom: spacing.lg,
   },
   browseLinkText: { ...typography.body, color: colors.textPrimary, fontWeight: '600', flex: 1 },
-  browseLinkChevron: { color: colors.textTertiary, fontSize: 22 },
+  browseLinkChevron: { color: colors.textTertiary, fontSize: 20 },
   // The one visual hierarchy this screen now has -- three roomy, co-equal
   // primary cards (Gathering/Community/Plan for Someone), each with its
   // own icon, label, and one-line tagline, per the user's own mock
@@ -466,7 +466,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   primaryCards: { gap: spacing.sm, marginBottom: spacing.xl },
   primaryCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface,
-    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, ...shadow.card,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md, ...shadow.card,
   },
   primaryCardIconWrap: {
     width: 44, height: 44, borderRadius: radius.md, backgroundColor: `${colors.primary}1a`,
@@ -474,7 +474,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   primaryCardLabel: { ...typography.headline, color: colors.textPrimary },
   primaryCardSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  primaryCardChevron: { color: colors.textTertiary, fontSize: 22 },
+  primaryCardChevron: { color: colors.textTertiary, fontSize: 20 },
   // Every other real action this screen offers, demoted to one small flat
   // list below the 3 primary cards -- see this file's own header comment
   // for why these were kept rather than deleted.
@@ -506,7 +506,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   sublabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   chip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated,
   },
   chipSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },

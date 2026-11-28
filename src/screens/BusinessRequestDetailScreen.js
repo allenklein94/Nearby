@@ -2456,11 +2456,11 @@ const getStyles = (colors) => StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs },
   chip: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.md, marginRight: spacing.xs, marginBottom: spacing.xs,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginRight: spacing.xs, marginBottom: spacing.xs,
   },
   chipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
   timelineFormCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginTop: spacing.sm,
   },
   timelineFormInput: {

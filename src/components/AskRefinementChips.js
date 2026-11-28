@@ -68,8 +68,8 @@ export default function AskRefinementChips({ classifyResult, onRefine, refining 
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  chip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  chip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   // A soft coral wash inside the chip's own border, never the solid selected look.
-  emphasis: { borderRadius: 16 },
+  emphasis: { borderRadius: 14 },
   text: { ...typography.caption, fontWeight: '600' },
 });

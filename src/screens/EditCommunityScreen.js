@@ -17,7 +17,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 export default function EditCommunityScreen({ route, navigation }) {
   const { t } = useLanguage();
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
@@ -167,6 +167,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   visToggleActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   visToggleText: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   visToggleTextActive: { color: colors.primary },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

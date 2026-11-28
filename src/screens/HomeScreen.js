@@ -115,7 +115,7 @@ import { placeDistanceLabel } from '../services/places';
 import { homeQuickStatRows } from '../utils/homeQuiet';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import { openExploreDiscover } from '../utils/discoverEntry';
 
 // Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
@@ -3030,8 +3030,8 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginRight: spacing.sm,
   },
   intentButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.lg, minWidth: 68, alignItems: 'center', justifyContent: 'center',
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary, paddingHorizontal: spacing.lg, minWidth: 68, alignItems: 'center', justifyContent: 'center',
   },
   intentButtonDisabled: { opacity: 0.5 },
   intentButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
@@ -3152,7 +3152,7 @@ const getStyles = (colors) => StyleSheet.create({
   outcomePromptRow: { flexDirection: 'row', justifyContent: 'space-between' },
   outcomePromptButton: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs },
   outcomePromptButtonEmoji: { fontSize: 20, marginBottom: 2 },
-  outcomePromptButtonLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
+  outcomePromptButtonLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   predictiveActButton: { alignSelf: 'flex-start', paddingVertical: 6 },
   predictiveActButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   firstRunCard: {
@@ -3172,16 +3172,16 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.lg,
   },
   forecastLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
-  forecastLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  forecastLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   forecastValue: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   forecastDetail: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
   weatherSuggestions: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   weatherSuggestionsHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
-  weatherSuggestionsHeader: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  weatherSuggestionsHeader: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   weatherSuggestionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   weatherSuggestionIcon: { fontSize: 14, marginRight: spacing.xs },
   weatherSuggestionText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
-  weatherSuggestionTime: { color: colors.textTertiary, fontSize: 11, marginLeft: spacing.xs },
+  weatherSuggestionTime: { color: colors.textTertiary, fontSize: 12, marginLeft: spacing.xs },
   sinceAwayBanner: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },
@@ -3222,7 +3222,7 @@ const getStyles = (colors) => StyleSheet.create({
   heroScrim: { ...StyleSheet.absoluteFillObject },
   heroEyebrow: {
     position: 'absolute', top: spacing.sm, left: spacing.sm,
-    color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.6,
+    color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 0.6,
     backgroundColor: 'rgba(0,0,0,0.32)', paddingHorizontal: spacing.sm, paddingVertical: 3,
     borderRadius: radius.full, overflow: 'hidden',
   },
@@ -3230,7 +3230,7 @@ const getStyles = (colors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
     padding: spacing.md, paddingTop: spacing.xl,
   },
-  heroTitle: { color: '#FFFFFF', fontWeight: '800', fontSize: 17, marginBottom: 2 },
+  heroTitle: { color: '#FFFFFF', fontWeight: '800', fontSize: 16, marginBottom: 2 },
   heroMeta: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '500' },
   heroCta: {
     backgroundColor: colors.primary, borderRadius: radius.full,
@@ -3245,7 +3245,7 @@ const getStyles = (colors) => StyleSheet.create({
   rowCtaGhostText: { color: colors.textPrimary, fontWeight: '600', fontSize: 12 },
   recapCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.lg,
   },
   recapSummaryWrap: { flex: 1, marginRight: spacing.sm },
   noticedRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: spacing.sm, marginBottom: spacing.md },
@@ -3254,11 +3254,11 @@ const getStyles = (colors) => StyleSheet.create({
   noticedText: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
   recapSummary: { color: colors.textPrimary, fontSize: 13 },
   recapLink: { color: colors.primary, fontWeight: '700', fontSize: 13 },
-  trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
+  trendingCard: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   trendingTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   trendingMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   quietCard: {
-    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', marginBottom: spacing.md,
   },
   quietTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   quietText: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18 },

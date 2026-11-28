@@ -7,7 +7,7 @@ import { WHEN_OPTIONS, MOOD_OPTIONS } from '../services/surpriseMeLogic';
 import { modalAnimation } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { surpriseText } from '../i18n/surpriseView';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // A mood chip keeps its emoji; the word is the person's language.
 const moodChip = (opt, language) => `${opt.label.split(' ')[0]} ${surpriseText(language, `sheet.moods.${opt.key}`)}`;
@@ -113,7 +113,8 @@ function getStyles(colors) {
     chipText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
     chipTextActive: { color: colors.primary },
     submitButton: {
-      backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center',
+      ...PRIMARY_BUTTON,
+      backgroundColor: colors.primary, alignItems: 'center',
     },
     submitButtonDisabled: { opacity: 0.5 },
     submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },

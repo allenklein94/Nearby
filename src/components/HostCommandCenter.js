@@ -167,14 +167,14 @@ const getStyles = (colors) => StyleSheet.create({
   actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   actionChip: {
     borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
-    paddingHorizontal: spacing.md, paddingVertical: 6, backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.surface,
   },
   actionChipDanger: { borderColor: colors.danger },
   actionInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
   countPill: {
-    minWidth: 18, height: 18, borderRadius: radius.full, paddingHorizontal: 5,
+    minWidth: 18, height: 18, borderRadius: radius.full, paddingHorizontal: 4,
     backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
-  countPillText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  countPillText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
 });

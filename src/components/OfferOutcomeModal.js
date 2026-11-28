@@ -8,7 +8,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
 import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // The one shared four-option scale (constants/satisfactionScale.js), never a second one.
 const SATISFACTION_OPTIONS = SATISFACTION_SCALE;
 
@@ -166,7 +166,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   satisfactionOption: { flex: 1, alignItems: 'center', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md },
   satisfactionOptionSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   satisfactionEmoji: { fontSize: 26, marginBottom: 4 },
-  satisfactionLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  satisfactionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   subtitle: { ...typography.bodyBold, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
@@ -180,7 +180,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.sm, color: colors.textPrimary, minHeight: 60, textAlignVertical: 'top',
   },
-  submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  submitButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   submitButtonDisabled: { opacity: 0.5 },
   submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   skipText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },

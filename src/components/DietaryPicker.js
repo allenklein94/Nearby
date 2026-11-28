@@ -41,7 +41,7 @@ const getStyles = (colors) => StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: {
     backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.md, marginRight: spacing.sm, marginBottom: spacing.sm,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginRight: spacing.sm, marginBottom: spacing.sm,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },

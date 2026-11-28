@@ -439,7 +439,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     marginBottom: spacing.lg, backgroundColor: colors.surface,
   },
   growthPromptTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
-  growthAction: { width: '100%', borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.sm },
+  growthAction: { width: '100%', borderRadius: radius.full, paddingVertical: 12, alignItems: 'center', marginBottom: spacing.sm },
   growthActionSecondary: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border },
   // Primary action = coral with white text, like every primary CTA (owner UX audit, 2026-11-21); the secondary
   // ("Share Link") variant overrides via growthActionTextSecondary.

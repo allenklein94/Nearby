@@ -48,7 +48,7 @@ function getStyles(colors, shadow) {
   return StyleSheet.create({
     card: {
       backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-      padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
+      padding: spacing.md, marginBottom: spacing.md, ...shadow.card,
     },
     topRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
     pill: { borderWidth: 1, borderColor: colors.textTertiary, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 2, marginRight: spacing.sm },

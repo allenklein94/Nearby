@@ -11,7 +11,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { unlockStatus } from '../utils/unlockProgress';
 import { perkRedemptionState } from '../utils/perkRedemptionState';
 import PerkCodeBox from './PerkCodeBox';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // The selected perk's redemption context, shown in place under its card on Discover -> Perks (owner, 2026-10-04: the
 // former BrandOffers screen's redemption moved here; there is no separate perk screen or second perk list). It loads only
@@ -193,7 +193,7 @@ const getStyles = (colors) => StyleSheet.create({
   linkText: { color: colors.primary, fontSize: 13, fontWeight: '700', marginBottom: spacing.sm },
   secondaryText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  redeemButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
+  redeemButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.primary, alignItems: 'center' },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   redeemedBadge: { flex: 1, alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, alignItems: 'center' },
   redeemedBadgeText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },

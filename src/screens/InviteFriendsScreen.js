@@ -4,7 +4,7 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // A plain invitation (owner, 2026-11-09): no referral code, no count, no reward. Inviting never earns anything.
 const APP_URL = 'https://apps.apple.com/app/nearby-crossed-paths/id6792143175';
@@ -45,6 +45,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
-  shareButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, ...shadow.button },
+  shareButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, paddingHorizontal: spacing.xl, ...shadow.button },
   shareButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { showSuccessToast } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 export default function RelationshipLegacyScreen({ route, navigation }) {
   const { matchId, matchName } = route.params;
@@ -143,6 +143,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   libraryLinkText: { ...typography.caption, color: colors.textPrimary, fontWeight: '700' },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, minHeight: 70, textAlignVertical: 'top' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

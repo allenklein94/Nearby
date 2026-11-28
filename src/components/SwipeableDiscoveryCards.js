@@ -275,7 +275,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   name: { ...typography.headline, color: colors.textPrimary },
   verifiedBadge: { color: colors.success, fontSize: 16, fontWeight: '700' },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  compatText: { fontSize: 11, fontWeight: '700' },
+  compatText: { fontSize: 12, fontWeight: '700' },
   proximityText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.sm },
   bio: { ...typography.body, color: colors.textSecondary },
   sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
@@ -289,12 +289,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.warning, justifyContent: 'center', alignItems: 'center', ...shadow.card,
   },
-  rewindButtonText: { color: colors.warning, fontSize: 22, fontWeight: '700' },
+  rewindButtonText: { color: colors.warning, fontSize: 20, fontWeight: '700' },
   skipButton: {
     width: 52, height: 52, borderRadius: 26, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', ...shadow.card,
   },
-  skipButtonText: { color: colors.textTertiary, fontSize: 22, fontWeight: '700' },
+  skipButtonText: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
   waveButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.primary, justifyContent: 'center', alignItems: 'center', ...shadow.card,

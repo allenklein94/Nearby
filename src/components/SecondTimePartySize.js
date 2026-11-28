@@ -42,7 +42,7 @@ const getStyles = (colors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.sm },
   chip: {
     alignSelf: 'flex-start', marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.md, backgroundColor: colors.surface,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, backgroundColor: colors.surface,
   },
   chipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
   step: {

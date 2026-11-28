@@ -51,16 +51,16 @@ export default OccasionPlanShareCard;
 export { CARD_WIDTH, CARD_HEIGHT };
 
 const styles = StyleSheet.create({
-  container: { width: CARD_WIDTH, height: CARD_HEIGHT, borderRadius: 28, overflow: 'hidden' },
-  gradient: { flex: 1, padding: 28, justifyContent: 'space-between' },
+  container: { width: CARD_WIDTH, height: CARD_HEIGHT, borderRadius: 20, overflow: 'hidden' },
+  gradient: { flex: 1, padding: 24, justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandText: { color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.2 },
   body: { flex: 1, justifyContent: 'center' },
-  title: { color: '#fff', fontWeight: '800', fontSize: 26, letterSpacing: -0.3, marginBottom: 14 },
+  title: { color: '#fff', fontWeight: '800', fontSize: 26, letterSpacing: -0.3, marginBottom: 12 },
   line: { color: 'rgba(255,255,255,0.92)', fontWeight: '600', fontSize: 16, marginTop: 6 },
   viewPlanPill: {
     alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10,
+    borderRadius: 999, paddingHorizontal: 18, paddingVertical: 12,
   },
   viewPlanText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

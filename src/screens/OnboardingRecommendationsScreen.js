@@ -17,6 +17,7 @@ import { displayApproxDistance, displayWhen, displayGatheringWhen } from '../i18
 import LoadErrorState from '../components/LoadErrorState';
 
 import { NLoader } from '../motion';
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 export default function OnboardingRecommendationsScreen({ navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
@@ -140,10 +141,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
   missionCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
+    padding: spacing.md, alignItems: 'center', marginBottom: spacing.md,
   },
   missionLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  missionText: { color: colors.textPrimary, fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 18, alignItems: 'center', ...shadow.button },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  missionText: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

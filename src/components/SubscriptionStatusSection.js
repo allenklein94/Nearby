@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { displayDay } from '../i18n/display';
 
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 // Stores we name, read from ui.billing.store.<STORE> (an unknown store id is shown as given).
 const KNOWN_STORES = ['APP_STORE', 'MAC_APP_STORE', 'PLAY_STORE', 'AMAZON', 'STRIPE', 'PROMOTIONAL', 'RC_BILLING'];
 
@@ -165,16 +166,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { marginBottom: spacing.md },
   planCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
+    padding: spacing.md, alignItems: 'center', marginBottom: spacing.md,
   },
   planCardActive: { borderWidth: 1.5, borderColor: colors.border },
   planEmoji: { fontSize: 36, marginBottom: spacing.xs },
   planTitle: { ...typography.title, color: colors.textPrimary, fontSize: 20 },
   planSubtext: { color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },
   planStoreText: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.xs },
-  sandboxText: { color: colors.danger, fontSize: 11, marginTop: 4, fontWeight: '700' },
+  sandboxText: { color: colors.danger, fontSize: 12, marginTop: 4, fontWeight: '700' },
   manageButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, paddingHorizontal: spacing.xl,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary, paddingHorizontal: spacing.xl,
     marginTop: spacing.lg, ...shadow.button,
   },
   manageButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },

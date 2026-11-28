@@ -649,7 +649,7 @@ const getStyles = (colors) => StyleSheet.create({
   reportPhoto: { width: '100%', height: 240, marginTop: spacing.sm, borderRadius: radius.sm },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,

@@ -9,6 +9,7 @@ import { modalAnimation } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
 
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 // Aug 30 2026 (CLAUDE.md, external UX critique response): this used to be
 // the Advanced Filters (Premium-only) modal alone -- a caller would only
 // ever open it after passing its own premium check, so it never had to
@@ -310,7 +311,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerButton: { color: colors.primary, fontWeight: '600', fontSize: 15 },
-  headerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 17 },
+  headerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   fieldSection: { marginBottom: spacing.lg },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   fieldLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15, marginBottom: spacing.sm },
@@ -339,6 +340,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   upsellButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },
   upsellButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
-  applyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  applyButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
   applyButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

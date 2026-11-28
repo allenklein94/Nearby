@@ -811,7 +811,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   upsellIcon: { fontSize: 24, marginRight: spacing.md },
   upsellTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
   upsellText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
-  upsellArrow: { color: '#fff', fontSize: 22, fontWeight: '700' },
+  upsellArrow: { color: '#fff', fontSize: 20, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },

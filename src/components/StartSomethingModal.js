@@ -125,7 +125,7 @@ const getStyles = (colors) => StyleSheet.create({
     flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.38)',
   },
   optionIcon: { marginBottom: spacing.xs },
-  optionLabel: { color: colors.textPrimary, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  optionLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   optionLabelOnPhoto: { color: '#fff' },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
 });

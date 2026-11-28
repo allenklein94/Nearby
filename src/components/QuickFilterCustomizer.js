@@ -217,7 +217,7 @@ const getStyles = (colors) => StyleSheet.create({
   valueLabel: { color: colors.textSecondary, fontSize: 13 },
   valueChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, flex: 1 },
   valueChip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
   },
   valueChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

@@ -86,6 +86,6 @@ const getStyles = (colors) =>
     name: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
     subtitle: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
     chipRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
-    chip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, maxWidth: 160 },
-    chipText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
+    chip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, maxWidth: 160 },
+    chipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   });

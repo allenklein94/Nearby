@@ -9,7 +9,7 @@ import { getMyEmergencyContacts, addEmergencyContact, deleteEmergencyContact } f
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // Emergency contacts, shown in place under Settings > Safety (screen-reduction audit 2026-10-24, owner approved: this was its
 // own screen, EmergencyContacts, same pattern as BlockedUsersSection). Loads when the section opens; add/remove re-read the list.
@@ -190,6 +190,6 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.md,
     padding: spacing.sm, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm,
   },
-  addButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.xs },
+  addButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xs },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

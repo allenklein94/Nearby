@@ -18,7 +18,7 @@ import TagGroupPicker from '../components/TagGroupPicker';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 export default function CreateCommunityScreen({ navigation, route }) {
   const { t } = useLanguage();
@@ -235,6 +235,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   visToggleActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   visToggleText: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   visToggleTextActive: { color: colors.primary },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

@@ -40,7 +40,7 @@ import { guessOccasionTypeFromEventTitle, formatCalendarEventDateLabel, filterUp
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import { localDateKey } from '../utils/whenPresets'; // the LOCAL day (never the UTC day)
 
 // Sep 14 2026 (CLAUDE.md, "global onboarding -> product wiring" master
@@ -991,7 +991,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   chip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated,
   },
   chipSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
@@ -1004,11 +1004,11 @@ const getStyles = (colors) => StyleSheet.create({
   },
   recurRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingVertical: spacing.xs },
   checkbox: {
-    width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: colors.border,
+    width: 20, height: 20, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
-  addButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.xs },
+  addButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xs },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   calendarSectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
   calendarManageLink: { color: colors.primary, fontWeight: '600', fontSize: 13 },

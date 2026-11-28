@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { geocodeAddress } from '../services/places';
 import { initialPin, pinProvenance } from '../utils/locationProvenance';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // Lets a host either search for an address or fine-tune by dragging
 // the pin directly, rather than being locked to wherever their
@@ -171,10 +171,10 @@ const getStyles = (colors) => StyleSheet.create({
   bottomBar: { padding: spacing.md, gap: spacing.sm },
   placeHint: { ...typography.caption, color: colors.textSecondary, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   currentLocationButton: {
-    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: 12, alignItems: 'center',
+    ...PRIMARY_BUTTON,
+    borderWidth: 1, borderColor: colors.primary, alignItems: 'center',
   },
   currentLocationText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
-  confirmButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center' },
+  confirmButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center' },
   confirmButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

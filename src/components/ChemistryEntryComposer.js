@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { showSuccessToast } from '../motion';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 export const CHEMISTRY_SIGNALS = [
   { key: 'felt_relaxed', icon: '😌', labelKey: 'relaxed' },
@@ -128,11 +128,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   signalRowActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   signalIcon: { fontSize: 20, marginRight: spacing.sm },
   signalLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14, flex: 1 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.textTertiary, justifyContent: 'center', alignItems: 'center' },
+  checkbox: { width: 22, height: 22, borderRadius: 8, borderWidth: 2, borderColor: colors.textTertiary, justifyContent: 'center', alignItems: 'center' },
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, minHeight: 70, textAlignVertical: 'top' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
 });

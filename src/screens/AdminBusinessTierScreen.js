@@ -137,7 +137,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   devBannerText: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
   searchInput: {
     margin: spacing.lg, marginBottom: 0, backgroundColor: colors.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: 10,
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: 12,
     color: colors.textPrimary, fontSize: 14,
   },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
@@ -147,10 +147,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md, ...shadow.card,
   },
   businessName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
-  inactiveBadge: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  inactiveBadge: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
   chipRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   chip: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: radius.full,
+    flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.sm, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },

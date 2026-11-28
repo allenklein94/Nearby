@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { showSuccessToast } from '../motion';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 const QUESTIONS = [
   { key: 'whatWasBeautiful', labelKey: 'goodbyeArchive.whatWasBeautiful', placeholderKey: 'ui.goodbyeArchive.eGHowEasyIt' },
@@ -111,7 +111,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   nameInput: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, minHeight: 70, textAlignVertical: 'top' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
 });

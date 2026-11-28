@@ -56,7 +56,7 @@ export default function SharedGatheringCard({ gatheringId, isMe, senderLabel, on
 const getStyles = (colors) => StyleSheet.create({
   card: { width: 240, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   mine: { borderColor: colors.primary },
-  kicker: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  kicker: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   title: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   when: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   unavailable: { color: colors.textTertiary, fontSize: 13 },

@@ -8,7 +8,7 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 export default function IdVerificationScreen() {
   const { colors, shadow } = useTheme();
@@ -164,7 +164,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   captureButton: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
   captureButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   preview: { width: '100%', height: 200, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
-  submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  submitButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   statusState: { alignItems: 'center', padding: spacing.xl, paddingTop: spacing.xxl },
   statusEmoji: { fontSize: 48, marginBottom: spacing.md },

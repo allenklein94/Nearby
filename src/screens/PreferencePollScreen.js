@@ -138,7 +138,7 @@ const getStyles = (colors) => StyleSheet.create({
   emptyText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13, paddingHorizontal: spacing.lg },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, marginBottom: spacing.md,
+    padding: spacing.md, marginBottom: spacing.md,
   },
   askerText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.xs },
   questionText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },

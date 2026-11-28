@@ -217,13 +217,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
   card: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
-  cardArt: { width: 44, height: 44, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
+  cardArt: { width: 44, height: 44, borderRadius: radius.lg, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   songTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   artist: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
-  addedBy: { color: colors.textTertiary, fontSize: 11, marginTop: spacing.xs },
-  openButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  addedBy: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.xs },
+  openButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
   openButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 });

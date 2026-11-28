@@ -171,7 +171,7 @@ const getStyles = (colors) => StyleSheet.create({
   satisfactionOption: { flex: 1, alignItems: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.sm },
   satisfactionOptionSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   satisfactionEmoji: { fontSize: 22, marginBottom: 2 },
-  satisfactionLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  satisfactionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   subtitle: { ...typography.bodyBold, color: colors.textPrimary, marginTop: spacing.md, marginBottom: spacing.sm },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },

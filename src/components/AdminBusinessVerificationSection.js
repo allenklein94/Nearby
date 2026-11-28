@@ -178,7 +178,7 @@ export default function AdminBusinessVerificationSection({ refreshKey }) {
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md },
   heading: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16, marginBottom: spacing.xs },
   help: { color: colors.textTertiary, fontSize: 12, lineHeight: 17, marginBottom: spacing.xs },
   row: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginTop: spacing.sm },
@@ -186,15 +186,15 @@ const getStyles = (colors) => StyleSheet.create({
   meta: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
   state: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.xs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm, alignItems: 'center' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 8, paddingHorizontal: spacing.md, alignItems: 'center' },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 6, paddingHorizontal: spacing.md, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  buttonQuiet: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: 8, paddingHorizontal: spacing.md },
+  buttonQuiet: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: 6, paddingHorizontal: spacing.md },
   buttonQuietText: { color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
   form: { marginTop: spacing.sm, gap: spacing.sm },
   check: { gap: 4 },
   checkTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: 5, paddingHorizontal: 10 },
+  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   chipOn: { borderColor: colors.primary, backgroundColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 12 },
   chipTextOn: { color: '#fff', fontWeight: '600' },

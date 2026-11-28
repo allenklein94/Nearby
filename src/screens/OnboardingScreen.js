@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import NearbyMark from '../components/brand/NearbyMark';
 
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 // Deliberately sells the outcome, not the features — "your next
 // favorite memory" rather than a feature-by-feature carousel
 // explaining notifications, privacy, discovery, etc. Whatever
@@ -54,8 +55,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headline: { ...typography.display, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.md },
   subtext: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.sm },
-  primaryButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 18, alignItems: 'center', ...shadow.button },
-  primaryButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  primaryButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondaryButton: { paddingVertical: spacing.md, alignItems: 'center' },
   secondaryButtonText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
 });

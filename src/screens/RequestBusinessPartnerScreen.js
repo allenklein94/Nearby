@@ -203,7 +203,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   rowIcon: { fontSize: 24, marginRight: spacing.md },
   rowTitle: { ...typography.headline, color: colors.textPrimary },
   rowSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-  chevron: { color: colors.textTertiary, fontSize: 24 },
+  chevron: { color: colors.textTertiary, fontSize: 20 },
   logo: { width: 36, height: 36, borderRadius: 18, marginRight: spacing.md },
   logoFallback: { backgroundColor: colors.surfaceElevated, justifyContent: 'center', alignItems: 'center' },
   logoFallbackText: { fontSize: 18 },

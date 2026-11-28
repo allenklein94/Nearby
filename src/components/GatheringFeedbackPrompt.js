@@ -55,5 +55,5 @@ const getStyles = (colors) => StyleSheet.create({
   question: { color: colors.textSecondary, fontSize: 12, marginBottom: spacing.xs },
   row: { flexDirection: 'row', gap: spacing.xs },
   button: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4, borderWidth: 1, borderColor: colors.border },
-  buttonText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
+  buttonText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700' },
 });

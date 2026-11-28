@@ -54,7 +54,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // "Group planning for an Occasion" (CLAUDE.md, direct user follow-up to the
 // Occasion rename/simplify pass). User's own example: "Sarah's 30th
@@ -1210,21 +1210,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   recommendationText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
   inviteRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  declineButton: { flex: 1, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingVertical: 14, alignItems: 'center' },
+  declineButton: { ...PRIMARY_BUTTON, flex: 1, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
   declineButtonText: { color: colors.textSecondary, fontWeight: '700' },
-  acceptButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', ...shadow.button },
+  acceptButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
   acceptButtonText: { color: '#fff', fontWeight: '700' },
   decidedCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
-    padding: spacing.lg, marginBottom: spacing.lg, alignItems: 'center',
+    padding: spacing.md, marginBottom: spacing.lg, alignItems: 'center',
   },
   decidedLabel: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.xs },
   decidedChoice: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.md },
-  decideButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 12, paddingHorizontal: spacing.lg, ...shadow.button },
+  decideButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, paddingHorizontal: spacing.lg, ...shadow.button },
   decideButtonText: { color: '#fff', fontWeight: '700' },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   participantsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  participantChip: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 6 },
+  participantChip: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   participantText: { color: colors.textSecondary, fontSize: 12 },
   inviteMoreLink: { color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: spacing.xs },
   inviteMorePanel: {
@@ -1234,16 +1234,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   helperText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.md },
   optionCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.xs,
   },
   optionTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   optionSubtitle: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  voteButton: { paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
+  voteButton: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   voteButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   voteButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
   voteButtonTextActive: { color: '#fff' },
-  decideLink: { paddingHorizontal: spacing.sm, paddingVertical: 8 },
+  decideLink: { paddingHorizontal: spacing.sm, paddingVertical: 6 },
   decideLinkText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
   proposeCard: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
@@ -1261,7 +1261,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.sm, fontSize: 14, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm },
-  addOptionButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
+  addOptionButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center' },
   addOptionButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   cancelLink: { alignItems: 'center', paddingVertical: spacing.lg },
   cancelLinkText: { color: colors.danger, fontWeight: '600', fontSize: 13 },

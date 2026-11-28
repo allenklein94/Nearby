@@ -46,6 +46,7 @@ import { clearHiddenSponsors } from '../services/sponsored';
 import { loadSoundCuesEnabled, setSoundCuesEnabled, subscribeSoundCuesEnabled } from '../services/soundCues';
 import { soundCuesSupported } from '../utils/soundCues';
 import ToggleRow from '../components/ToggleRow';
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
@@ -1526,7 +1527,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   helperText: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm, lineHeight: 16 },
   linkText: { ...typography.body, color: colors.primary, fontWeight: '600' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
   rowButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

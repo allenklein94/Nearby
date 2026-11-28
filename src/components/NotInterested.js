@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   more: { fontSize: 18, fontWeight: '700', paddingHorizontal: spacing.xs },
   row: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'flex-start' },
   rowText: { fontSize: 14, fontWeight: '600' },
-  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, marginBottom: spacing.sm },
+  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, marginBottom: spacing.sm },
   lineText: { flex: 1, fontSize: 14 },
   undo: { fontSize: 14, fontWeight: '700' },
 });

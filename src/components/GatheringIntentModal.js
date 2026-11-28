@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // Labels come from ui.gatheringIntent.option.<value>.
 const INTENT_OPTIONS = [
   { value: 'meet_someone_new', emoji: '👋' },
@@ -108,7 +108,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   optionEmoji: { fontSize: 20, marginRight: spacing.sm },
   optionLabel: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
   optionLabelSelected: { color: colors.primary },
-  submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md, ...shadow.button },
+  submitButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.md, ...shadow.button },
   submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   skipText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
 });

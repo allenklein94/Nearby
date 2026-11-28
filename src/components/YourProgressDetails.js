@@ -196,7 +196,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13, textAlign: 'center' },
   streakCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, alignItems: 'center', marginBottom: spacing.lg,
+    padding: spacing.md, alignItems: 'center', marginBottom: spacing.lg,
   },
   streakEmoji: { fontSize: 32, marginBottom: spacing.xs },
   streakNumber: { ...typography.title, color: colors.textPrimary, fontSize: 32 },
@@ -210,7 +210,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   barColumn: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
   barTrack: { width: 14, height: 80, justifyContent: 'flex-end', backgroundColor: colors.surfaceElevated, borderRadius: radius.sm, overflow: 'hidden' },
   barFill: { width: '100%', backgroundColor: colors.primary, borderRadius: radius.sm },
-  barWeekLabel: { color: colors.textTertiary, fontSize: 9, marginTop: 4 },
+  barWeekLabel: { color: colors.textTertiary, fontSize: 12, marginTop: 4 },
   deltaCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md,
@@ -240,7 +240,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md,
   },
-  earnedStatLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  earnedStatLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   earnedStatValue: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   vibeSection: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
@@ -260,7 +260,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   achievementBadgeLocked: { opacity: 0.4 },
   achievementIcon: { fontSize: 24, marginBottom: 4 },
   achievementIconLocked: { opacity: 0.5 },
-  achievementLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textAlign: 'center' },
+  achievementLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   ctaButton: {
     backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md,
     alignItems: 'center', marginTop: spacing.md,

@@ -167,7 +167,7 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  chip: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 12, borderWidth: 1 },
+  chip: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 14, borderWidth: 1 },
   split: { flexDirection: 'row', alignItems: 'center' },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, width: '100%' },
   text: { ...typography.caption, fontWeight: '600' },

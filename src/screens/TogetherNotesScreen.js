@@ -129,11 +129,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   sectionLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15, marginBottom: spacing.sm },
   noteCard: {
-    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.sm,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.sm,
     marginBottom: spacing.xs,
   },
   noteText: { color: colors.textPrimary, fontSize: 14 },
-  noteAddedBy: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  noteAddedBy: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   emptyText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.sm },
   addRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   input: { flex: 1, backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.sm, borderWidth: 1, borderColor: colors.border },

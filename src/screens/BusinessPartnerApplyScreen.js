@@ -28,7 +28,7 @@ import CategorySearchField from '../components/CategorySearchField';
 import { LOCATION_MODES, isServiceArea, signupLocationProblem, signupLocationFields } from '../utils/businessLocationMode';
 import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import { spacing, radius, typography } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // 2026-09-06: expanded from a hand-typed 6-value list to the same 15 (then,
 // same day, 19) major categories as CATEGORY_GROUPS (gatheringCategories.js)
@@ -1098,14 +1098,14 @@ function DetailRow({ label, value, styles }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  statusCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.lg, ...shadow.card },
+  statusCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', marginBottom: spacing.lg, ...shadow.card },
   statusIcon: { fontSize: 40, marginBottom: spacing.sm },
   statusTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs, textAlign: 'center' },
   statusBody: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-  notesCard: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  notesCard: { backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border },
   notesLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, fontWeight: '700' },
   notesText: { ...typography.body, color: colors.textPrimary },
-  detailsCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card },
+  detailsCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.lg, ...shadow.card },
   detailsHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md, fontWeight: '700' },
   detailRow: { marginBottom: spacing.sm },
   detailLabel: { ...typography.caption, color: colors.textTertiary },
@@ -1114,11 +1114,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   subheader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   reviewNote: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginRight: spacing.xs, marginBottom: spacing.xs },
+  chip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginRight: spacing.xs, marginBottom: spacing.xs },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
   chipTextActive: { color: '#fff' },
@@ -1142,6 +1142,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   confirmBanner: { backgroundColor: colors.primaryMuted, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1.5, borderColor: colors.primary },
   confirmTitle: { ...typography.headline, color: colors.textPrimary },
   confirmSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  aiButton: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.primary, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
+  aiButton: { ...PRIMARY_BUTTON, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary, alignItems: 'center', marginTop: spacing.sm },
   aiButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
 });

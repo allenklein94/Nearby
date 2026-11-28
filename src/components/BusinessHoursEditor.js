@@ -255,7 +255,7 @@ const makeStyles = (colors) => StyleSheet.create({
   dayRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
   dayLabel: { width: 88, color: colors.textPrimary, fontWeight: '700' },
   intervalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs, marginLeft: 88 },
-  chip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full ?? 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full ?? 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   chipTextSelected: { color: colors.primary },

@@ -29,7 +29,7 @@ import useCategoryNames from '../hooks/useCategoryNames';
 import { useLanguage } from '../context/LanguageContext';
 import { displayDateTime } from '../i18n/display';
 import ToggleRow from '../components/ToggleRow';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // Labels come from ui.gatheringVocab.vibe.<column> (the same wording GatheringDetail shows).
 const VIBE_SCALES = [
   { key: 'energyLevel', column: 'energy_level' },
@@ -601,7 +601,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   helper: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full ?? 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full ?? 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textPrimary, fontSize: 14 },
   chipTextSelected: { color: '#fff', fontWeight: '600' },
@@ -618,13 +618,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   scaleOptionText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
   scaleOptionTextSelected: { color: colors.primary },
   scaleLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  scaleEndLabel: { color: colors.textTertiary, fontSize: 11 },
+  scaleEndLabel: { color: colors.textTertiary, fontSize: 12 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   timelineRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   timelineTimeInput: { width: 90 },
   timelineRemoveButton: { paddingHorizontal: spacing.xs },
   timelineRemoveText: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
   addStepText: { color: colors.primary, fontWeight: '700', fontSize: 14, marginTop: spacing.xs },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

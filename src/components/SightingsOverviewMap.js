@@ -62,5 +62,5 @@ const getStyles = (colors) => StyleSheet.create({
   avatarPlaceholder: {},
   calloutCard: { padding: spacing.sm, minWidth: 140 },
   calloutTitle: { ...typography.bodyBold, color: '#1a1a1a', fontSize: 13 },
-  calloutAction: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  calloutAction: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 4 },
 });

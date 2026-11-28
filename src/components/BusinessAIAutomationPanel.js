@@ -29,7 +29,7 @@ import { withdrawBusinessOffer } from '../services/businessFulfillment';
 import { getBusinessEntitlements, hasEntitlement } from '../services/entitlements';
 import { countLabel } from '../utils/plural';
 import ToggleRow from './ToggleRow';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import {
   getBusinessAiTrustLevel, setBusinessAiTrustLevel,
   getBusinessAiPolicies, upsertBusinessAiPolicy, deleteBusinessAiPolicy,
@@ -630,21 +630,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
   levelTitle: { ...typography.bodyBold, color: colors.textPrimary, flex: 1 },
   lockBadge: { fontSize: 14 },
-  levelDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: spacing.xs, marginLeft: 28 },
-  upgradeHint: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: spacing.xs, marginLeft: 28 },
+  levelDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: spacing.xs, marginLeft: 24 },
+  upgradeHint: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: spacing.xs, marginLeft: 24 },
   sectionDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.lg },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionHeader: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 17 },
+  sectionHeader: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   sectionSubtext: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: spacing.xs, marginBottom: spacing.md },
   addLink: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   emptyText: { color: colors.textTertiary, fontSize: 13, fontStyle: 'italic', marginTop: spacing.xs },
   policyCard: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.sm, ...shadow.card,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.sm,
   },
   policyCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   policyName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
-  policyStatus: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  policyStatus: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   policyStatusOn: { color: colors.success },
   policyStatusOff: { color: colors.textTertiary },
   policyMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
@@ -657,9 +657,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   logRowHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   logIcon: { fontSize: 18 },
   logTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
-  logMeta: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
-  logBody: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs, marginLeft: 26 },
-  logActionButton: { marginTop: spacing.sm, marginLeft: 26, alignSelf: 'flex-start' },
+  logMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 1 },
+  logBody: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs, marginLeft: 24 },
+  logActionButton: { marginTop: spacing.sm, marginLeft: 24, alignSelf: 'flex-start' },
   logActionButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: {
@@ -670,11 +670,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   fieldLabel: { color: colors.textSecondary, fontWeight: '700', fontSize: 13, marginBottom: spacing.xs, marginTop: spacing.sm },
   textInput: {
     backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: spacing.md, paddingVertical: 10, color: colors.textPrimary, fontSize: 14,
+    paddingHorizontal: spacing.md, paddingVertical: 12, color: colors.textPrimary, fontSize: 14,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
-    paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -691,10 +691,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
   modalButtonRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg, marginBottom: spacing.md },
   cancelButton: {
-    flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: radius.full,
+    ...PRIMARY_BUTTON,
+    flex: 1, alignItems: 'center',
     borderWidth: 1, borderColor: colors.border,
   },
   cancelButtonText: { color: colors.textSecondary, fontWeight: '700' },
-  saveButton: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: radius.full, backgroundColor: colors.primary },
+  saveButton: { ...PRIMARY_BUTTON, flex: 1, alignItems: 'center', backgroundColor: colors.primary },
   saveButtonText: { color: '#fff', fontWeight: '700' },
 });

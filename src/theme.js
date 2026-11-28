@@ -19,6 +19,9 @@ export const lightColors = {
   // color per this app's own locked visual-system convention) so surprise
   // mode reads as visually different, not just a coral banner with
   // different text. Used only by surprise-mode-specific UI.
+  // Women-only badge text (design-system D8): the badge keeps its pink identity (border + tint), the TEXT is darkened so it
+  // passes 4.5:1 (#ec4899 at 11 pt was about 3.5:1 on the light background).
+  womenOnlyText: '#BE185D',
   surprise: '#6C5CE7',
   surpriseMuted: 'rgba(108, 92, 231, 0.12)',
   // Item 128: the amber "in progress" text tone (Item 91's plan status, Item 123's "close"
@@ -49,6 +52,7 @@ export const darkColors = {
   info: '#6FA3E0',
   expired: '#8a8aa3',
   border: 'rgba(255, 255, 255, 0.08)',
+  womenOnlyText: '#F472B6',
   surprise: '#9B8CFF',
   surpriseMuted: 'rgba(155, 140, 255, 0.18)',
   inProgress: '#E0A84A',
@@ -62,8 +66,13 @@ export const typography = {
   display: { fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
   title: { fontSize: 26, fontWeight: '700', letterSpacing: -0.3 },
   headline: { fontSize: 20, fontWeight: '700' },
+  // Design-system D1 (owner, 2026-11-28): the two sizes the app really uses as steps, plus a subhead. The whole text scale is
+  // 34 / 26 / 20 / 18 / 16 / 15 / 14 / 13 / 12; nothing below 12 (guard: src/design/designSystemScale.test.js).
+  subhead: { fontSize: 18, fontWeight: '700' },
   body: { fontSize: 16, fontWeight: '400', lineHeight: 22 },
   bodyBold: { fontSize: 16, fontWeight: '600' },
+  secondary: { fontSize: 15, fontWeight: '400' },
+  label: { fontSize: 14, fontWeight: '600' },
   caption: { fontSize: 13, fontWeight: '500' },
   small: { fontSize: 12, fontWeight: '400' },
 };

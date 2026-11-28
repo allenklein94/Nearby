@@ -8,7 +8,7 @@ import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // 20270400: ID images are the most sensitive files Nearby holds: a review link lasts 15 minutes (it was 60), like profile photos.
 const ID_IMAGE_LINK_SECONDS = 15 * 60;
@@ -167,8 +167,8 @@ const getStyles = (colors) => StyleSheet.create({
   imageLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs },
   image: { width: '100%', height: 150, borderRadius: radius.md, backgroundColor: colors.surfaceElevated },
   actionsRow: { flexDirection: 'row', gap: spacing.sm },
-  rejectButton: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
+  rejectButton: { ...PRIMARY_BUTTON, flex: 1, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
   rejectButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
-  approveButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
+  approveButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.primary, alignItems: 'center' },
   approveButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

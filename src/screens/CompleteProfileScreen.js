@@ -21,7 +21,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { QUICK_INTEREST_TAGS } from '../constants/onboardingInterests';
 import { categoryName } from '../i18n/categoryNames';
 import { typography, spacing, radius } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 const MIN_AGE = 18;
 const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
@@ -506,7 +506,7 @@ const getStyles = (colors) => StyleSheet.create({
   progressStep: { flex: 1, alignItems: 'center' },
   progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginBottom: 6 },
   progressDotActive: { backgroundColor: colors.primary },
-  progressLabel: { fontSize: 10, color: colors.textTertiary, fontWeight: '600' },
+  progressLabel: { fontSize: 12, color: colors.textTertiary, fontWeight: '600' },
   progressLabelActive: { color: colors.primary },
   badge: {
     alignSelf: 'flex-start',
@@ -516,7 +516,7 @@ const getStyles = (colors) => StyleSheet.create({
     borderRadius: radius.full,
     marginBottom: spacing.md,
   },
-  badgeText: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  badgeText: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, justifyContent: 'center', minHeight: 50, borderWidth: 1, borderColor: colors.border },
   photoPicker: {
@@ -539,7 +539,7 @@ const getStyles = (colors) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: spacing.lg, paddingHorizontal: spacing.xs },
   checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.textTertiary,
+    width: 22, height: 22, borderRadius: 8, borderWidth: 2, borderColor: colors.textTertiary,
     marginRight: spacing.sm, marginTop: 2, justifyContent: 'center', alignItems: 'center',
   },
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -547,12 +547,11 @@ const getStyles = (colors) => StyleSheet.create({
   consentText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 19 },
   link: { color: colors.primary, textDecorationLine: 'underline' },
   navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
-  backButton: {
-    paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,
+  backButton: { ...PRIMARY_BUTTON, paddingHorizontal: spacing.lg,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
   backButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
-  nextButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center' },
+  nextButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.primary, alignItems: 'center' },
   nextButtonDisabled: { opacity: 0.5 },
   nextButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   signOutLink: { paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },

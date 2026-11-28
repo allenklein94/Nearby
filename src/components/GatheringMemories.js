@@ -195,7 +195,7 @@ const getStyles = (colors) => StyleSheet.create({
   strip: { gap: spacing.sm, paddingBottom: spacing.sm },
   thumb: { width: 88, height: 88, borderRadius: radius.md },
   thumbPlaceholder: { backgroundColor: colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
-  play: { color: colors.textSecondary, fontSize: 22 },
+  play: { color: colors.textSecondary, fontSize: 20 },
   addButton: { alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   addText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   viewer: { flex: 1, backgroundColor: colors.background },

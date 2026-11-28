@@ -40,7 +40,7 @@ import { moneyLabel } from '../utils/outcomeDisplay';
 import { getGatheringById } from '../services/gatherings';
 import { gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs } from '../utils/gatheringBusinessAsk';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import { localDateKey } from '../utils/whenPresets'; // the LOCAL day (never the UTC day)
 // Same canonical 26-tag list business_requests.category's own (now-widened)
 // CHECK constraint validates against -- was a separate, independently-
@@ -1207,7 +1207,7 @@ const getStyles = (colors) => StyleSheet.create({
   matchedAvailabilityText: { ...typography.body, color: colors.primary, fontWeight: '600', marginBottom: 2 },
   matchedAvailabilityDescription: { ...typography.caption, color: colors.textSecondary },
   recapCard: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginTop: spacing.lg,
   },
   recapText: { ...typography.caption, color: colors.textSecondary, lineHeight: 19 },
@@ -1230,7 +1230,7 @@ const getStyles = (colors) => StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: {
     backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.md, marginRight: spacing.sm, marginBottom: spacing.sm,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginRight: spacing.sm, marginBottom: spacing.sm,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
@@ -1245,7 +1245,7 @@ const getStyles = (colors) => StyleSheet.create({
   nearbyEmptyText: { ...typography.caption, color: colors.textTertiary, fontStyle: 'italic' },
   nearbyResultsList: { gap: spacing.xs },
   nearbyResultCard: {
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.sm,
   },
   nearbyResultCardSelected: { borderColor: colors.primary, borderWidth: 1.5, backgroundColor: colors.primaryMuted },
@@ -1253,7 +1253,8 @@ const getStyles = (colors) => StyleSheet.create({
   nearbyResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   nearbyResultMeta: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
   submitButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginTop: spacing.xl,
   },
   submitButtonDisabled: { opacity: 0.5 },

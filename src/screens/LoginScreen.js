@@ -11,7 +11,7 @@ import NearbyMark from '../components/brand/NearbyMark';
 import TurnstileWidget from '../components/TurnstileWidget';
 import useAuthCaptcha from '../hooks/useAuthCaptcha';
 import { authCaptchaOptions, captchaUnavailableError, isCaptchaRefusal, turnstileLanguage } from '../utils/captcha';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 const REVIEWER_PHONE_DIGITS = '5555550199';
 
@@ -230,8 +230,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderColor: colors.border,
     textAlign: 'center',
   },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   topBack: { position: 'absolute', top: spacing.lg, left: spacing.lg, paddingVertical: spacing.sm, minHeight: 44, justifyContent: 'center' },
   topBackText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
   backText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center' },

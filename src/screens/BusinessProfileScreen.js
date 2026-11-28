@@ -30,7 +30,7 @@ import { isVerifiedBusiness } from '../services/businessVerification';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { canReportBusiness } from '../utils/reportContent';
 import VerifiedBusinessBadge from '../components/VerifiedBusinessBadge';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -672,42 +672,42 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
   attributeSectionHeader: { ...typography.small, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
   attributeChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg },
-  attributeChip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  attributeChip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
   attributeChipText: { ...typography.small, color: colors.textSecondary },
   actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
   // Item 37: Follow is a passive subscribe action, not the primary CTA --
   // outlined in both states, never filled coral. "Plan Here" (below) is
   // the real primary action on this screen.
-  followButton: { flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
+  followButton: { ...PRIMARY_BUTTON, flex: 1, borderWidth: 1, borderColor: colors.primary, alignItems: 'center' },
   followingButton: { backgroundColor: colors.surface, borderColor: colors.border },
   followButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   followingButtonText: { color: colors.textSecondary },
-  messageButton: { flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
+  messageButton: { ...PRIMARY_BUTTON, flex: 1, borderWidth: 1, borderColor: colors.primary, alignItems: 'center' },
   messageButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   // Item 37: the real primary, context-aware CTA for "looking at a
   // business" -- filled coral, same treatment followButton used to have.
   planHereButton: {
-    borderRadius: radius.full, paddingVertical: 14,
+    ...PRIMARY_BUTTON,
     alignItems: 'center', marginBottom: spacing.lg, backgroundColor: colors.primary, ...shadow.button,
   },
   planHereButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   section: { marginBottom: spacing.lg },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   photo: { width: 140, height: 100, borderRadius: radius.md, marginRight: spacing.sm },
-  offerCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
+  offerCard: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   offerTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   offerDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
-  experienceCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
+  experienceCard: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   experienceTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   experienceDescription: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   experienceMeta: { color: colors.textTertiary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   scarcityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
-  redeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
+  redeemButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.sm },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   lockedButton: { backgroundColor: colors.surfaceElevated },
   lockedButtonText: { color: colors.textTertiary, fontWeight: '700', fontSize: 13 },
   perkCodeBox: { marginTop: spacing.sm, marginBottom: 0 },
-  gatheringCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
+  gatheringCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringIcon: { fontSize: 22, marginRight: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   gatheringMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },

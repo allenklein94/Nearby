@@ -15,7 +15,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { MatchAnimation, SkeletonFeed, modalAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
 import { Ionicons } from '@expo/vector-icons';
 import { FUNCTIONAL_ICONS, FUNCTIONAL_ICON_SIZE } from '../constants/functionalIcons';
@@ -546,7 +546,8 @@ const getStyles = (colors) => StyleSheet.create({
   searchIcon: { fontSize: 14, marginRight: spacing.sm },
   searchInput: { flex: 1, color: colors.textPrimary, fontSize: 14 },
   findContactsButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginBottom: spacing.lg,
   },
   findContactsButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
@@ -586,13 +587,13 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md,
     padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
   },
-  modalButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
+  modalButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center' },
   modalButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   modalCancelText: { color: colors.textTertiary, textAlign: 'center' },
   circleToggleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   circleToggleCheck: { width: 24, color: colors.primary, fontWeight: '800', fontSize: 16 },
   circleToggleName: { color: colors.textPrimary, fontSize: 15 },
-  acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
   acceptButtonSent: { backgroundColor: colors.success },
   acceptButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   declineButton: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },

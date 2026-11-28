@@ -199,13 +199,13 @@ const getStyles = (colors) => StyleSheet.create({
   groupChatsRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   groupChatChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, maxWidth: 260, // device test 2026-11-27: "Downtown run..." cut off at 160
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, maxWidth: 260, // device test 2026-11-27: "Downtown run..." cut off at 160
   },
   groupChatChipIcon: { fontSize: 14, marginRight: 4 },
   groupChatChipText: { color: colors.textPrimary, fontWeight: '600', fontSize: 13, flexShrink: 1 },
   groupChatChipPast: {
-    color: colors.textTertiary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase',
+    color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase',
     marginLeft: 6, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
-    paddingHorizontal: 6, paddingVertical: 1,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
   },
 });

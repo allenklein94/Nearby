@@ -134,6 +134,6 @@ const getStyles = (colors) =>
     title: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
     subtitle: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
     badge: { borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.sm },
-    badgeText: { fontSize: 11, fontWeight: '700' },
+    badgeText: { fontSize: 12, fontWeight: '700' },
     chevron: { color: colors.textTertiary, fontSize: 18, marginLeft: spacing.xs },
   });

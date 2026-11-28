@@ -268,7 +268,7 @@ const getStyles = (colors) => StyleSheet.create({
   messageRowMe: { justifyContent: 'flex-end' },
   avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},
-  senderName: { fontSize: 11, color: colors.textTertiary, marginBottom: 2, marginLeft: spacing.xs },
+  senderName: { fontSize: 12, color: colors.textTertiary, marginBottom: 2, marginLeft: spacing.xs },
   bubble: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.sm, borderWidth: 1, borderColor: colors.border },
   bubbleMe: { backgroundColor: colors.primary, borderColor: colors.primary },
   bubbleText: { color: colors.textPrimary, fontSize: 14 },

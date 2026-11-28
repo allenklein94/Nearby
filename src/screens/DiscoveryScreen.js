@@ -1026,7 +1026,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // already says brand color shouldn't be spent on it.
   headerIconsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerIconButton: { padding: spacing.xs },
-  headerIconText: { fontSize: 17, color: colors.textSecondary },
+  headerIconText: { fontSize: 16, color: colors.textSecondary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   // Replaces the old modeSwitcher (2 full-width pill buttons) + a
   // 2-section accordion (Looking For / Quick Filters) + a separate
@@ -1081,10 +1081,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   name: { ...typography.headline, color: colors.textPrimary },
   verifiedBadge: { color: colors.success, fontSize: 16, fontWeight: '700' },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  compatText: { fontSize: 11, fontWeight: '700' },
+  compatText: { fontSize: 12, fontWeight: '700' },
   proximityRow: { marginBottom: spacing.xs },
   proximityText: { ...typography.small, color: colors.textTertiary },
-  viewOnMapText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 2 },
+  viewOnMapText: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 2 },
   overviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
   overviewTitle: { ...typography.headline, color: colors.textPrimary },
   overviewClose: { color: colors.textTertiary, fontSize: 20 },

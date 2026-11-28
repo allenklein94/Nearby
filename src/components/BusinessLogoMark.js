@@ -32,5 +32,5 @@ export default function BusinessLogoMark({ uri, size = 22, onFailed }) {
 }
 
 const styles = StyleSheet.create({
-  mark: { borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  mark: { borderWidth: StyleSheet.hairlineWidth, marginRight: 6, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 });

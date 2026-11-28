@@ -19,7 +19,7 @@ import AdminBusinessVerificationSection from '../components/AdminBusinessVerific
 import AdminDuplicateWarnings from '../components/AdminDuplicateWarnings';
 import AdminOfferHistory from '../components/AdminOfferHistory';
 import { warningsFor, approvalNeedsConfirm, mediaMatchPairs, dismissArgs } from '../utils/businessDuplicateWarnings';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -485,7 +485,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   businessName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   requester: { color: colors.textTertiary, fontSize: 12, marginTop: 2, marginBottom: spacing.xs },
   category: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
-  statusBadge: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  statusBadge: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
   statusApproved: { color: colors.success },
   statusDenied: { color: colors.textTertiary },
   statusNeedsInfo: { color: colors.warning },
@@ -493,17 +493,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   contact: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm },
   needsInfoNote: { color: colors.warning, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  approveButton: { flex: 1, backgroundColor: colors.success, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
+  approveButton: { flex: 1, backgroundColor: colors.success, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
   approveButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  requestInfoButton: { flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.primary },
+  requestInfoButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.surfaceElevated, alignItems: 'center', borderWidth: 1, borderColor: colors.primary },
   requestInfoButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
-  denyButton: { flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
+  denyButton: { flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
   denyButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
   notesInputRow: { marginTop: spacing.sm },
   notesInput: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.sm, color: colors.textPrimary, fontSize: 13, minHeight: 60, textAlignVertical: 'top',
   },
-  sendNotesButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
+  sendNotesButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.sm },
   sendNotesButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

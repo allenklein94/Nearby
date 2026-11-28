@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   viewerName: { flex: 1, color: '#fff', fontSize: 14 },
   addFriendButton: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   addFriendButtonSent: { backgroundColor: 'rgba(255,255,255,0.3)' },
-  addFriendButtonText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  addFriendButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   emptyViewersText: { color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', paddingVertical: spacing.lg },
   closeViewersText: { color: 'rgba(255,255,255,0.7)', textAlign: 'center', fontSize: 14 },
 });

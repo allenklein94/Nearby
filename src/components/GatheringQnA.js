@@ -155,9 +155,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   answerLabel: { fontWeight: '700', color: colors.primary },
   awaitingText: { color: colors.textTertiary, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
   answerRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs, gap: spacing.sm },
-  answerInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 8, fontSize: 13, borderWidth: 1, borderColor: colors.border },
+  answerInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 6, fontSize: 13, borderWidth: 1, borderColor: colors.border },
   answerSubmitText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   askRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs, gap: spacing.sm },
-  askInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 8, fontSize: 13, borderWidth: 1, borderColor: colors.border },
+  askInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 6, fontSize: 13, borderWidth: 1, borderColor: colors.border },
   askSubmitText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
 });

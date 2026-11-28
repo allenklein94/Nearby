@@ -116,5 +116,5 @@ const getStyles = (colors) => StyleSheet.create({
   },
   gifImage: { width: '100%', height: '100%' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xl },
-  attribution: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', paddingVertical: spacing.sm },
+  attribution: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.sm },
 });

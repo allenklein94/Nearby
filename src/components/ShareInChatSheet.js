@@ -116,7 +116,7 @@ const getStyles = (colors) => StyleSheet.create({
   note: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.sm, marginBottom: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   name: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  sendButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8, minWidth: 70, alignItems: 'center' },
+  sendButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, minWidth: 70, alignItems: 'center' },
   sendButtonSent: { backgroundColor: colors.success },
   sendButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl, lineHeight: 20 },

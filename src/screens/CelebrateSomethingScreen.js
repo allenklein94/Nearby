@@ -53,7 +53,7 @@ import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { moneyLabel } from '../utils/outcomeDisplay';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 import { skipsCarriedWhoFor } from '../utils/createHubWhoFor';
 
 // Item 61 ("Celebrate Something" life-events planning layer, CLAUDE.md):
@@ -2251,7 +2251,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   progressStep: { flex: 1, alignItems: 'center' },
   progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginBottom: 6 },
   progressDotActive: { backgroundColor: colors.primary },
-  progressLabel: { fontSize: 10, color: colors.textTertiary, fontWeight: '600' },
+  progressLabel: { fontSize: 12, color: colors.textTertiary, fontWeight: '600' },
   progressLabelActive: { color: colors.primary },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   sublabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
@@ -2290,7 +2290,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   dateDisplayText: { color: colors.textPrimary, fontWeight: '600' },
   calendarToggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, paddingVertical: spacing.xs },
   checkbox: {
-    width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: colors.border,
+    width: 20, height: 20, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -2298,7 +2298,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   calendarToggleText: { color: colors.textPrimary, fontSize: 14, flex: 1 },
   optionCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
-    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.xs,
   },
   optionCardSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
@@ -2320,12 +2320,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   autoPlanRowDetail: { color: colors.textSecondary, fontSize: 13 },
   autoPlanTotal: { color: colors.textPrimary, fontWeight: '700', fontSize: 15, marginTop: spacing.sm, textAlign: 'right' },
   navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
-  backButton: {
-    paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,
+  backButton: { ...PRIMARY_BUTTON, paddingHorizontal: spacing.lg,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
   backButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
-  nextButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  nextButton: { ...PRIMARY_BUTTON, flex: 1, backgroundColor: colors.primary, alignItems: 'center', ...shadow.button },
   nextButtonDisabled: { opacity: 0.5 },
   nextButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   skipRow: { alignItems: 'center', paddingVertical: spacing.md },

@@ -12,7 +12,7 @@ import { displayDateTime } from '../i18n/display';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation, isRomanticMatch = true }) {
   const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
@@ -206,11 +206,11 @@ const getStyles = (colors) => StyleSheet.create({
   contactHintLink: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: spacing.lg },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs },
   input: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center' },
+  button: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   locationButton: {
-    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: 14, alignItems: 'center', marginTop: spacing.md,
+    ...PRIMARY_BUTTON,
+    borderWidth: 1, borderColor: colors.primary, alignItems: 'center', marginTop: spacing.md,
   },
   locationButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   locationHint: { ...typography.small, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },

@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 const FIELDS = [
   { key: 'what_was_beautiful', labelKey: 'whatWasBeautiful' },
   { key: 'what_was_difficult', labelKey: 'whatWasDifficult' },
@@ -189,7 +190,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
   addButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginBottom: spacing.lg, ...shadow.button,
   },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },

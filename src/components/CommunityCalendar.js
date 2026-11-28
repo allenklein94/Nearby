@@ -92,10 +92,10 @@ export default function CommunityCalendar({ gatherings, selectedDate, onSelectDa
 const getStyles = (colors) => StyleSheet.create({
   container: { marginBottom: spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  navArrow: { fontSize: 22, color: colors.primary, paddingHorizontal: spacing.md, fontWeight: '700' },
+  navArrow: { fontSize: 20, color: colors.primary, paddingHorizontal: spacing.md, fontWeight: '700' },
   monthLabel: { ...typography.bodyBold, color: colors.textPrimary },
   weekdayRow: { flexDirection: 'row' },
-  weekdayLabel: { flex: 1, textAlign: 'center', color: colors.textTertiary, fontSize: 11, fontWeight: '700' },
+  weekdayLabel: { flex: 1, textAlign: 'center', color: colors.textTertiary, fontSize: 12, fontWeight: '700' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', borderRadius: radius.md },
   cellSelected: { backgroundColor: colors.primaryMuted },

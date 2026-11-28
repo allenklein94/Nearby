@@ -34,5 +34,5 @@ const getStyles = (colors) => StyleSheet.create({
     alignSelf: 'flex-start', backgroundColor: colors.warning + '20', borderRadius: radius.full,
     paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.warning,
   },
-  text: { color: colors.warning, fontSize: 11, fontWeight: '700' },
+  text: { color: colors.warning, fontSize: 12, fontWeight: '700' },
 });

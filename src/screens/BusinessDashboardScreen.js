@@ -149,7 +149,7 @@ import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../uti
 import { countLabel } from '../utils/plural';
 import { bestTimeLine } from '../utils/bestTime';
 import ToggleRow from '../components/ToggleRow';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // Tab, tool, offer-type and duration labels live in ui.bizDash3 (11 languages), keyed by `key`.
 const SECTIONS = [
   { key: 'home', icon: '🏠' },
@@ -8726,11 +8726,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   sectionTab: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs, borderRadius: radius.md },
   sectionTabActive: { backgroundColor: colors.primaryMuted },
   sectionTabIcon: { fontSize: 16 },
-  sectionTabLabel: { color: colors.textTertiary, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  sectionTabLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', marginTop: 2 },
   sectionTabLabelActive: { color: colors.primary },
   welcomeCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
-    padding: spacing.lg, marginBottom: spacing.lg,
+    padding: spacing.md, marginBottom: spacing.lg,
   },
   // P2 remediation item 11 -- neutral (colors.surface/border), matching
   // this same file's own briefCard/discoveryTeaser informational-card
@@ -8738,7 +8738,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // tappable onboarding actions; this one is status-only).
   pendingReviewCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, marginBottom: spacing.lg,
+    padding: spacing.md, marginBottom: spacing.lg,
   },
   pendingReviewTitle: { ...typography.headline, color: colors.textPrimary },
   pendingReviewRow: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
@@ -8751,7 +8751,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   discoveryTeaserChevron: { color: colors.textTertiary, fontSize: 20 },
   briefCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, marginBottom: spacing.lg,
+    padding: spacing.md, marginBottom: spacing.lg,
   },
   briefBestOpportunity: { color: colors.primary, fontWeight: '700', fontSize: 14, marginTop: spacing.sm },
   briefSuggestion: { color: colors.textSecondary, fontSize: 13, fontStyle: 'italic' },
@@ -8768,7 +8768,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, alignItems: 'center', ...shadow.card,
   },
   statNumber: { ...typography.title, color: colors.textPrimary },
-  statLabel: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 2 },
+  statLabel: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', marginTop: 2 },
   homeTileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   homeTile: { flexGrow: 1, flexBasis: '30%', minWidth: 140, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   homeTileLine: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 },
@@ -8788,7 +8788,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md },
   postUpdateButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginTop: spacing.xl,
   },
   postUpdateButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
@@ -8812,28 +8813,28 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   lockedFeatureCta: { color: colors.primary, fontSize: 13, fontWeight: '700', marginTop: spacing.sm },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  offerRedemptionCount: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  offerRedemptionCount: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginTop: 4 },
   estimatedOwedBanner: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
-  estimatedOwedLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  estimatedOwedLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   estimatedOwedValue: { color: colors.textPrimary, fontSize: 28, fontWeight: '800', marginTop: 2 },
-  estimatedOwedDetail: { color: colors.textTertiary, fontSize: 11, marginTop: 4 },
+  estimatedOwedDetail: { color: colors.textTertiary, fontSize: 12, marginTop: 4 },
   insightsCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
   insightLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 4, lineHeight: 18 },
   opportunityWhen: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 13, marginTop: 4 },
-  breakdownText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  breakdownText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginTop: 4 },
   taskRow: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs },
   taskText: { color: colors.textPrimary, fontSize: 13 },
-  attachRewardText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  attachRewardText: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 4 },
   memberHistoryPanel: { marginTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
   memberHistoryLine: { color: colors.textSecondary, fontSize: 12, marginBottom: 2 },
   messageMemberLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: spacing.sm },
-  notesLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', marginTop: spacing.md, textTransform: 'uppercase' },
+  notesLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', marginTop: spacing.md, textTransform: 'uppercase' },
   notesInput: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.sm, fontSize: 13, borderWidth: 1, borderColor: colors.border, marginTop: spacing.xs, minHeight: 40 },
   smallActionButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', minWidth: 80 },
   smallActionButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
@@ -8867,12 +8868,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   inlineAddButton: { flexShrink: 0, marginLeft: spacing.sm, alignSelf: 'center', minHeight: 44 },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
-  submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  submitButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, alignItems: 'center', marginTop: spacing.lg },
   submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleRowLabel: { ...typography.body, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
-  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },

@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
+import { PRIMARY_BUTTON } from '../constants/buttonStates';
 export default function PaywallScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -188,7 +189,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderRadius: radius.full,
     marginBottom: spacing.md,
   },
-  badgeText: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
+  badgeText: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   featuresCard: {
@@ -210,7 +211,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   alreadyPremiumEmoji: { fontSize: 40, marginBottom: spacing.sm },
   alreadyPremiumTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   alreadyPremiumText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
-  manageButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, paddingHorizontal: spacing.xl, ...shadow.button },
+  manageButton: { ...PRIMARY_BUTTON, backgroundColor: colors.primary, paddingHorizontal: spacing.xl, ...shadow.button },
   manageButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   manageHelperText: { ...typography.small, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md, lineHeight: 16 },
   planButton: {
@@ -237,12 +238,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     paddingVertical: 2,
     borderRadius: radius.full,
   },
-  saveBadgeText: { color: '#0a0a0a', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  saveBadgeText: { color: '#0a0a0a', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   restoreText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
   errorCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     marginTop: spacing.md,
   },
   empty: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },

@@ -3936,7 +3936,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   openNowNote: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
   },
   filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   filterChipIcon: { fontSize: 13, marginRight: 4 },
@@ -3954,16 +3954,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     width: 128, backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.sm,
   },
-  nowCardImage: { width: '100%', height: 64, borderRadius: radius.md, marginBottom: spacing.xs },
+  nowCardImage: { width: '100%', height: 64, borderRadius: radius.lg, marginBottom: spacing.xs },
   nowCardIconWrap: { alignItems: 'center', justifyContent: 'center' },
   nowCardTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
-  nowCardSubtitle: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  nowCardSubtitle: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   // The new Categories browse row -- plain chips (no active/selected
   // state, since tapping navigates into an expanded context rather than
   // toggling a filter that stays on this same row).
   categoryChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: 6,
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, gap: 6,
   },
   categoryChipIcon: { fontSize: 14 },
   categoryChipText: { color: colors.textPrimary, fontWeight: '700', fontSize: 12 },
@@ -3978,7 +3978,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // new color introduced for one card.
   createItCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5,
-    borderColor: colors.primary, padding: spacing.lg, marginTop: spacing.lg, alignItems: 'center',
+    borderColor: colors.primary, padding: spacing.md, marginTop: spacing.lg, alignItems: 'center',
   },
   createItTitle: { ...typography.headline, color: colors.textPrimary, textAlign: 'center' },
   createItSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },
@@ -3990,17 +3990,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
+    padding: spacing.md, marginBottom: spacing.md, ...shadow.card,
   },
   cardImage: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
   cardIconWrap: {
-    width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md,
+    width: 44, height: 44, borderRadius: radius.lg, marginRight: spacing.md,
     alignItems: 'center', justifyContent: 'center',
   },
   cardIcon: { fontSize: 22 },
   cardTitle: { ...typography.headline, color: colors.textPrimary },
   cardSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-  cardChevron: { color: colors.textTertiary, fontSize: 24 },
+  cardChevron: { color: colors.textTertiary, fontSize: 20 },
   // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- the standard-tier
   // card's real next-action word (coral, an actual action) vs. the
   // current user's own real RSVP state (muted, informational only --
@@ -4020,7 +4020,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   heroScrim: { ...StyleSheet.absoluteFillObject },
   heroEyebrow: {
     position: 'absolute', top: spacing.sm, left: spacing.sm,
-    color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.6,
+    color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 0.6,
     backgroundColor: 'rgba(0,0,0,0.32)', paddingHorizontal: spacing.sm, paddingVertical: 3,
     borderRadius: radius.full, overflow: 'hidden',
   },
@@ -4028,7 +4028,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
     padding: spacing.md, paddingTop: spacing.xl,
   },
-  heroTitle: { color: '#FFFFFF', fontWeight: '800', fontSize: 17, marginBottom: 2 },
+  heroTitle: { color: '#FFFFFF', fontWeight: '800', fontSize: 16, marginBottom: 2 },
   heroMeta: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '500' },
   heroCta: {
     backgroundColor: colors.primary, borderRadius: radius.full,

@@ -20,7 +20,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import { inviteSentConfirmation } from '../utils/actionConfirmations';
-import { disabledButtonStyle } from '../constants/buttonStates';
+import { disabledButtonStyle, PRIMARY_BUTTON } from '../constants/buttonStates';
 // Replaces the old plain Alert.alert('Posted!', ...) dead end with two
 // real actions — a working shareable deep link (needs the `linking`
 // config added to RootNavigator.js; a "shareable link" that silently
@@ -327,7 +327,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: spacing.lg },
   summaryCard: {
     width: '100%', backgroundColor: colors.surface,
-    borderRadius: radius.lg, borderWidth: 1.5, padding: spacing.lg, ...shadow.card,
+    borderRadius: radius.lg, borderWidth: 1.5, padding: spacing.md,
   },
   pieceRow: { flexDirection: 'row', alignItems: 'center' },
   pieceRowGap: { marginTop: spacing.sm },
@@ -339,7 +339,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   summaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1 },
   businessAskedNote: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
   actionButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16,
+    ...PRIMARY_BUTTON,
+    backgroundColor: colors.primary,
     alignItems: 'center', marginBottom: spacing.sm, ...shadow.button,
   },
   actionButtonSecondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, shadowOpacity: 0 },
@@ -351,7 +352,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   circleRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md, gap: spacing.sm },
   circleChip: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.full,
-    paddingHorizontal: spacing.md, paddingVertical: 8, minHeight: 32, justifyContent: 'center',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, minHeight: 32, justifyContent: 'center',
   },
   circleChipDone: { backgroundColor: colors.surfaceElevated },
   circleChipText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
@@ -362,8 +363,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},
   friendName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  friendContext: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
-  inviteButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8, minWidth: 70, alignItems: 'center' },
+  friendContext: { color: colors.textTertiary, fontSize: 12, marginTop: 1 },
+  inviteButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, minWidth: 70, alignItems: 'center' },
   inviteButtonSent: { backgroundColor: colors.success },
   inviteButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });

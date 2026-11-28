@@ -88,11 +88,11 @@ const getStyles = (colors) =>
     divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
     thumb: { width: COMPACT_THUMB_SIZE, height: COMPACT_THUMB_SIZE, borderRadius: COMPACT_THUMB_SIZE / 2, marginRight: spacing.md },
     iconWrap: { alignItems: 'center', justifyContent: 'center' },
-    icon: { fontSize: 19 },
+    icon: { fontSize: 20 },
     info: { flex: 1, marginRight: spacing.sm },
     title: { ...typography.headline, fontSize: 15, color: colors.textPrimary },
     meta: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-    chevron: { color: colors.textTertiary, fontSize: 22 },
+    chevron: { color: colors.textTertiary, fontSize: 20 },
     actionLabel: { color: colors.primary, fontWeight: '700', fontSize: 13 },
     stateLabel: { color: colors.textTertiary, fontWeight: '600', fontSize: 12 },
   });

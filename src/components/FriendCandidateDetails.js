@@ -103,7 +103,7 @@ const getStyles = (colors) => StyleSheet.create({
   name: { ...typography.headline, color: colors.textPrimary },
   verifiedBadge: { color: colors.success, fontSize: 16, fontWeight: '700' },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  compatText: { fontSize: 11, fontWeight: '700' },
+  compatText: { fontSize: 12, fontWeight: '700' },
   distance: { ...typography.small, color: colors.textTertiary },
   crossedPathsText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.xs },
   // sharedText itself keeps its own marginBottom -- sharedRow adds no
@@ -114,6 +114,6 @@ const getStyles = (colors) => StyleSheet.create({
   sharedText: { ...typography.small, color: colors.primary, fontWeight: '600', marginBottom: spacing.xs },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  chip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   chipText: { ...typography.small, color: colors.textSecondary },
 });

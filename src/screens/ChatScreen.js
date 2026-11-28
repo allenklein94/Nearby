@@ -109,7 +109,7 @@ function VoiceBubble({ audioPath, isMe, colors }) {
 }
 
 const voiceStyles = StyleSheet.create({
-  bubble: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 18, gap: 8 },
+  bubble: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 20, gap: 8 },
   label: { fontSize: 14, fontWeight: '600' },
 });
 
@@ -1555,7 +1555,7 @@ const getStyles = (colors) => StyleSheet.create({
   gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
   reactionBadge: {
     alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2, marginTop: 2, marginHorizontal: 4,
+    borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2, marginHorizontal: 4,
   },
   reactionBadgeText: { fontSize: 12 },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
