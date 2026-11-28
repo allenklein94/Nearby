@@ -97,3 +97,47 @@ exposure (never once outside users exist); 0349's leaves issued photo links vali
 - Website re-exported from the merged branch and published (0419, 0422, 0424-0427, 0430 depend on it).
 - Phase A post-deploy checks all PASS; 0435 (cuisine) is last and needs nothing beyond Wall B.
 - 0434 (version policy) enforcement and strict mode stay OFF; each is its own later approval.
+
+## 5. Owner decisions (2026-11-28, later the same day) + what was checked
+
+**Decided by the owner:** Batch 1 (0348-0354) may go BEFORE Tier 1, with every other gate kept (R2 App Store Connect,
+R8 website pass before + after 0348, same-day verified + encrypted backup, `--check`, one approval code per file). The
+2026-11-27 phone session is NOT Tier 1. Registrations closed while the profile exposure is open. 0353 carries 0383's
+consent guard. 0384 stays in Phase B only with effective interim containment (below).
+
+**Registrations (read-only, 2026-11-28):** production Auth already has `disable_signup = true` (it was `false` on
+2026-10-30; nothing in this session changed it). Providers on: email + phone only (no Google/Apple/other); the 0367 hook
+is off. 10 accounts, newest created 2026-10-27: no account was created since sign-up was last open. With `disable_signup`
+on, Auth refuses account creation on every public path (email sign-up, phone code to a new number, email code / magic
+link to a new address); existing accounts keep signing in (phone code, password, magic link). The two server paths that
+create or link accounts are service-key only (`setup-review-account` checks the service key; `review-login` makes a link
+for the existing reviewer address). A live probe from this session was refused by the session's safety rules, so the
+refusals are NOT yet proven on production: run `SUPABASE_ACCESS_TOKEN=... node scripts/trust-safety/signup-closed-check.js`
+(fictional address + reserved 555 number only; signs the dedicated test account in and out). Side effect accepted by the
+owner: Tier 1 item 0(f) (a NEW phone sign-up) waits until sign-up reopens (after 0348 + 0367's hook).
+Reopening later = Auth `disable_signup = false` (own approval; only after 0348 and, for phone-only, 0367 + its switch).
+
+**Who could have read profile columns:** only signed-in accounts, and all 10 are the owner's (production row count +
+creation dates above); sign-up has been closed since at least today. The Management API's log endpoint changed
+(`logs.all` removed; the replacement refused the old `edge_logs` source), so request logs were NOT reviewed from here;
+the Free plan keeps about a day of logs anyway. Owner option: Dashboard > Logs > API, filter path `/rest/v1/profiles`,
+look for any user agent other than `Nearby/87`, the website or Supabase's own. No profile VALUES were read in any check.
+
+**Crossed Paths interim containment: options (no production change made).** What today's production does: the
+`report-presence` service stores a rounded presence row (~11 m cell, deleted after 1 h, never readable by another
+account) for every signed-in caller, and makes sightings + pushes without consent checks. Presence rows are ALSO read by
+`get-online-status` and by the location-targeted push rules (`push_target_areas`: recommended-for-you, gathering
+interest threshold, the area pushes), so they are not only Crossed Paths data.
+
+| Option | What it does | Breaks / costs | When it can go |
+|---|---|---|---|
+| A (recommended) | 0353 as staged: no sighting is written, kept or read and no push is sent unless BOTH people opted into the same pool (+ visible, discoverable, no block); refused rows purged | presence row still stored 1 h for everyone (private) | Batch 1b |
+| B | A + a guard in 0353 that drops the presence row of anyone opted into neither Dating nor friend discovery | those people lose online status and the location-targeted pushes until 0384 + build 88 | Batch 1b (needs 0353 re-tested + re-coded) |
+| C | Owner turns off proximity notifications on their accounts now | pushes only; collection unchanged | now (all accounts are the owner's) |
+| D | Stop `report-presence` now (undeploy / return early) | build 87's Dating Browse "Crossed Paths" + online status stop; the presence call fails silently in the app (not phone-checked) | now, but an edge-function deploy (own approval) |
+
+No option is needed before Batch 1 for TODAY's data: every account is the owner's, sign-up is closed, and there is 1
+sighting row. Recommendation: A in Batch 1b, C now if you want the pushes to stop at once; B only if you want collection
+stopped before build 88 and accept the online-status/push loss for non-opted-in people. Later 0383 on top of 0353:
+the full replay applies 0353 then 0383 unchanged (0383 re-creates the same functions/policies; journey `crossedPathsConsent`
+passes at 0435), see section 6.
