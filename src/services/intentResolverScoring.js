@@ -174,6 +174,18 @@ export function attributeAndCuisineBonus(row, attributes, cuisine) {
 // Activity fit (owner item 37): the ask names something to DO ("work remotely", "a first date") and this business declared
 // what it takes (activityLayer.js). Same weight as the other ask-specific bonuses, ranking only, never a filter.
 export const SCORE_ACTIVITY_FIT = SCORE_HAPPENING_NOW;
+// A typed ask's stated cuisine vs a gathering's DECLARED cuisine (20270435; owner 2026-11-28). Eligibility keeps unknown:
+// no declared cuisine (or a server without the column) = kept, unranked by it; a different declared cuisine = left out
+// ("italian dinner" never shows a gathering its host called Mexican); the same one = the asked-for reason and the same
+// intent-tier credit a business earns for its declared cuisine (attributeAndCuisineBonus). Never inferred from the title.
+export function gatheringCuisineFit(gathering, cuisine) {
+  const declared = gathering?.cuisine ?? null;
+  if (!cuisine || !declared) return { eligible: true, matched: false, reason: null, delta: 0 };
+  if (declared !== cuisine) return { eligible: false, matched: false, reason: null, delta: 0 };
+  const label = CUISINE_OPTIONS.find((c) => c.key === cuisine)?.label ?? cuisine;
+  return { eligible: true, matched: true, reason: reasonText('askedForCuisine', { cuisineFood: `${label} food` }), delta: SCORE_HAPPENING_NOW };
+}
+
 export function activityFitBonus(row, askedActivities) {
   return activityFit(row, askedActivities) ? SCORE_ACTIVITY_FIT : 0;
 }

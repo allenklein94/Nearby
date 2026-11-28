@@ -6,7 +6,7 @@ import { getMyFamiliarHosts } from './familiarHosts';
 import { compareFamiliarity } from '../utils/hostFamiliarity';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
-import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
+import { getNearbyGatherings, getGatheringFitReasons, attachGatheringCuisines } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceInfo, getPartnerSuitedAges, getPartnerOperatingInfo, getDeclinedBusinesses } from './brandOffers';
 import { bookingModeOf } from '../constants/bookingMode';
@@ -58,6 +58,7 @@ import {
   gatheringResolverScoreParts,
   priceAndPartyBonus,
   attributeAndCuisineBonus,
+  gatheringCuisineFit,
   hobbyAttributeBonus,
   activityFitBonus,
   SCORE_ACTIVITY_FIT,
@@ -123,10 +124,13 @@ function scored(parts) {
   return { score: baseSignals.reduce((n, p) => n + p.delta, 0), baseSignals };
 }
 
-async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText), statedDay = null, clockStated = false) {
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText), statedDay = null, clockStated = false, cuisine = null) {
   const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
-  const relevant = nearby.filter((g) => {
+  // 2026-11-28: each gathering's declared cuisine, only when the ask states one (one read; none before 20270435).
+  const withCuisine = cuisine ? await attachGatheringCuisines(nearby) : nearby;
+  const relevant = withCuisine.filter((g) => {
     if (category && g.interest_tag !== category) return false;
+    if (!gatheringCuisineFit(g, cuisine).eligible) return false;
     // Owner 2026-10-23: a stated weekday / date ("pickleball Friday", "November 4") is that day, as Tomorrow is tomorrow.
     return statedDay ? matchesStatedDay(g.scheduled_at, statedDay) : matchesDateWindow(g.scheduled_at, dateWindow, new Date(), { clockStated });
   });
@@ -137,7 +141,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     const activityHit = gatheringActivityFit(gathering, askedActivities);
     // the explanation layer: what the ask wants to DO, then the category it named (every gathering here is in it), then fit reasons.
     // Never an occasion reason: a gathering has no occasion.
-    const reasons = [activityHit?.reason, category && gathering.interest_tag === category ? askedForReason(category) : null, ...fitReasons].filter(Boolean);
+    const cuisineHit = gatheringCuisineFit(gathering, cuisine);
+    const reasons = [activityHit?.reason, cuisineHit.reason, category && gathering.interest_tag === category ? askedForReason(category) : null, ...fitReasons].filter(Boolean);
     // Universal Signal Remediation Pass, P0 item 1 (CLAUDE.md, Aug 28 2026):
     // capacity/approvedAttendees are already fetched by getNearbyGatherings()
     // -- this was a pure mapping omission, not a missing query. A full
@@ -209,6 +214,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
         // an explicit friends plan is preferred over a merely compatible gathering (same tier, one more point)
         { code: 'base_activity_fit', delta: activityHit ? SCORE_ACTIVITY_FIT + (activityHit.explicit ? 1 : 0) : 0 },
         { code: 'base_price_party', delta: priceAndPartyBonus(gathering, priceLevel, partyType) },
+        // the stated cuisine met by the host's declared one: the same intent-tier credit a business gets (attributeAndCuisineBonus)
+        { code: 'base_attribute_match', delta: cuisineHit.delta },
       ]),
     };
   });
@@ -757,7 +764,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const clockStated = !!(clockWindow && (clockWindow.after != null || clockWindow.before != null)) || pointClock != null;
 
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay, clockStated),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay, clockStated, cuisine),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow, statedDay),
     resolvePerks(category, location),

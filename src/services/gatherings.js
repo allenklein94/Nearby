@@ -1,4 +1,4 @@
-import { writeWithOptionalColumns } from '../utils/optionalProfileColumns';
+import { writeWithOptionalColumns, isMissingColumnError } from '../utils/optionalProfileColumns';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { completedPlanFor } from '../utils/gatheringCompletion';
 import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadius';
@@ -159,6 +159,34 @@ export async function getGatheringCuisine(gatheringId) {
   if (error) return null;
   return data?.cuisine ?? null;
 }
+// Can this server store a gathering's cuisine yet (20270435 live)? Asked once per session (owner 2026-11-28: never let the
+// screen imply a cuisine was saved when it can't be). A missing column = no; a failed read (offline) = not offered this
+// time and asked again next time; only a clean read = yes.
+let cuisineSupport = null;
+export function gatheringCuisineSupported() {
+  if (!cuisineSupport) {
+    cuisineSupport = Promise.resolve(supabase.from('gatherings').select('cuisine').limit(1)).then(({ error }) => {
+      if (!error) return true;
+      if (!isMissingColumnError(error, GATHERING_CUISINE_COLUMNS)) cuisineSupport = null;
+      return false;
+    }, () => { cuisineSupport = null; return false; });
+  }
+  return cuisineSupport;
+}
+export function resetGatheringCuisineSupportForTests() { cuisineSupport = null; }
+
+// Adds each listed gathering's declared cuisine (one read by ids) when the server has the column; otherwise the rows come
+// back unchanged (cuisine unknown, never guessed). Used by Discover's typed asks and its cuisine filter.
+export async function attachGatheringCuisines(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const ids = list.map((g) => g?.id).filter(Boolean);
+  if (!ids.length || !(await gatheringCuisineSupported())) return list;
+  const { data, error } = await supabase.from('gatherings').select('id, cuisine').in('id', ids);
+  if (error || !Array.isArray(data)) return list;
+  const byId = new Map(data.map((r) => [r.id, r.cuisine ?? null]));
+  return list.map((g) => (byId.has(g.id) ? { ...g, cuisine: byId.get(g.id) } : g));
+}
+
 export async function setGatheringCuisine(gatheringId, cuisine) {
   const { error, available } = await writeWithOptionalColumns(
     (values) => supabase.from('gatherings').update(values).eq('id', gatheringId),

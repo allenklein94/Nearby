@@ -15,6 +15,7 @@ import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { NO_PREFERENCE } from '../constants/activityRefinements';
 import { GATHERING_CUISINES, cuisineApplies, cleanGatheringCuisine, cuisineName } from '../utils/gatheringCuisine';
+import useGatheringCuisineSupported from '../hooks/useGatheringCuisineSupported';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { setGatheringCuisine, updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
@@ -89,6 +90,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [newCategory, setNewCategory] = useState(null);
   // 2026-11-27: the gathering's optional cuisine (20270435), edited here, saved on its own write.
   const [cuisine, setCuisine] = useState(gathering.cuisine ?? null);
+  const cuisineSupported = useGatheringCuisineSupported(); // 2026-11-28: no cuisine choice until the server stores it
   const [timelineSteps, setTimelineSteps] = useState(gathering.timeline_steps ?? []);
   const [coverPhotoPath, setCoverPhotoPath] = useState(gathering.cover_photo_path ?? null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState(null);
@@ -195,7 +197,7 @@ export default function EditGatheringScreen({ route, navigation }) {
       if (missingCategory && newCategory) await setGatheringCategoryIfMissing(gathering.id, newCategory);
       const finalTag = missingCategory ? newCategory : gathering.interest_tag;
       const cleanCuisine = cleanGatheringCuisine(cuisine, finalTag);
-      if (cleanCuisine !== (gathering.cuisine ?? null)) await setGatheringCuisine(gathering.id, cleanCuisine);
+      if (cuisineSupported && cleanCuisine !== (gathering.cuisine ?? null)) await setGatheringCuisine(gathering.id, cleanCuisine);
       if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
       else showSuccessToast(t('ui.gatheringForm.edit.updated'), t('ui.gatheringForm.edit.updatedBody'));
       navigation.goBack();
@@ -259,7 +261,7 @@ export default function EditGatheringScreen({ route, navigation }) {
             </>
           )}
 
-          {cuisineApplies(missingCategory ? newCategory : gathering.interest_tag) && (
+          {cuisineSupported && cuisineApplies(missingCategory ? newCategory : gathering.interest_tag) && (
             <>
               <Text style={styles.label}>{t('ui.askBusiness.cuisineOptional')}</Text>
               <View style={styles.chipsWrap}>

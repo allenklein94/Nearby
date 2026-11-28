@@ -40,6 +40,7 @@ import { WHEN_PRESETS, dateForPreset, presetLeavesTime, dayForPreset } from '../
 import { compactActivityPicker } from '../utils/createActivityPicker';
 import { NO_PREFERENCE } from '../constants/activityRefinements';
 import { GATHERING_CUISINES, cuisineApplies, cleanGatheringCuisine, cuisineName } from '../utils/gatheringCuisine';
+import useGatheringCuisineSupported from '../hooks/useGatheringCuisineSupported';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
@@ -182,6 +183,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const activityFromContext = !!(carriedActivity || route.params?.quickStartCategory);
   // Owner 2026-11-27: the gathering's optional cuisine (canonical key), its own fact beside activity, category and title.
   const [cuisine, setCuisine] = useState(route.params?.quickStartCuisine ?? null);
+  // 2026-11-28: offered, shown and sent only when the server stores it (20270435); before that, no cuisine anywhere here.
+  const cuisineSupported = useGatheringCuisineSupported();
+  const storedCuisine = cuisineSupported ? cleanGatheringCuisine(cuisine, interestTag) : null;
   useEffect(() => {
     if (route.params?.quickStartCuisine) setCuisine(route.params.quickStartCuisine);
   }, [route.params?.quickStartCuisine]);
@@ -683,7 +687,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         description: description.trim() || null,
         interestTag,
         activity: gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }),
-        cuisine: cleanGatheringCuisine(cuisine, interestTag),
+        cuisine: storedCuisine,
         scheduledAt: scheduledAt.toISOString(),
         isPublic,
         customLocation,
@@ -882,7 +886,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
               </View>
             ))}
-            {cuisineApplies(interestTag) && (
+            {cuisineSupported && cuisineApplies(interestTag) && (
               // Item 7 + owner 2026-11-27: an optional cuisine for a food gathering, stored as its own fact (gatherings.cuisine,
               // 20270435), never folded into the title; carried from the words ("italian dinner") or picked here.
               <View style={{ marginBottom: spacing.sm }}>
@@ -1606,7 +1610,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.previewIcon}>{selectedStyle ? selectedStyle.icon : '🎉'}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.previewTitle}>{title || t('ui.gatheringForm.preview.untitled')}</Text>
-                {interestTag ? <Text style={styles.previewMeta}>{carriedActivity && gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }) === carriedActivity ? quickOptionLabel({ label: carriedActivity }, language) : names.tag(interestTag)}{cleanGatheringCuisine(cuisine, interestTag) ? ` · ${cuisineName(cleanGatheringCuisine(cuisine, interestTag), language)}` : ''}</Text> : null}
+                {interestTag ? <Text style={styles.previewMeta}>{carriedActivity && gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }) === carriedActivity ? quickOptionLabel({ label: carriedActivity }, language) : names.tag(interestTag)}{storedCuisine ? ` · ${cuisineName(storedCuisine, language)}` : ''}</Text> : null}
               </View>
               {reviewEditLink('what')}
             </View>
